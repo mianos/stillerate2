@@ -18,6 +18,7 @@
 #include "Button.h"
 #include "OneWireManager.h"
 #include "Motormanager.h"
+#include "PidController.h"
 
 static const char *TAG = "stillerate2";
 

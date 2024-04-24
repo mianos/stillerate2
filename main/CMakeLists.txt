@@ -15,4 +15,5 @@ idf_component_register(SRCS main.cpp
                     nvsstoragemanager
                     jsonwrapper
                     ESP32-MAX31865
-                    espressif__onewire_bus)
+                    espressif__onewire_bus
+                    pidwrapper)

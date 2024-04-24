@@ -17,6 +17,7 @@
 #include "SettingsManager.h"
 #include "Button.h"
 #include "OneWireManager.h"
+#include "Motormanager.h"
 
 static const char *TAG = "stillerate2";
 
@@ -106,6 +107,14 @@ extern "C" void app_main() {
 	SettingsManager settings(nv);
 
 	auto dsx = OneWireManager();
+
+    MotorController motor1(5, LEDC_TIMER_0, LEDC_CHANNEL_0); // Motor 1 on GPIO 5
+    MotorController motor2(18, LEDC_TIMER_1, LEDC_CHANNEL_1); // Motor 2 on GPIO 18
+    // Set initial duty cycle (e.g., 50% duty for motor 1)
+    motor1.setDuty(4096);
+    // Set different duty cycle for motor 2 if desired
+    motor2.setDuty(2048);
+
 	ESP_LOGI(TAG, "Settings %s", settings.toJson().c_str());
     MqttClient client(settings);
 	WiFiManager wifiManager(nv, localEventHandler, nullptr);

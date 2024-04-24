@@ -1,4 +1,8 @@
+
 menu "Still3 Configuration"
+
+#    osource "components/ESP32-MAX31865/Kconfig"
+
 
 config BUTTON_PIN
     int "Button GPIO Pin"

@@ -4,6 +4,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 # Include the ESP-IDF components
 idf_component_register(SRCS main.cpp 
                 MqttClient.cpp
+                OneWireManager.cpp
                 INCLUDE_DIRS "."
                 REQUIRES
 				    driver
@@ -12,4 +13,6 @@ idf_component_register(SRCS main.cpp
                     button
                     wifimanager
                     nvsstoragemanager
-                    jsonwrapper)
+                    jsonwrapper
+                    ESP32-MAX31865
+                    espressif__onewire_bus)

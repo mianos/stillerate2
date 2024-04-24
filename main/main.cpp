@@ -12,9 +12,11 @@
 
 #include "sdkconfig.h"
 
+#include "MqttClient.h"
 #include "WifiManager.h"
 #include "SettingsManager.h"
 #include "Button.h"
+#include "OneWireManager.h"
 
 static const char *TAG = "stillerate2";
 
@@ -43,6 +45,40 @@ void initialize_sntp(SettingsManager& settings) {
              timeinfo.tm_hour, timeinfo.tm_min, timeinfo.tm_sec);
 }
 
+void PublishMqttInit(MqttClient& client, SettingsManager& settings) {
+    JsonWrapper doc;
+
+    doc.AddItem("version", 2);
+    doc.AddItem("name", settings.sensorName);
+	doc.AddTime();
+	doc.AddTime(false, "gmt");
+
+    esp_netif_t* netif = esp_netif_get_handle_from_ifkey("WIFI_STA_DEF");
+    if (!netif) {
+        ESP_LOGE("NET_INFO", "Network interface for STA not found");
+        return;
+    }
+    // Get hostname
+    const char* hostname;
+    esp_netif_get_hostname(netif, &hostname);
+	doc.AddItem("hostname", std::string(hostname));
+
+    // Get IP Address
+    esp_netif_ip_info_t ip_info;
+    if (esp_netif_get_ip_info(netif, &ip_info) == ESP_OK) {
+        char ip_str[16]; // Buffer to hold the IP address string
+        esp_ip4addr_ntoa(&ip_info.ip, ip_str, sizeof(ip_str));
+		doc.AddItem("ip", std::string(ip_str));
+    } else {
+        ESP_LOGE("NET_INFO", "Failed to get IP information");
+    }
+	doc.AddItem("settings", "cmnd/" + settings.sensorName + "/settings");
+
+    std::string status_topic = std::string("tele/") + settings.sensorName + "/init";
+    std::string output = doc.ToString();
+    client.publish(status_topic, output);
+}
+
 
 
 static void localEventHandler(void* arg, esp_event_base_t event_base, int32_t event_id, void* event_data) {
@@ -69,13 +105,17 @@ extern "C" void app_main() {
 	NvsStorageManager nv;
 	SettingsManager settings(nv);
 
+	auto dsx = OneWireManager();
 	ESP_LOGI(TAG, "Settings %s", settings.toJson().c_str());
+    MqttClient client(settings);
 	WiFiManager wifiManager(nv, localEventHandler, nullptr);
 
 	xTaskCreate(button_task, "button_task", 2048, &wifiManager, 10, NULL);
 
     if (xSemaphoreTake(wifiSemaphore, portMAX_DELAY) ) {
 		initialize_sntp(settings);
+		client.start();
+		PublishMqttInit(client, settings);
         ESP_LOGI(TAG, "Main task continues after WiFi connection.");
 		while (true) {
 			vTaskDelay(pdMS_TO_TICKS(100)); 

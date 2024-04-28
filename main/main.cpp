@@ -6,6 +6,8 @@
 #include "freertos/task.h"
 #include "freertos/semphr.h"
 
+#include "driver/gpio.h"
+
 #include "esp_log.h"
 #include "esp_sntp.h"
 #include "esp_netif.h"
@@ -19,6 +21,7 @@
 #include "OneWireManager.h"
 #include "Motormanager.h"
 #include "PidController.h"
+#include "Max31865Sensor.h"
 
 static const char *TAG = "stillerate2";
 
@@ -102,19 +105,53 @@ void button_task(void *pvParameters) {
     }
 }
 
+
+class GPIOWrapper {
+public:
+    // Constructor to initialize the GPIO pin as output and set it to a default level
+    GPIOWrapper(gpio_num_t pin, int defaultLevel = 0) : pin_(pin) {
+        gpio_config_t io_conf{};
+        io_conf.intr_type = GPIO_INTR_DISABLE;
+        io_conf.mode = GPIO_MODE_OUTPUT;
+        io_conf.pin_bit_mask = (1ULL << pin_);
+        io_conf.pull_down_en = GPIO_PULLDOWN_DISABLE;
+        io_conf.pull_up_en = GPIO_PULLUP_DISABLE;
+        gpio_config(&io_conf);
+
+        // Set the initial level of the GPIO pin
+        gpio_set_level(pin_, defaultLevel);
+    }
+
+    // Method to set the GPIO level
+    void setLevel(int level) {
+        gpio_set_level(pin_, level);
+    }
+
+private:
+    gpio_num_t pin_; // GPIO pin number
+};
+
+
 extern "C" void app_main() {
 	wifiSemaphore = xSemaphoreCreateBinary();
 	NvsStorageManager nv;
 	SettingsManager settings(nv);
 
-	auto dsx = OneWireManager();
+	//auto trigger = GPIOWrapper(GPIO_NUM_2);
+	
+	//auto dsx = OneWireManager();
 
-    MotorController motor1(5, LEDC_TIMER_0, LEDC_CHANNEL_0); // Motor 1 on GPIO 5
-    MotorController motor2(18, LEDC_TIMER_1, LEDC_CHANNEL_1); // Motor 2 on GPIO 18
+	// FIX ..
+	//E (474) ledc: ledc_timer_del(592): LEDC is not initialized
+//	0x42008e1e: MotorController::MotorController(int, ledc_timer_t, ledc_channel_t, ledc_mode_t, int, int, ledc_timer_bit_t) at /Users/rfo/wa/stillerate2/main/Motormanager.h:31 (discriminator 1)
+//    MotorController motor1(5, LEDC_TIMER_0, LEDC_CHANNEL_0); // Motor 1 on GPIO 5
+//    MotorController motor2(18, LEDC_TIMER_1, LEDC_CHANNEL_1); // Motor 2 on GPIO 18
     // Set initial duty cycle (e.g., 50% duty for motor 1)
-    motor1.setDuty(4096);
+   // motor1.setDuty(4096);
     // Set different duty cycle for motor 2 if desired
-    motor2.setDuty(2048);
+   // motor2.setDuty(2048);
+    Max31865Sensor sensor1(GPIO_NUM_7);
+    Max31865Sensor sensor2(GPIO_NUM_6);
 
 	ESP_LOGI(TAG, "Settings %s", settings.toJson().c_str());
     MqttClient client(settings);
@@ -126,9 +163,16 @@ extern "C" void app_main() {
 		initialize_sntp(settings);
 		client.start();
 		PublishMqttInit(client, settings);
+
         ESP_LOGI(TAG, "Main task continues after WiFi connection.");
+
 		while (true) {
-			vTaskDelay(pdMS_TO_TICKS(100)); 
+			float temperature1 = sensor1.measure();
+			float temperature2 = sensor2.measure();
+			if (temperature1 >= 0 && temperature2 >= 0) {
+				ESP_LOGI(Tag, "T1: %.4f, T2: %.4f, diff: %.4f", temperature1, temperature2, temperature1 - temperature2);
+			}
+			vTaskDelay(pdMS_TO_TICKS(500)); 
 			//ESP_LOGI(TAG, "val %lu", value);
 			// Check whether to increment or decrement
 		}

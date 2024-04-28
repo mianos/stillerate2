@@ -18,7 +18,6 @@
 #include "WifiManager.h"
 #include "SettingsManager.h"
 #include "Button.h"
-#include "OneWireManager.h"
 #include "Motormanager.h"
 #include "PidController.h"
 #include "Max31865Sensor.h"
@@ -139,8 +138,6 @@ extern "C" void app_main() {
 
 	//auto trigger = GPIOWrapper(GPIO_NUM_2);
 	
-	//auto dsx = OneWireManager();
-
 	// FIX ..
 	//E (474) ledc: ledc_timer_del(592): LEDC is not initialized
 //	0x42008e1e: MotorController::MotorController(int, ledc_timer_t, ledc_channel_t, ledc_mode_t, int, int, ledc_timer_bit_t) at /Users/rfo/wa/stillerate2/main/Motormanager.h:31 (discriminator 1)

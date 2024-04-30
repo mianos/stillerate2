@@ -15,10 +15,9 @@ MqttClient::MqttClient(esp_mqtt_client_config_t& mqtt_cfg, std::string sensorNam
 
     client = esp_mqtt_client_init(&mqtt_cfg);
     esp_mqtt_client_register_event(client,
-			static_cast<esp_mqtt_event_id_t>(ESP_EVENT_ANY_ID),
-			mqtt_event_handler,
-			this);
-	registerHandlers();
+								static_cast<esp_mqtt_event_id_t>(ESP_EVENT_ANY_ID),
+								mqtt_event_handler,
+								this);
 }
 
 MqttClient::~MqttClient() {
@@ -67,43 +66,26 @@ void MqttClient::resubscribe() {
     }
 }
 
-
-void handleSettings(MqttClient* client, const std::string& topic, cJSON* data) {
-    JsonWrapper jsonData(data);
-    auto jsonString = jsonData.ToString();
-
-    if (jsonString.empty()) {
-        ESP_LOGE(TAG, "Failed to serialize JSON data");
-        return;
-    }
-    ESP_LOGI(TAG, "Settings handler - Topic: %s, Data: %s", topic.c_str(), jsonString.c_str());
+void MqttClient::registerHandler(const std::string& topic,
+							     const std::regex& pattern,
+								 HandlerFunc handler, void* context) {
+	subscribe(topic);
+	bindings.push_back({topic, pattern, handler, context});
 }
 
-
-void MqttClient::registerHandlers() {
-    std::vector<HandlerBinding> handlers = {
-        {"cmnd/+/settings", std::regex("cmnd/" + sensorName + "/settings"), handleSettings}
-        // You can add more handlers with separate subscription and matching patterns
-    };
-
-    for (const auto& handler : handlers) {
-		subscribe(handler.subscriptionTopic.c_str());
-        bindings.push_back({"", handler.matchPattern, handler.handler}); // Subscription topic isn't needed in the dispatcher
-    }
-}
 
 void MqttClient::dispatchEvent(MqttClient* client, const std::string& topic, cJSON* data) {
-    for (const auto& binding : client->bindings) {
-        if (std::regex_match(topic, binding.matchPattern)) {
+	for (const auto& binding : client->bindings) {
+		if (std::regex_match(topic, binding.matchPattern)) {
 			if (binding.handler) {
-				binding.handler(client, topic, data);
+				binding.handler(client, topic, data, binding.context);
 				return; // Assuming only one handler per topic pattern
 			}
-        }
-    }
-    // Optionally, handle the case where no pattern matches
-	ESP_LOGW("MQTT_DISPATCH", "Unhandled topic: %s", topic.c_str());
+		}
+	}
+	ESP_LOGW(TAG, "Unhandled topic: %s", topic.c_str());
 }
+
 
 void MqttClient::mqtt_event_handler(void* handler_args, esp_event_base_t base, int32_t event_id, void* event_data) {
     auto* clientInstance = static_cast<MqttClient*>(handler_args); // Cast to MqttClient*

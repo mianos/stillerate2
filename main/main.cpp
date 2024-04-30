@@ -24,6 +24,7 @@
 
 static const char *TAG = "stillerate2";
 
+
 static SemaphoreHandle_t wifiSemaphore;
 
 void initialize_sntp(SettingsManager& settings) {
@@ -130,6 +131,15 @@ private:
     gpio_num_t pin_; // GPIO pin number
 };
 
+struct MqttContext {
+	PIDController *pid;
+};
+
+void pidSettingsHandler(MqttClient* client, const std::string& topic, cJSON* data, void* context) {
+    auto* settings = static_cast<MqttContext*>(context); // Explicit cast required
+    // Use settings and other parameters to handle settings
+	ESP_LOGI(TAG, "PID settings handler called");
+}
 
 extern "C" void app_main() {
 	wifiSemaphore = xSemaphoreCreateBinary();
@@ -152,16 +162,7 @@ extern "C" void app_main() {
 
 	ESP_LOGI(TAG, "Settings %s", settings.toJson().c_str());
 
-	esp_mqtt_client_config_t mqtt_cfg = {};
-    mqtt_cfg.broker.address.uri = settings.mqttBrokerUri.c_str();
-    mqtt_cfg.credentials.username = settings.mqttUserName.c_str();
-    mqtt_cfg.credentials.client_id = settings.sensorName.c_str();
-    mqtt_cfg.credentials.authentication.password = settings.mqttUserPassword.c_str();
 
-    MqttClient client(mqtt_cfg, settings.sensorName);
-	WiFiManager wifiManager(nv, localEventHandler, nullptr);
-
-	xTaskCreate(button_task, "button_task", 2048, &wifiManager, 10, NULL);
 
 	pid_ctrl_parameter_t params = {};
 	params.kp = 3.0;
@@ -173,6 +174,21 @@ extern "C" void app_main() {
 	params.max_integral = 100.0;
 	params.cal_type = PID_CAL_TYPE_POSITIONAL;
 	PIDController pid(nv, params);
+
+
+	esp_mqtt_client_config_t mqtt_cfg = {};
+    mqtt_cfg.broker.address.uri = settings.mqttBrokerUri.c_str();
+    mqtt_cfg.credentials.username = settings.mqttUserName.c_str();
+    mqtt_cfg.credentials.client_id = settings.sensorName.c_str();
+    mqtt_cfg.credentials.authentication.password = settings.mqttUserPassword.c_str();
+    MqttClient client(mqtt_cfg, settings.sensorName);
+
+	MqttContext ctx{&pid};
+	std::string topic = "cmnd/" + settings.sensorName + "/pid";
+	client.registerHandler(topic, std::regex(topic), pidSettingsHandler, &ctx);
+
+	WiFiManager wifiManager(nv, localEventHandler, nullptr);
+	xTaskCreate(button_task, "button_task", 2048, &wifiManager, 10, NULL);
 
     if (xSemaphoreTake(wifiSemaphore, portMAX_DELAY) ) {
 		initialize_sntp(settings);
@@ -187,6 +203,7 @@ extern "C" void app_main() {
 			if (reflux >= 0 && boiler >= 0) {
 				ESP_LOGI(Tag, "T1: %.4f, T2: %.4f, diff: %.4f", reflux, boiler, reflux - boiler);
 
+#if 0
 				float output;
 				float error = 74.8 - reflux;
 				if (!pid.compute(error, output)) {
@@ -194,6 +211,7 @@ extern "C" void app_main() {
 				} else {
 					ESP_LOGI(TAG, "error %.4f pid out %.4f", error, output);
 				}
+#endif
 			}
 			vTaskDelay(pdMS_TO_TICKS(500)); 
 			//ESP_LOGI(TAG, "val %lu", value);

@@ -156,6 +156,17 @@ extern "C" void app_main() {
 
 	xTaskCreate(button_task, "button_task", 2048, &wifiManager, 10, NULL);
 
+	pid_ctrl_parameter_t params = {};
+	params.kp = 3.0;
+	params.ki = 0.1;
+	params.kd = 1.0;
+	params.max_output = 160.0;
+	params.min_output = 0;
+	params.min_integral = -100.0;
+	params.max_integral = 100.0;
+	params.cal_type = PID_CAL_TYPE_POSITIONAL;
+	PIDController pid(params);
+
     if (xSemaphoreTake(wifiSemaphore, portMAX_DELAY) ) {
 		initialize_sntp(settings);
 		client.start();
@@ -164,10 +175,18 @@ extern "C" void app_main() {
         ESP_LOGI(TAG, "Main task continues after WiFi connection.");
 
 		while (true) {
-			float temperature1 = sensor1.measure();
-			float temperature2 = sensor2.measure();
-			if (temperature1 >= 0 && temperature2 >= 0) {
-				ESP_LOGI(Tag, "T1: %.4f, T2: %.4f, diff: %.4f", temperature1, temperature2, temperature1 - temperature2);
+			float reflux = sensor1.measure();
+			float boiler = sensor2.measure();
+			if (reflux >= 0 && boiler >= 0) {
+				//ESP_LOGI(Tag, "T1: %.4f, T2: %.4f, diff: %.4f", reflux, boiler, reflux - boiler);
+
+				float output;
+				float error = 74.8 - reflux;
+				if (!pid.compute(error, output)) {
+					ESP_LOGE(TAG, "failed to calculate pid error");
+				} else {
+					ESP_LOGI(TAG, "error %.4f pid out %.4f", error, output);
+				}
 			}
 			vTaskDelay(pdMS_TO_TICKS(500)); 
 			//ESP_LOGI(TAG, "val %lu", value);

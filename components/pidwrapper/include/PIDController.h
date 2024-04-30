@@ -1,14 +1,17 @@
 #pragma once
 
 #include "pid_ctrl.h"
+#include "JsonWrapper.h"
 #include <cassert>
+#include <iostream>
 
 class PIDController {
 public:
     // Constructor that takes initial PID parameters
-    PIDController(const pid_ctrl_parameter_t& params) {
+    PIDController(const pid_ctrl_parameter_t& params)
+        : currentParams(params) {
         pid_ctrl_config_t config;
-        config.init_param = params;
+        config.init_param = currentParams;
 
         esp_err_t result = pid_new_control_block(&config, &pid_handle);
         // Assert to ensure PID control block is created successfully
@@ -25,6 +28,7 @@ public:
 
     // Update the PID parameters
     bool updateParameters(const pid_ctrl_parameter_t& params) {
+        currentParams = params; // Update local copy
         esp_err_t result = pid_update_parameters(pid_handle, &params);
         return result == ESP_OK;
     }
@@ -41,20 +45,40 @@ public:
         return result == ESP_OK;
     }
 
+    // Serialize current PID parameters to JSON
+    std::string getParametersAsJson() const {
+        JsonWrapper json;
+        json.AddItem("kp", currentParams.kp);
+        json.AddItem("ki", currentParams.ki);
+        json.AddItem("kd", currentParams.kd);
+        json.AddItem("max_output", currentParams.max_output);
+        json.AddItem("min_output", currentParams.min_output);
+        json.AddItem("max_integral", currentParams.max_integral);
+        json.AddItem("min_integral", currentParams.min_integral);
+        return json.ToString();
+    }
+
+    // Update parameters from JSON string
+    bool setParametersFromJson(const std::string& jsonString) {
+        JsonWrapper json = JsonWrapper::Parse(jsonString);
+        pid_ctrl_parameter_t newParams = currentParams;  // Start with current parameters
+        bool updated = false;
+
+        updated |= json.GetField("kp", newParams.kp);
+        updated |= json.GetField("ki", newParams.ki);
+        updated |= json.GetField("kd", newParams.kd);
+        updated |= json.GetField("max_output", newParams.max_output);
+        updated |= json.GetField("min_output", newParams.min_output);
+        updated |= json.GetField("max_integral", newParams.max_integral);
+        updated |= json.GetField("min_integral", newParams.min_integral);
+
+        if (updated) {
+            return updateParameters(newParams);
+        }
+        return false;
+    }
+
 private:
+    pid_ctrl_parameter_t currentParams;
     pid_ctrl_block_handle_t pid_handle = nullptr; // Handle to the underlying PID control block
 };
-
-// Example usage:
-// pid_ctrl_parameter_t params = {1.0, 0.01, 0.001, 100.0, -100.0, 50.0, -50.0, PID_CAL_TYPE_POSITIONAL};
-// PIDController pid(params);
-// float output;
-// if (!pid.compute(0.5, output)) {
-//     // handle error
-// }
-// if (!pid.updateParameters(new_params)) {
-//     // handle error
-// }
-// if (!pid.reset()) {
-//     // handle error
-// }

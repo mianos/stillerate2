@@ -165,7 +165,7 @@ extern "C" void app_main() {
 	params.min_integral = -100.0;
 	params.max_integral = 100.0;
 	params.cal_type = PID_CAL_TYPE_POSITIONAL;
-	PIDController pid(params);
+	PIDController pid(nv, params);
 
     if (xSemaphoreTake(wifiSemaphore, portMAX_DELAY) ) {
 		initialize_sntp(settings);

@@ -2,23 +2,40 @@
 
 #include "pid_ctrl.h"
 #include "JsonWrapper.h"
+#include "NvsStorageManager.h"
+#include <cassert>
+#include <iostream>
+
+#pragma once
+
+#include "pid_ctrl.h"
+#include "JsonWrapper.h"
+#include "NvsStorageManager.h"
 #include <cassert>
 #include <iostream>
 
 class PIDController {
 public:
-    // Constructor that takes initial PID parameters
-    PIDController(const pid_ctrl_parameter_t& params)
-        : currentParams(params) {
-        pid_ctrl_config_t config;
-        config.init_param = currentParams;
+    // Constructor that takes a reference to an NvsStorageManager and initial PID parameters
+    PIDController(NvsStorageManager& nvsManager, const pid_ctrl_parameter_t& initialParams, const std::string& nvsKey = "pid_params")
+        : nvs(nvsManager),
+          pid_handle(nullptr),
+          currentParams(initialParams),
+          nvsKey(nvsKey) 
 
+    {
+        // Initialize PID control block
+        pid_ctrl_config_t config = {};
+        config.init_param = currentParams; // Ensure currentParams is fully initialized
         esp_err_t result = pid_new_control_block(&config, &pid_handle);
-        // Assert to ensure PID control block is created successfully
         assert(result == ESP_OK && "Failed to create PID control block");
+
+        // Load parameters or use initial parameters if not available
+        if (!loadParameters()) {
+            updateParameters(initialParams);
+        }
     }
 
-    // Destructor to clean up the PID control block
     ~PIDController() {
         if (pid_handle) {
             esp_err_t result = pid_del_control_block(pid_handle);
@@ -26,21 +43,41 @@ public:
         }
     }
 
+    // Load parameters from NVS
+    bool loadParameters() {
+        std::string jsonParams;
+        if (nvs.retrieve(nvsKey, jsonParams)) {
+            return setParametersFromJson(jsonParams);
+        }
+        return false;
+    }
+
+    // Save parameters to NVS
+    void saveParameters() {
+        std::string jsonParams = getParametersAsJson();
+        nvs.store(nvsKey, jsonParams);
+    }
+
     // Update the PID parameters
     bool updateParameters(const pid_ctrl_parameter_t& params) {
         currentParams = params; // Update local copy
         esp_err_t result = pid_update_parameters(pid_handle, &params);
-        return result == ESP_OK;
+        if (result == ESP_OK) {
+            saveParameters(); // Save updated parameters to NVS
+            return true;
+        }
+        return false;
     }
-
     // Compute the PID output given an input error
     bool compute(float input_error, float& output) {
+        assert(pid_handle != nullptr && "PID handle is not initialized");
         esp_err_t result = pid_compute(pid_handle, input_error, &output);
         return result == ESP_OK;
     }
 
     // Reset the PID controller state
     bool reset() {
+        assert(pid_handle != nullptr && "PID handle is not initialized");
         esp_err_t result = pid_reset_ctrl_block(pid_handle);
         return result == ESP_OK;
     }
@@ -79,6 +116,8 @@ public:
     }
 
 private:
-    pid_ctrl_parameter_t currentParams;
-    pid_ctrl_block_handle_t pid_handle = nullptr; // Handle to the underlying PID control block
+    NvsStorageManager& nvs; // Reference to NVS storage manager
+    pid_ctrl_block_handle_t pid_handle; // Handle to the underlying PID control block
+    pid_ctrl_parameter_t currentParams; // Current PID parameters
+    std::string nvsKey; // NVS key for storing and retrieving PID parameters
 };

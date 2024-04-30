@@ -4,7 +4,6 @@
 
 #include "esp_log.h"
 
-#include "JsonWrapper.h"
 #include "MqttClient.h"
 
 static const char* TAG = "MqttClient";
@@ -74,16 +73,16 @@ void MqttClient::registerHandler(const std::string& topic,
 }
 
 
-void MqttClient::dispatchEvent(MqttClient* client, const std::string& topic, cJSON* data) {
-	for (const auto& binding : client->bindings) {
-		if (std::regex_match(topic, binding.matchPattern)) {
-			if (binding.handler) {
-				binding.handler(client, topic, data, binding.context);
-				return; // Assuming only one handler per topic pattern
-			}
-		}
-	}
-	ESP_LOGW(TAG, "Unhandled topic: %s", topic.c_str());
+void MqttClient::dispatchEvent(MqttClient* client, const std::string& topic, const JsonWrapper& data) {
+    for (const auto& binding : client->bindings) {
+        if (std::regex_match(topic, binding.matchPattern)) {
+            if (binding.handler) {
+                binding.handler(client, topic, data, binding.context);
+                return; // Assuming only one handler per topic pattern
+            }
+        }
+    }
+    ESP_LOGW(TAG, "Unhandled topic: %s", topic.c_str());
 }
 
 
@@ -112,18 +111,18 @@ void MqttClient::mqtt_event_handler(void* handler_args, esp_event_base_t base, i
        //  ESP_LOGI(TAG, "MQTT_EVENT_PUBLISHED, msg_id=%d", event->msg_id);
         break;
     case MQTT_EVENT_DATA: {
-            std::string topicStr(event->topic, event->topic_len);
-            std::string payloadStr(event->data, event->data_len);
+			std::string topicStr(event->topic, event->topic_len);
+			std::string payloadStr(event->data, event->data_len);
 
-            auto jsonPayload = JsonWrapper::Parse(payloadStr);
-            if (!jsonPayload.Empty()) {
-                dispatchEvent(clientInstance, topicStr, jsonPayload.Release());
-            } else {
-                const char* error_ptr = cJSON_GetErrorPtr();
-                if (error_ptr != nullptr) {
-                    ESP_LOGE(TAG, "Error parsing JSON: %s", error_ptr);
-                }
-            }
+			auto jsonPayload = JsonWrapper::Parse(payloadStr);
+			if (!jsonPayload.Empty()) {
+				dispatchEvent(clientInstance, topicStr, jsonPayload);
+			} else {
+				const char* error_ptr = cJSON_GetErrorPtr();
+				if (error_ptr != nullptr) {
+					ESP_LOGE(TAG, "Error parsing JSON: %s", error_ptr);
+				}
+			}
         }
         break;
     case MQTT_EVENT_ERROR:

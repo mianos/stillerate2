@@ -135,10 +135,13 @@ struct MqttContext {
 	PIDController *pid;
 };
 
-void pidSettingsHandler(MqttClient* client, const std::string& topic, cJSON* data, void* context) {
-    auto* settings = static_cast<MqttContext*>(context); // Explicit cast required
+void pidSettingsHandler(MqttClient* client, const std::string& topic, const JsonWrapper& data, void* context) {
+
+    auto* ctx = static_cast<MqttContext*>(context); // Explicit cast required
+	assert(ctx != nullptr);
     // Use settings and other parameters to handle settings
-	ESP_LOGI(TAG, "PID settings handler called");
+	ESP_LOGI(TAG, "PID settings handler called with '%s'", data.ToString().c_str());
+	ctx->pid->setParametersFromJsonWrapper(data);
 }
 
 extern "C" void app_main() {
@@ -213,7 +216,7 @@ extern "C" void app_main() {
 				}
 #endif
 			}
-			vTaskDelay(pdMS_TO_TICKS(500)); 
+			vTaskDelay(pdMS_TO_TICKS(4000)); 
 			//ESP_LOGI(TAG, "val %lu", value);
 			// Check whether to increment or decrement
 		}

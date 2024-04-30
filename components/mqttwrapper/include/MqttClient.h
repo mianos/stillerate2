@@ -12,7 +12,10 @@
 #include "freertos/semphr.h"
 #include "mqtt_client.h"
 
-using HandlerFunc = std::function<void(class MqttClient *, const std::string&, cJSON*, void*)>;
+#include "JsonWrapper.h"
+
+using HandlerFunc = std::function<void(class MqttClient *, const std::string&, const JsonWrapper&, void*)>;
+
 
 struct HandlerBinding {
     std::string subscriptionTopic;
@@ -45,6 +48,5 @@ private:
     void flushMessageQueue();
 
 	std::vector<HandlerBinding> bindings;
-	static void dispatchEvent(MqttClient* client, const std::string& topic, cJSON* data);
-
+	static void dispatchEvent(MqttClient* client, const std::string& topic, const JsonWrapper& data);
 };

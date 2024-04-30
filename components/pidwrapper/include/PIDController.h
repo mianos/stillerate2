@@ -97,19 +97,23 @@ public:
 
     // Update parameters from JSON string
     bool setParametersFromJson(const std::string& jsonString) {
-        JsonWrapper json = JsonWrapper::Parse(jsonString);
+		return setParametersFromJsonWrapper(JsonWrapper::Parse(jsonString));
+	}
+
+    bool setParametersFromJsonWrapper(const JsonWrapper& json) {
         pid_ctrl_parameter_t newParams = currentParams;  // Start with current parameters
         bool updated = false;
 
-        updated |= json.GetField("kp", newParams.kp);
-        updated |= json.GetField("ki", newParams.ki);
-        updated |= json.GetField("kd", newParams.kd);
-        updated |= json.GetField("max_output", newParams.max_output);
-        updated |= json.GetField("min_output", newParams.min_output);
-        updated |= json.GetField("max_integral", newParams.max_integral);
-        updated |= json.GetField("min_integral", newParams.min_integral);
+        updated |= json.GetField("kp", newParams.kp, true);
+        updated |= json.GetField("ki", newParams.ki, true);
+        updated |= json.GetField("kd", newParams.kd, true);
+        updated |= json.GetField("max_output", newParams.max_output, true);
+        updated |= json.GetField("min_output", newParams.min_output, true);
+        updated |= json.GetField("max_integral", newParams.max_integral, true);
+        updated |= json.GetField("min_integral", newParams.min_integral, true);
 
         if (updated) {
+			ESP_LOGI("PID", "Updating pid param");
             return updateParameters(newParams);
         }
         return false;

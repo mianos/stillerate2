@@ -9,17 +9,10 @@
 
 static const char* TAG = "MqttClient";
 
-MqttClient::MqttClient(SettingsManager& settings) 
-        : settings(settings) {
+MqttClient::MqttClient(esp_mqtt_client_config_t& mqtt_cfg, std::string sensorName)
+        : sensorName(sensorName) {
     connected_sem = xSemaphoreCreateBinary();
-    esp_mqtt_client_config_t mqtt_cfg = {};
 
-    mqtt_cfg.broker.address.uri = settings.mqttBrokerUri.c_str();
-    // Set client credentials
-    mqtt_cfg.credentials.username = settings.mqttUserName.c_str();
-    mqtt_cfg.credentials.client_id = settings.sensorName.c_str();
-    mqtt_cfg.credentials.authentication.password = settings.mqttUserPassword.c_str();
-    // Initialize the MQTT client with the configuration
     client = esp_mqtt_client_init(&mqtt_cfg);
     esp_mqtt_client_register_event(client,
 			static_cast<esp_mqtt_event_id_t>(ESP_EVENT_ANY_ID),
@@ -88,10 +81,8 @@ void handleSettings(MqttClient* client, const std::string& topic, cJSON* data) {
 
 
 void MqttClient::registerHandlers() {
-    const std::string& device = settings.sensorName;
-
     std::vector<HandlerBinding> handlers = {
-        {"cmnd/+/settings", std::regex("cmnd/" + device + "/settings"), handleSettings}
+        {"cmnd/+/settings", std::regex("cmnd/" + sensorName + "/settings"), handleSettings}
         // You can add more handlers with separate subscription and matching patterns
     };
 

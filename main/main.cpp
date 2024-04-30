@@ -151,7 +151,14 @@ extern "C" void app_main() {
     Max31865Sensor sensor2(GPIO_NUM_6);
 
 	ESP_LOGI(TAG, "Settings %s", settings.toJson().c_str());
-    MqttClient client(settings);
+
+	esp_mqtt_client_config_t mqtt_cfg = {};
+    mqtt_cfg.broker.address.uri = settings.mqttBrokerUri.c_str();
+    mqtt_cfg.credentials.username = settings.mqttUserName.c_str();
+    mqtt_cfg.credentials.client_id = settings.sensorName.c_str();
+    mqtt_cfg.credentials.authentication.password = settings.mqttUserPassword.c_str();
+
+    MqttClient client(mqtt_cfg, settings.sensorName);
 	WiFiManager wifiManager(nv, localEventHandler, nullptr);
 
 	xTaskCreate(button_task, "button_task", 2048, &wifiManager, 10, NULL);
@@ -178,7 +185,7 @@ extern "C" void app_main() {
 			float reflux = sensor1.measure();
 			float boiler = sensor2.measure();
 			if (reflux >= 0 && boiler >= 0) {
-				//ESP_LOGI(Tag, "T1: %.4f, T2: %.4f, diff: %.4f", reflux, boiler, reflux - boiler);
+				ESP_LOGI(Tag, "T1: %.4f, T2: %.4f, diff: %.4f", reflux, boiler, reflux - boiler);
 
 				float output;
 				float error = 74.8 - reflux;

@@ -12,8 +12,6 @@
 #include "freertos/semphr.h"
 #include "mqtt_client.h"
 
-#include "SettingsManager.h"
-
 using HandlerFunc = std::function<void(class MqttClient *, const std::string&, cJSON*)>;
 
 struct HandlerBinding {
@@ -24,7 +22,7 @@ struct HandlerBinding {
 
 class MqttClient {
 public:
-    MqttClient(SettingsManager& settings);
+	MqttClient(esp_mqtt_client_config_t& mqtt_cfg, std::string sensorName);
     ~MqttClient();
 
     void start();
@@ -34,7 +32,7 @@ public:
 	void registerHandlers();
 
 private:
-	SettingsManager& settings;
+	std::string sensorName;
     SemaphoreHandle_t connected_sem;
     esp_mqtt_client_handle_t client;
     std::vector<std::string> subscriptions;

@@ -73,8 +73,9 @@ public:
 	JsonWrapper compute(float input_error, float& output) {
         assert(pid_handle != nullptr && "PID handle is not initialized");
         JsonWrapper json;
-        esp_err_t result = pid_compute(pid_handle, input_error, &output);
-		json.AddItem("cstatus", result);
+        pid_compute(pid_handle, input_error, &output);
+        //esp_err_t result = pid_compute(pid_handle, input_error, &output);
+		// json.AddItem("cstatus", result);
 		json.AddItem("input", input_error);
 		json.AddItem("output", output);
 		return json;

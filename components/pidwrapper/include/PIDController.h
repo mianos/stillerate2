@@ -17,11 +17,12 @@
 class PIDController {
 public:
     // Constructor that takes a reference to an NvsStorageManager and initial PID parameters
-    PIDController(NvsStorageManager& nvsManager, const pid_ctrl_parameter_t& initialParams, const std::string& nvsKey = "pid_params")
+    PIDController(NvsStorageManager& nvsManager, double set_point, const pid_ctrl_parameter_t& initialParams, const std::string& nvsKey = "pid_params")
         : nvs(nvsManager),
           pid_handle(nullptr),
           currentParams(initialParams),
-          nvsKey(nvsKey) 
+          nvsKey(nvsKey),
+		  set_point(set_point)
 
     {
         // Initialize PID control block
@@ -69,10 +70,14 @@ public:
         return false;
     }
     // Compute the PID output given an input error
-    bool compute(float input_error, float& output) {
+	JsonWrapper compute(float input_error, float& output) {
         assert(pid_handle != nullptr && "PID handle is not initialized");
+        JsonWrapper json;
         esp_err_t result = pid_compute(pid_handle, input_error, &output);
-        return result == ESP_OK;
+		json.AddItem("cstatus", result);
+		json.AddItem("input", input_error);
+		json.AddItem("output", output);
+		return json;
     }
 
     // Reset the PID controller state
@@ -92,6 +97,7 @@ public:
         json.AddItem("min_output", currentParams.min_output);
         json.AddItem("max_integral", currentParams.max_integral);
         json.AddItem("min_integral", currentParams.min_integral);
+        json.AddItem("set_point", set_point);
         return json.ToString();
     }
 
@@ -111,6 +117,7 @@ public:
         updated |= json.GetField("min_output", newParams.min_output, true);
         updated |= json.GetField("max_integral", newParams.max_integral, true);
         updated |= json.GetField("min_integral", newParams.min_integral, true);
+        updated |= json.GetField("set_point", set_point, true);
 
         if (updated) {
 			ESP_LOGI("PID", "Updating pid param");
@@ -124,4 +131,6 @@ private:
     pid_ctrl_block_handle_t pid_handle; // Handle to the underlying PID control block
     pid_ctrl_parameter_t currentParams; // Current PID parameters
     std::string nvsKey; // NVS key for storing and retrieving PID parameters
+public:
+	double set_point;
 };

@@ -208,7 +208,7 @@ extern "C" void app_main() {
 	params.min_integral = -100.0;
 	params.max_integral = 100.0;
 	params.cal_type = PID_CAL_TYPE_POSITIONAL;
-	PIDController pid(nv, params);
+	PIDController pid(nv, 78.4, params);
 
 
 	esp_mqtt_client_config_t mqtt_cfg = {};
@@ -239,6 +239,12 @@ extern "C" void app_main() {
 		while (true) {
 			if (emu.enabled) {
 				ESP_LOGI(Tag, "EMU");
+				float error = pid.set_point - emu.temp;
+				float output;
+				auto rjs = pid.compute(error, output);
+				rjs.AddItem("emulation", true);
+				rjs.AddTime();
+				client.publish(std::string("tele/") + settings.sensorName + "/pid", rjs.ToString());
 			}
 			float reflux = sensor1.measure();
 			float boiler = sensor2.measure();

@@ -14,8 +14,7 @@
 
 #include "JsonWrapper.h"
 
-using HandlerFunc = std::function<void(class MqttClient *, const std::string&, const JsonWrapper&, void*)>;
-
+using HandlerFunc = std::function<esp_err_t(class MqttClient*, const std::string&, const JsonWrapper&, void*)>;
 
 struct HandlerBinding {
     std::string subscriptionTopic;

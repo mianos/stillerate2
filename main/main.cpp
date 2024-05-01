@@ -11,6 +11,7 @@
 #include "esp_log.h"
 #include "esp_sntp.h"
 #include "esp_netif.h"
+#include "esp_check.h"
 
 #include "sdkconfig.h"
 
@@ -131,18 +132,52 @@ private:
     gpio_num_t pin_; // GPIO pin number
 };
 
-struct MqttContext {
-	PIDController *pid;
+
+struct Emulation {
+    bool enabled = false;
+    double temp = 0.0;
+
+    // Deserialize the Emulation data from a JsonWrapper
+    bool fromJsonWrapper(const JsonWrapper& json) {
+        bool updated = false;
+        updated |= json.GetField("enabled", enabled, true);	// mandatory means only set if set
+        updated |= json.GetField("temp", temp, true);
+        return updated;
+    }
+
+    // Serialize the Emulation data to a JsonWrapper
+    JsonWrapper toJsonWrapper() const {
+        JsonWrapper json(cJSON_CreateObject());
+        json.AddItem("enabled", enabled);
+        json.AddItem("temp", temp);
+        return json;
+    }
 };
 
-void pidSettingsHandler(MqttClient* client, const std::string& topic, const JsonWrapper& data, void* context) {
+struct MqttContext {
+	PIDController *pid;
+	Emulation *emu;
+};
 
+
+esp_err_t pidSettingsHandler(MqttClient* client, const std::string& topic, const JsonWrapper& data, void* context) {
     auto* ctx = static_cast<MqttContext*>(context); // Explicit cast required
-	assert(ctx != nullptr);
+	ESP_RETURN_ON_FALSE(context, ESP_FAIL, "pidSettingsHandler", "Context cannot be nullptr");
     // Use settings and other parameters to handle settings
 	ESP_LOGI(TAG, "PID settings handler called with '%s'", data.ToString().c_str());
 	ctx->pid->setParametersFromJsonWrapper(data);
+	return ESP_OK;
 }
+
+esp_err_t pidEmulationHandler(MqttClient* client, const std::string& topic, const JsonWrapper& data, void* context) {
+    auto* ctx = static_cast<MqttContext*>(context); // Explicit cast required
+	ESP_RETURN_ON_FALSE(context, ESP_FAIL, "pidEmulationHandler", "Context cannot be nullptr");
+	auto* emu = ctx->emu;
+	emu->fromJsonWrapper(data);
+	ESP_LOGI(TAG, "pidemulation called '%s'", emu->toJsonWrapper().ToString().c_str());
+	return ESP_OK;
+}
+
 
 extern "C" void app_main() {
 	wifiSemaphore = xSemaphoreCreateBinary();
@@ -162,10 +197,7 @@ extern "C" void app_main() {
    // motor2.setDuty(2048);
     Max31865Sensor sensor1(GPIO_NUM_7);
     Max31865Sensor sensor2(GPIO_NUM_6);
-
 	ESP_LOGI(TAG, "Settings %s", settings.toJson().c_str());
-
-
 
 	pid_ctrl_parameter_t params = {};
 	params.kp = 3.0;
@@ -186,9 +218,13 @@ extern "C" void app_main() {
     mqtt_cfg.credentials.authentication.password = settings.mqttUserPassword.c_str();
     MqttClient client(mqtt_cfg, settings.sensorName);
 
-	MqttContext ctx{&pid};
+	Emulation emu;
+	MqttContext ctx{&pid, &emu};
 	std::string topic = "cmnd/" + settings.sensorName + "/pid";
 	client.registerHandler(topic, std::regex(topic), pidSettingsHandler, &ctx);
+
+	topic = "cmnd/" + settings.sensorName + "/pidemulation";
+	client.registerHandler(topic, std::regex(topic), pidEmulationHandler, &ctx);
 
 	WiFiManager wifiManager(nv, localEventHandler, nullptr);
 	xTaskCreate(button_task, "button_task", 2048, &wifiManager, 10, NULL);
@@ -201,6 +237,9 @@ extern "C" void app_main() {
         ESP_LOGI(TAG, "Main task continues after WiFi connection.");
 
 		while (true) {
+			if (emu.enabled) {
+				ESP_LOGI(Tag, "EMU");
+			}
 			float reflux = sensor1.measure();
 			float boiler = sensor2.measure();
 			if (reflux >= 0 && boiler >= 0) {

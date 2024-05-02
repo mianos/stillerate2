@@ -159,13 +159,13 @@ esp_err_t pidRun(MqttClient* client, const std::string& topic, const JsonWrapper
     auto* ctx = static_cast<MqttContext*>(context); // Explicit cast required
 	ESP_RETURN_ON_FALSE(context, ESP_FAIL, "pidRun", "Context cannot be nullptr");
 	auto* ptimer  = ctx->ptimer;
-	ESP_RETURN_ON_FALSE(ptimer, ESP_FAIL, "pidRun", "ptimer cannot be nullptr");
-    int periodms;
-    if (!data.GetField("periodms", periodms, true)) { // mandatory flag so not present will return false
-        ESP_LOGE(TAG, "pidRun failed: 'periodms' not found in JSON");
+
+    int period;
+    if (!data.GetField("period", period, true)) { // mandatory flag so not present will return false
+        ESP_LOGE(TAG, "pidRun failed: 'period' not found in JSON");
         return ESP_FAIL; // Handle the error appropriately
     }
-    ptimer->start(periodms);
+    ptimer->start(period);
 	ESP_LOGI(TAG, "pidRun called '%s'", data.ToString().c_str());
 	return ESP_OK;
 }
@@ -188,7 +188,7 @@ extern "C" void app_main() {
     // Set different duty cycle for motor 2 if desired
    // motor2.setDuty(2048);
     Max31865Sensor sensor1(GPIO_NUM_7);
-    Max31865Sensor sensor2(GPIO_NUM_6);
+    Max31865Sensor reflux_temp(GPIO_NUM_6);
 	ESP_LOGI(TAG, "Settings %s", settings.toJson().c_str());
 
 	pid_ctrl_parameter_t params = {};
@@ -211,9 +211,8 @@ extern "C" void app_main() {
     MqttClient client(mqtt_cfg, settings.sensorName);
 
 	Emulation emu;
-	PIDControlTimer ptimer;
+	PIDControlTimer ptimer(pid, client, settings, reflux_temp);
 	MqttContext ctx{&pid, &emu, &ptimer};
-	ptimer.setContext(&ctx);
 
 	std::string topic = "cmnd/" + settings.sensorName + "/pid";
 	client.registerHandler(topic, std::regex(topic), pidSettingsHandler, &ctx);
@@ -238,14 +237,16 @@ extern "C" void app_main() {
 				auto rjs = pid.compute(error, output);
 				rjs.AddItem("emulation", true);
 				rjs.AddTime();
-				client.publish(std::string("tele/") + settings.sensorName + "/pid", rjs.ToString());
+				auto topic = std::string("tele/") + settings.sensorName + "/pid";
+				ESP_LOGI("PTIMER", "json '%s'", rjs.ToString().c_str());
+				//client.publish(std::string("tele/") + settings.sensorName + "/pid", rjs.ToString());
 			}
+#if 0
 			float reflux = sensor1.measure();
-			float boiler = sensor2.measure();
+			float boiler = reflux.measure();
 			if (reflux >= 0 && boiler >= 0) {
 				ESP_LOGI(TAG, "T1: %.4f, T2: %.4f, diff: %.4f", reflux, boiler, reflux - boiler);
 
-#if 0
 				float output;
 				float error = 74.8 - reflux;
 				if (!pid.compute(error, output)) {
@@ -253,8 +254,8 @@ extern "C" void app_main() {
 				} else {
 					ESP_LOGI(TAG, "error %.4f pid out %.4f", error, output);
 				}
-#endif
 			}
+#endif
 			vTaskDelay(pdMS_TO_TICKS(4000)); 
 			//ESP_LOGI(TAG, "val %lu", value);
 			// Check whether to increment or decrement

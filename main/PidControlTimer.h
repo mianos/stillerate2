@@ -3,38 +3,46 @@
 #include "freertos/timers.h"
 #include "esp_log.h"
 
+#include "MqttClient.h"
 #include "MqttContext.h"
 #include "Emulation.h"
+#include "SettingsManager.h"
+#include "PidController.h"
+#include "Max31865Sensor.h"
 
 class PIDControlTimer {
 private:
     TimerHandle_t pidTimer = nullptr;
-    class MqttContext *ctx = nullptr;  // Use a pointer to manage the context
+	PIDController& pid;
+	MqttClient& mqtt_client;
+	SettingsManager& settings;
+	Max31865Sensor& reflux_temp_sensor;
 
     static void pidTimerCallback(TimerHandle_t xTimer) {
         auto *instance = static_cast<PIDControlTimer*>(pvTimerGetTimerID(xTimer));
-        instance->runPIDControl();
+        (void)instance->runPIDControl();
     }
 
-    void runPIDControl() {
-        ESP_LOGI("PIDControlTimer", "Timer callback executing");
-        if (ctx) {
-            // Utilize context here as needed
-            ; // ESP_LOGI("PID", "Context PID: %d", *(ctx->pid));  // Example usage
-        }
+    esp_err_t runPIDControl() {
+		float reflux_temp = reflux_temp_sensor.measure();
+		auto error = pid.set_point - reflux_temp;
+        ESP_LOGI("PIDControlTimer", "temp %.4f", reflux_temp);
+
+		float output;
+	    auto rjs = pid.compute(error, output);
+		rjs.AddTime();
+		mqtt_client.publish(std::string("tele/") + settings.sensorName + "/pid", rjs.ToString());
+		return ESP_OK;
     }
 
 public:
-    PIDControlTimer() {}
+    PIDControlTimer(PIDController& pid, MqttClient& mqtt_client, SettingsManager &settings, Max31865Sensor& reflux_temp)
+		: pid(pid), mqtt_client(mqtt_client), settings(settings), reflux_temp_sensor(reflux_temp) {}
 
     ~PIDControlTimer() {
         if (pidTimer != nullptr) {
             xTimerDelete(pidTimer, portMAX_DELAY);
         }
-    }
-
-    void setContext(MqttContext *context) {
-        ctx = context;
     }
 
     void start(uint32_t periodMs) {

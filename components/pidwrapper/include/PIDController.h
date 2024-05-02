@@ -48,6 +48,7 @@ public:
     bool loadParameters() {
         std::string jsonParams;
         if (nvs.retrieve(nvsKey, jsonParams)) {
+			ESP_LOGI("PID", "loaded '%s' from nvram", jsonParams.c_str());
             return setParametersFromJson(jsonParams);
         }
         return false;

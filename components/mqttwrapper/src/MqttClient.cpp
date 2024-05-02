@@ -52,6 +52,7 @@ void MqttClient::subscribe(std::string topic) {
     if (std::find(subscriptions.begin(), subscriptions.end(), topic) == subscriptions.end()) {
         subscriptions.push_back(topic);  // Add to subscriptions if not already present
     }
+	ESP_LOGI(TAG, "subscribe sem get");
     // Perform subscription only if already connected
     if (xSemaphoreTake(connected_sem, 0) == pdTRUE) {  // Non-blocking take
         esp_mqtt_client_subscribe(client, topic.c_str(), 0);
@@ -65,8 +66,8 @@ void MqttClient::resubscribe() {
     }
 }
 
-void MqttClient::registerHandler(const std::string& topic,
-							     const std::regex& pattern,
+void MqttClient::registerHandler(const std::string topic,
+							     const std::regex pattern,
 								 HandlerFunc handler, void* context) {
 	subscribe(topic);
 	bindings.push_back({topic, pattern, handler, context});
@@ -77,6 +78,7 @@ void MqttClient::dispatchEvent(MqttClient* client, const std::string& topic, con
     for (const auto& binding : client->bindings) {
         if (std::regex_match(topic, binding.matchPattern)) {
             if (binding.handler) {
+				ESP_LOGI(TAG, "handled topic: %s", topic.c_str());
                 binding.handler(client, topic, data, binding.context);
                 return; // Assuming only one handler per topic pattern
             }

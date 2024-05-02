@@ -33,7 +33,7 @@ public:
     void publish(std::string topic, std::string data);
     void subscribe(std::string topic);
 	
-	void registerHandler(const std::string& topic, const std::regex& pattern, HandlerFunc handler, void* context);
+	void registerHandler(const std::string topic, const std::regex pattern, HandlerFunc handler, void* context);
 
 private:
 	std::string sensorName;

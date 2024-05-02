@@ -34,7 +34,6 @@ void initialize_sntp(SettingsManager& settings) {
     esp_sntp_setoperatingmode(SNTP_OPMODE_POLL);
     esp_sntp_setservername(0, settings.ntpServer.c_str());
     esp_sntp_init();
-    ESP_LOGI(TAG, "SNTP service initialized");
     int max_retry = 200;
     while (sntp_get_sync_status() == SNTP_SYNC_STATUS_RESET && max_retry--) {
         vTaskDelay(100 / portTICK_PERIOD_MS); 
@@ -154,9 +153,67 @@ struct Emulation {
     }
 };
 
+
+
+class PIDControlTimer {
+private:
+    TimerHandle_t pidTimer = nullptr;
+
+    static void pidTimerCallback(TimerHandle_t xTimer) {
+        auto *instance = static_cast<PIDControlTimer*>(pvTimerGetTimerID(xTimer));
+        instance->runPIDControl();
+    }
+
+    void runPIDControl() {
+        ESP_LOGI("PIDControlTimer", "Timer callback executing");
+        // Example logging, replace with actual function calls:
+        // float temperature = getTemperature();
+        // float output = calculatePID(temperature);
+        // ESP_LOGI("PID", "Temperature: %.2f, Output: %.2f", temperature, output);
+    }
+
+public:
+    PIDControlTimer() {}
+
+    ~PIDControlTimer() {
+        if (pidTimer != nullptr) {
+            xTimerDelete(pidTimer, portMAX_DELAY);
+        }
+    }
+
+    void start(uint32_t periodMs) {
+        // Check if a new timer needs to be created or if the old one needs to be stopped
+        if (pidTimer != nullptr) {
+            ESP_LOGI("PIDControlTimer", "Stopping and deleting old timer");
+            xTimerStop(pidTimer, portMAX_DELAY);
+            xTimerDelete(pidTimer, portMAX_DELAY);
+            pidTimer = nullptr;
+        }
+
+        if (periodMs == 0) {
+            ESP_LOGI("PIDControlTimer", "Timer stopped and not restarted (periodMs is 0)");
+            return;
+        }
+
+        // Create and start a new timer with the specified period
+        pidTimer = xTimerCreate("PIDTimer", pdMS_TO_TICKS(periodMs), pdTRUE, this, pidTimerCallback);
+        if (pidTimer == nullptr) {
+            ESP_LOGE("PIDControlTimer", "Failed to create timer");
+        } else {
+            if (xTimerStart(pidTimer, 0) != pdPASS) {
+                ESP_LOGE("PIDControlTimer", "Failed to start timer");
+            } else {
+                ESP_LOGI("PIDControlTimer", "Timer started with a period of %u ms", (unsigned int)periodMs);
+            }
+        }
+    }
+};
+
+
 struct MqttContext {
 	PIDController *pid;
 	Emulation *emu;
+	PIDControlTimer *ptimer;
 };
 
 
@@ -178,6 +235,34 @@ esp_err_t pidEmulationHandler(MqttClient* client, const std::string& topic, cons
 	return ESP_OK;
 }
 
+
+esp_err_t pidRun(MqttClient* client, const std::string& topic, const JsonWrapper& data, void* context) {
+    auto* ctx = static_cast<MqttContext*>(context); // Explicit cast required
+	ESP_RETURN_ON_FALSE(context, ESP_FAIL, "pidRun", "Context cannot be nullptr");
+	auto* ptimer  = ctx->ptimer;
+	ESP_RETURN_ON_FALSE(ptimer, ESP_FAIL, "pidRun", "ptimer cannot be nullptr");
+    int periodms;
+    if (!data.GetField("periodms", periodms, true)) { // mandatory flag so not present will return false
+        ESP_LOGE(TAG, "pidRun failed: 'periodms' not found in JSON");
+        return ESP_FAIL; // Handle the error appropriately
+    }
+    ptimer->start(periodms);
+	ESP_LOGI(TAG, "pidRun called '%s'", data.ToString().c_str());
+	return ESP_OK;
+}
+
+#if 0
+void mqtt_event_handler(void* handler_args, esp_event_base_t base, int32_t event_id, void* event_data) {
+    auto* client = static_cast<PIDControlTimer*>(handler_args);
+    // Handle MQTT events here, particularly for updating the timer interval
+    if (event_id == MQTT_EVENT_DATA) {
+        // Parse the incoming data to determine the new period
+        uint32_t newPeriod;
+        // Assume newPeriod is parsed correctly
+        client->changePeriod(newPeriod);
+    }
+}
+#endif
 
 extern "C" void app_main() {
 	wifiSemaphore = xSemaphoreCreateBinary();
@@ -219,12 +304,15 @@ extern "C" void app_main() {
     MqttClient client(mqtt_cfg, settings.sensorName);
 
 	Emulation emu;
-	MqttContext ctx{&pid, &emu};
+	PIDControlTimer ptimer;
+	MqttContext ctx{&pid, &emu, &ptimer};
+
 	std::string topic = "cmnd/" + settings.sensorName + "/pid";
 	client.registerHandler(topic, std::regex(topic), pidSettingsHandler, &ctx);
-
 	topic = "cmnd/" + settings.sensorName + "/pidemulation";
 	client.registerHandler(topic, std::regex(topic), pidEmulationHandler, &ctx);
+	topic = "cmnd/" + settings.sensorName + "/pidrun";
+	client.registerHandler(topic, std::regex(topic), pidRun, &ctx);
 
 	WiFiManager wifiManager(nv, localEventHandler, nullptr);
 	xTaskCreate(button_task, "button_task", 2048, &wifiManager, 10, NULL);
@@ -234,11 +322,9 @@ extern "C" void app_main() {
 		client.start();
 		PublishMqttInit(client, settings);
 
-        ESP_LOGI(TAG, "Main task continues after WiFi connection.");
-
 		while (true) {
 			if (emu.enabled) {
-				ESP_LOGI(Tag, "EMU");
+				ESP_LOGI(TAG, "EMU");
 				float error = pid.set_point - emu.temp;
 				float output;
 				auto rjs = pid.compute(error, output);
@@ -249,7 +335,7 @@ extern "C" void app_main() {
 			float reflux = sensor1.measure();
 			float boiler = sensor2.measure();
 			if (reflux >= 0 && boiler >= 0) {
-				ESP_LOGI(Tag, "T1: %.4f, T2: %.4f, diff: %.4f", reflux, boiler, reflux - boiler);
+				ESP_LOGI(TAG, "T1: %.4f, T2: %.4f, diff: %.4f", reflux, boiler, reflux - boiler);
 
 #if 0
 				float output;

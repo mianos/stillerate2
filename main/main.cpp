@@ -23,6 +23,8 @@
 #include "PidController.h"
 #include "Max31865Sensor.h"
 #include "MqttContext.h"
+#include "Emulation.h"
+#include "PidControlTimer.h"
 
 static const char *TAG = "stillerate2";
 
@@ -168,18 +170,6 @@ esp_err_t pidRun(MqttClient* client, const std::string& topic, const JsonWrapper
 	return ESP_OK;
 }
 
-#if 0
-void mqtt_event_handler(void* handler_args, esp_event_base_t base, int32_t event_id, void* event_data) {
-    auto* client = static_cast<PIDControlTimer*>(handler_args);
-    // Handle MQTT events here, particularly for updating the timer interval
-    if (event_id == MQTT_EVENT_DATA) {
-        // Parse the incoming data to determine the new period
-        uint32_t newPeriod;
-        // Assume newPeriod is parsed correctly
-        client->changePeriod(newPeriod);
-    }
-}
-#endif
 
 extern "C" void app_main() {
 	wifiSemaphore = xSemaphoreCreateBinary();
@@ -223,6 +213,7 @@ extern "C" void app_main() {
 	Emulation emu;
 	PIDControlTimer ptimer;
 	MqttContext ctx{&pid, &emu, &ptimer};
+	ptimer.setContext(&ctx);
 
 	std::string topic = "cmnd/" + settings.sensorName + "/pid";
 	client.registerHandler(topic, std::regex(topic), pidSettingsHandler, &ctx);

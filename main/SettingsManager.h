@@ -51,15 +51,18 @@ public:
 //		if (nvs.retrieve("dacScale", value)) dacScale = std::stoi(value);
     }
 
-	std::string toJson() const {
-        JsonWrapper json;
+	void toJsonWrapper(JsonWrapper& json) const {
         json.AddItem("mqttBrokerUri", mqttBrokerUri);
         json.AddItem("mqttUserName", mqttUserName);
         json.AddItem("mqttPassword", mqttUserPassword);
         json.AddItem("sensorName", sensorName);
         json.AddItem("tz", tz);
         json.AddItem("ntpServer", ntpServer);
-//        json.AddItem("dacScale", dacScale);
+	}
+
+	std::string toJson() const {
+        JsonWrapper json;
+		toJsonWrapper(json);
         return json.ToString();
     }
 

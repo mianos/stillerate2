@@ -89,9 +89,7 @@ public:
         return result == ESP_OK;
     }
 
-    // Serialize current PID parameters to JSON
-    std::string getParametersAsJson() const {
-        JsonWrapper json;
+	void toJsonWrapper(JsonWrapper& json) const {
         json.AddItem("kp", currentParams.kp);
         json.AddItem("ki", currentParams.ki);
         json.AddItem("kd", currentParams.kd);
@@ -100,6 +98,12 @@ public:
         json.AddItem("max_integral", currentParams.max_integral);
         json.AddItem("min_integral", currentParams.min_integral);
         json.AddItem("set_point", set_point);
+	}
+
+    // Serialize current PID parameters to JSON
+    std::string getParametersAsJson() const {
+        JsonWrapper json;
+		toJsonWrapper(json);
         return json.ToString();
     }
 

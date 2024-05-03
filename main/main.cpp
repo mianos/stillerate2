@@ -53,11 +53,10 @@ void initialize_sntp(SettingsManager& settings) {
              timeinfo.tm_hour, timeinfo.tm_min, timeinfo.tm_sec);
 }
 
-void PublishMqttInit(MqttClient& client, SettingsManager& settings) {
+void PublishMqttInit(MqttClient& client, SettingsManager& settings, PIDController &pid) {
     JsonWrapper doc;
 
     doc.AddItem("version", 2);
-    doc.AddItem("name", settings.sensorName);
 	doc.AddTime();
 	doc.AddTime(false, "gmt");
 
@@ -81,7 +80,8 @@ void PublishMqttInit(MqttClient& client, SettingsManager& settings) {
         ESP_LOGE("NET_INFO", "Failed to get IP information");
     }
 	doc.AddItem("settings", "cmnd/" + settings.sensorName + "/settings");
-
+	settings.toJsonWrapper(doc);
+	pid.toJsonWrapper(doc);
     std::string status_topic = std::string("tele/") + settings.sensorName + "/init";
     std::string output = doc.ToString();
     client.publish(status_topic, output);
@@ -227,7 +227,7 @@ extern "C" void app_main() {
     if (xSemaphoreTake(wifiSemaphore, portMAX_DELAY) ) {
 		initialize_sntp(settings);
 		client.start();
-		PublishMqttInit(client, settings);
+		PublishMqttInit(client, settings, pid);
 
 		while (true) {
 			if (emu.enabled) {

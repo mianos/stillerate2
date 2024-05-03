@@ -25,9 +25,9 @@
 #include "MqttContext.h"
 #include "Emulation.h"
 #include "PidControlTimer.h"
+#include "SensorLoopTask.h"
 
 static const char *TAG = "stillerate2";
-
 
 static SemaphoreHandle_t wifiSemaphore;
 
@@ -171,6 +171,26 @@ esp_err_t pidRun(MqttClient* client, const std::string& topic, const JsonWrapper
 }
 
 
+esp_err_t pumpHandler(MqttClient* client, const std::string& topic, const JsonWrapper& data, void* context) {
+    auto* ctx = static_cast<MqttContext*>(context);
+	ESP_RETURN_ON_FALSE(context, ESP_FAIL, "pumpHandler", "Context cannot be nullptr");
+
+	std::string name;
+    ESP_RETURN_ON_FALSE(data.GetField("name", name, true), ESP_FAIL, "pumpHandler", "pump name field not present");
+	float value;
+    ESP_RETURN_ON_FALSE(data.GetField("value", value, true), ESP_FAIL, "pumpHandler", "pump value field not present");
+	if (name == "condenser") {
+		ctx->condenser_pump->setDutyPercentage(value);
+	} else if (name == "reflux") {
+		ctx->reflux_pump->setDutyPercentage(value);
+	} else {
+        ESP_LOGE(TAG, "invalid pump name '%s'", name.c_str());
+        return ESP_FAIL;
+	}
+	ESP_LOGI(TAG, "motor handler called '%s'", data.ToString().c_str());
+	return ESP_OK;
+}
+
 extern "C" void app_main() {
 	wifiSemaphore = xSemaphoreCreateBinary();
 	NvsStorageManager nv;
@@ -181,13 +201,13 @@ extern "C" void app_main() {
 	// FIX ..
 	//E (474) ledc: ledc_timer_del(592): LEDC is not initialized
 //	0x42008e1e: MotorController::MotorController(int, ledc_timer_t, ledc_channel_t, ledc_mode_t, int, int, ledc_timer_bit_t) at /Users/rfo/wa/stillerate2/main/Motormanager.h:31 (discriminator 1)
-//    MotorController motor1(5, LEDC_TIMER_0, LEDC_CHANNEL_0); // Motor 1 on GPIO 5
-//    MotorController motor2(18, LEDC_TIMER_1, LEDC_CHANNEL_1); // Motor 2 on GPIO 18
+    MotorController reflux_pump(16, LEDC_TIMER_0, LEDC_CHANNEL_0); // Motor 1 on GPIO 5
+    MotorController condenser_pump(17, LEDC_TIMER_1, LEDC_CHANNEL_1); // Motor 2 on GPIO 18
     // Set initial duty cycle (e.g., 50% duty for motor 1)
    // motor1.setDuty(4096);
     // Set different duty cycle for motor 2 if desired
    // motor2.setDuty(2048);
-    Max31865Sensor sensor1(GPIO_NUM_7);
+    Max31865Sensor boiler_temp(GPIO_NUM_7);
     Max31865Sensor reflux_temp(GPIO_NUM_6);
 	ESP_LOGI(TAG, "Settings %s", settings.toJson().c_str());
 
@@ -212,7 +232,9 @@ extern "C" void app_main() {
 
 	Emulation emu;
 	PIDControlTimer ptimer(pid, client, settings, reflux_temp);
-	MqttContext ctx{&pid, &emu, &ptimer};
+	MqttContext ctx{&pid, &emu, &ptimer, &reflux_pump, &condenser_pump};
+
+	SensorLoopTask slt{client, settings, boiler_temp};
 
 	std::string topic = "cmnd/" + settings.sensorName + "/pid";
 	client.registerHandler(topic, std::regex(topic), pidSettingsHandler, &ctx);
@@ -220,6 +242,8 @@ extern "C" void app_main() {
 	client.registerHandler(topic, std::regex(topic), pidEmulationHandler, &ctx);
 	topic = "cmnd/" + settings.sensorName + "/pidrun";
 	client.registerHandler(topic, std::regex(topic), pidRun, &ctx);
+	topic = "cmnd/" + settings.sensorName + "/pump";
+	client.registerHandler(topic, std::regex(topic), pumpHandler, &ctx);
 
 	WiFiManager wifiManager(nv, localEventHandler, nullptr);
 	xTaskCreate(button_task, "button_task", 2048, &wifiManager, 10, NULL);

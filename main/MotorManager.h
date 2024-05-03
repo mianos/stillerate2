@@ -11,6 +11,7 @@ private:
 public:
     MotorController(int gpio_num, ledc_timer_t timer_num, ledc_channel_t channel_num, ledc_mode_t speed_mode = LEDC_LOW_SPEED_MODE, int frequency = 5000, int duty = 4096, ledc_timer_bit_t duty_resolution = LEDC_TIMER_13_BIT) {
         // Timer configuration
+		ledc_timer = {};
         ledc_timer.speed_mode = speed_mode;
         ledc_timer.timer_num = timer_num;
         ledc_timer.duty_resolution = duty_resolution;
@@ -18,6 +19,7 @@ public:
         ledc_timer.clk_cfg = LEDC_AUTO_CLK;
 
         // Channel configuration
+		ledc_channel = {};
         ledc_channel.speed_mode = speed_mode;
         ledc_channel.channel = channel_num;
         ledc_channel.timer_sel = timer_num;
@@ -31,12 +33,14 @@ public:
         ESP_ERROR_CHECK(ledc_channel_config(&ledc_channel));
 
         // Set initial duty cycle if needed
-        setDuty(duty);
+        setDutyPercentage(0.0);
     }
 
-    void setDuty(int duty) {
-        ESP_ERROR_CHECK(ledc_set_duty(ledc_channel.speed_mode, ledc_channel.channel, duty));
-        ESP_ERROR_CHECK(ledc_update_duty(ledc_channel.speed_mode, ledc_channel.channel));
-    }
+	void setDutyPercentage(float percentage) {
+		int maxDuty = (1 << ledc_timer.duty_resolution) - 1; // Max duty for the current resolution
+		int dutyValue = static_cast<int>(maxDuty * (percentage / 100.0f));
+		ESP_ERROR_CHECK(ledc_set_duty(ledc_channel.speed_mode, ledc_channel.channel, dutyValue));
+		ESP_ERROR_CHECK(ledc_update_duty(ledc_channel.speed_mode, ledc_channel.channel));
+	}
 };
 

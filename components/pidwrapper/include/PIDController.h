@@ -69,7 +69,7 @@ public:
         pid_compute(pid_handle, input_error, &output);
         //esp_err_t result = pid_compute(pid_handle, input_error, &output);
 		// json.AddItem("cstatus", result);
-		json.AddItem("input", input_error);
+		json.AddItem("input_error", input_error);
 		json.AddItem("output", output);
 		return json;
     }

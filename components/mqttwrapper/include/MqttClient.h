@@ -25,6 +25,8 @@ struct HandlerBinding {
 
 class MqttClient {
 public:
+	std::string sensorName;
+
 	MqttClient(esp_mqtt_client_config_t& mqtt_cfg, std::string sensorName);
     ~MqttClient();
 
@@ -36,7 +38,6 @@ public:
 	void registerHandler(const std::string topic, const std::regex pattern, HandlerFunc handler, void* context);
 
 private:
-	std::string sensorName;
     SemaphoreHandle_t connected_sem;
     esp_mqtt_client_handle_t client;
     std::vector<std::string> subscriptions;

@@ -165,11 +165,22 @@ esp_err_t pidRun(MqttClient* client, const std::string& topic, const JsonWrapper
         ESP_LOGE(TAG, "pidRun failed: 'period' not found in JSON");
         return ESP_FAIL; // Handle the error appropriately
     }
-    ptimer->start(period);
+    ptimer->start(period * 1000);
 	ESP_LOGI(TAG, "pidRun called '%s'", data.ToString().c_str());
 	return ESP_OK;
 }
 
+
+esp_err_t reportPidParamsHandler(MqttClient* client, const std::string& topic, const JsonWrapper& data, void* context) {
+    auto* ctx = static_cast<MqttContext*>(context); // Explicit cast required
+	ESP_RETURN_ON_FALSE(context, ESP_FAIL, "reportParamsHandler", "Context cannot be nullptr");
+    JsonWrapper doc;
+	doc.AddTime();
+	ctx->pid->toJsonWrapper(doc);
+    client->publish("tele/" + client->sensorName + "/pidparams", doc.ToString());;
+	ESP_LOGI(TAG, "sent pid params '%s'", doc.ToString().c_str());
+	return ESP_OK;
+}
 
 esp_err_t pumpHandler(MqttClient* client, const std::string& topic, const JsonWrapper& data, void* context) {
     auto* ctx = static_cast<MqttContext*>(context);
@@ -231,7 +242,7 @@ extern "C" void app_main() {
     MqttClient client(mqtt_cfg, settings.sensorName);
 
 	Emulation emu;
-	PIDControlTimer ptimer(pid, client, settings, reflux_temp);
+	PIDControlTimer ptimer(pid, client, settings, reflux_temp, reflux_pump);
 	MqttContext ctx{&pid, &emu, &ptimer, &reflux_pump, &condenser_pump};
 
 	SensorLoopTask slt{client, settings, boiler_temp};
@@ -244,6 +255,8 @@ extern "C" void app_main() {
 	client.registerHandler(topic, std::regex(topic), pidRun, &ctx);
 	topic = "cmnd/" + settings.sensorName + "/pump";
 	client.registerHandler(topic, std::regex(topic), pumpHandler, &ctx);
+	topic = "cmnd/" + settings.sensorName + "/pidparams";
+	client.registerHandler(topic, std::regex(topic), reportPidParamsHandler, &ctx);
 
 	WiFiManager wifiManager(nv, localEventHandler, nullptr);
 	xTaskCreate(button_task, "button_task", 2048, &wifiManager, 10, NULL);

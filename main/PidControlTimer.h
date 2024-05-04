@@ -17,6 +17,7 @@ private:
 	MqttClient& mqtt_client;
 	SettingsManager& settings;
 	Max31865Sensor& reflux_temp_sensor;
+	MotorController& reflux_cooling_motor;
 
     static void pidTimerCallback(TimerHandle_t xTimer) {
         auto *instance = static_cast<PIDControlTimer*>(pvTimerGetTimerID(xTimer));
@@ -25,19 +26,33 @@ private:
 
     esp_err_t runPIDControl() {
 		float reflux_temp = reflux_temp_sensor.measure();
+		JsonWrapper tjs;
+
+		tjs.AddItem("reflux", reflux_temp);
+		tjs.AddTime();
+		mqtt_client.publish(std::string("tele/") + settings.sensorName + "/temp", tjs.ToString());
+
 		auto error = pid.set_point - reflux_temp;
-        ESP_LOGI("PIDControlTimer", "temp %.4f", reflux_temp);
 
 		float output;
 	    auto rjs = pid.compute(error, output);
+		reflux_cooling_motor.setDutyPercentage(output);
+
 		rjs.AddTime();
 		mqtt_client.publish(std::string("tele/") + settings.sensorName + "/pid", rjs.ToString());
 		return ESP_OK;
     }
 
 public:
-    PIDControlTimer(PIDController& pid, MqttClient& mqtt_client, SettingsManager &settings, Max31865Sensor& reflux_temp)
-		: pid(pid), mqtt_client(mqtt_client), settings(settings), reflux_temp_sensor(reflux_temp) {}
+    PIDControlTimer(PIDController& pid,
+			MqttClient& mqtt_client,
+			SettingsManager &settings,
+			Max31865Sensor& reflux_temp,
+			MotorController& reflux_cooling_motor)
+		: pid(pid), mqtt_client(mqtt_client),
+		  settings(settings),
+		  reflux_temp_sensor(reflux_temp),
+		  reflux_cooling_motor(reflux_cooling_motor) {}
 
     ~PIDControlTimer() {
         if (pidTimer != nullptr) {

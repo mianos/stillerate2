@@ -80,6 +80,7 @@ void PublishMqttInit(MqttClient& client, SettingsManager& settings, PIDControlle
         ESP_LOGE("NET_INFO", "Failed to get IP information");
     }
 	doc.AddItem("settings", "cmnd/" + settings.sensorName + "/settings");
+	doc.AddItem("period", 0);	// starts with Pid loop stopped
 	settings.toJsonWrapper(doc);
 	pid.toJsonWrapper(doc);
     std::string status_topic = std::string("tele/") + settings.sensorName + "/init";
@@ -208,16 +209,9 @@ extern "C" void app_main() {
 	SettingsManager settings(nv);
 
 	//auto trigger = GPIOWrapper(GPIO_NUM_2);
-	
-	// FIX ..
-	//E (474) ledc: ledc_timer_del(592): LEDC is not initialized
-//	0x42008e1e: MotorController::MotorController(int, ledc_timer_t, ledc_channel_t, ledc_mode_t, int, int, ledc_timer_bit_t) at /Users/rfo/wa/stillerate2/main/Motormanager.h:31 (discriminator 1)
+
     MotorController reflux_pump(16, LEDC_TIMER_0, LEDC_CHANNEL_0); // Motor 1 on GPIO 5
     MotorController condenser_pump(17, LEDC_TIMER_1, LEDC_CHANNEL_1); // Motor 2 on GPIO 18
-    // Set initial duty cycle (e.g., 50% duty for motor 1)
-   // motor1.setDuty(4096);
-    // Set different duty cycle for motor 2 if desired
-   // motor2.setDuty(2048);
     Max31865Sensor boiler_temp(GPIO_NUM_7);
     Max31865Sensor reflux_temp(GPIO_NUM_6);
 	ESP_LOGI(TAG, "Settings %s", settings.toJson().c_str());
@@ -242,7 +236,7 @@ extern "C" void app_main() {
     MqttClient client(mqtt_cfg, settings.sensorName);
 
 	Emulation emu;
-	PIDControlTimer ptimer(pid, client, settings, reflux_temp, reflux_pump);
+	PIDControlTimer ptimer(pid, client, settings, reflux_temp, reflux_pump, emu);
 	MqttContext ctx{&pid, &emu, &ptimer, &reflux_pump, &condenser_pump};
 
 	SensorLoopTask slt{client, settings, boiler_temp};

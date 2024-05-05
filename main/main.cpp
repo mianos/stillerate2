@@ -213,7 +213,7 @@ extern "C" void app_main() {
     MotorController reflux_pump(16, LEDC_TIMER_0, LEDC_CHANNEL_0); // Motor 1 on GPIO 5
     MotorController condenser_pump(17, LEDC_TIMER_1, LEDC_CHANNEL_1); // Motor 2 on GPIO 18
     Max31865Sensor boiler_temp(GPIO_NUM_7);
-    Max31865Sensor reflux_temp(GPIO_NUM_6);
+    Max31865Sensor reflux_temp(GPIO_NUM_5);
 	ESP_LOGI(TAG, "Settings %s", settings.toJson().c_str());
 
 	pid_ctrl_parameter_t params = {};
@@ -261,17 +261,6 @@ extern "C" void app_main() {
 		PublishMqttInit(client, settings, pid);
 
 		while (true) {
-			if (emu.enabled) {
-				ESP_LOGI(TAG, "EMU");
-				float error = pid.set_point - emu.temp;
-				float output;
-				auto rjs = pid.compute(error, output);
-				rjs.AddItem("emulation", true);
-				rjs.AddTime();
-				auto topic = std::string("tele/") + settings.sensorName + "/pid";
-				ESP_LOGI("PTIMER", "json '%s'", rjs.ToString().c_str());
-				//client.publish(std::string("tele/") + settings.sensorName + "/pid", rjs.ToString());
-			}
 #if 0
 			float reflux = sensor1.measure();
 			float boiler = reflux.measure();

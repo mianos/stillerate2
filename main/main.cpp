@@ -81,6 +81,8 @@ void PublishMqttInit(MqttClient& client, SettingsManager& settings, PIDControlle
     }
 	doc.AddItem("settings", "cmnd/" + settings.sensorName + "/settings");
 	doc.AddItem("period", 0);	// starts with Pid loop stopped
+	doc.AddItem("reflux", 0);	// reflux pump at 0
+	doc.AddItem("condenser", 0);	// condenser pump at 0
 	settings.toJsonWrapper(doc);
 	pid.toJsonWrapper(doc);
     std::string status_topic = std::string("tele/") + settings.sensorName + "/init";
@@ -261,21 +263,6 @@ extern "C" void app_main() {
 		PublishMqttInit(client, settings, pid);
 
 		while (true) {
-#if 0
-			float reflux = sensor1.measure();
-			float boiler = reflux.measure();
-			if (reflux >= 0 && boiler >= 0) {
-				ESP_LOGI(TAG, "T1: %.4f, T2: %.4f, diff: %.4f", reflux, boiler, reflux - boiler);
-
-				float output;
-				float error = 74.8 - reflux;
-				if (!pid.compute(error, output)) {
-					ESP_LOGE(TAG, "failed to calculate pid error");
-				} else {
-					ESP_LOGI(TAG, "error %.4f pid out %.4f", error, output);
-				}
-			}
-#endif
 			vTaskDelay(pdMS_TO_TICKS(4000)); 
 			//ESP_LOGI(TAG, "val %lu", value);
 			// Check whether to increment or decrement

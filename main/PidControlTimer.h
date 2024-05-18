@@ -44,7 +44,7 @@ private:
 		float output;
 	    auto rjs = pid.compute(error, output);
 
-		reflux_cooling_motor.setDutyPercentage(output);
+		reflux_cooling_motor.setDutyPercentage(100.0 - output);
 
 		if (emu.enabled) {
 		    rjs.AddItem("emulation", true);

@@ -210,8 +210,8 @@ extern "C" void app_main() {
 
 	//auto trigger = GPIOWrapper(GPIO_NUM_2);
 
-    MotorController reflux_pump(16, LEDC_TIMER_0, LEDC_CHANNEL_0); // Motor 1 on GPIO 5
-    MotorController condenser_pump(17, LEDC_TIMER_1, LEDC_CHANNEL_1); // Motor 2 on GPIO 18
+    MotorController reflux_pump(6, LEDC_TIMER_0, LEDC_CHANNEL_0); // Motor 1 on GPIO 5
+    MotorController condenser_pump(20, LEDC_TIMER_1, LEDC_CHANNEL_1); // Motor 2 on GPIO 18
     Max31865Sensor boiler_temp(GPIO_NUM_7);
     Max31865Sensor reflux_temp(GPIO_NUM_5);
 	ESP_LOGI(TAG, "Settings %s", settings.toJson().c_str());

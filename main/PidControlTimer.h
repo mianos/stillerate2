@@ -43,8 +43,10 @@ private:
 		auto error = pid.set_point - reflux_temp;
 		float output;
 	    auto rjs = pid.compute(error, output);
+		auto cooler_duty = 100.0 - output;
+		reflux_cooling_motor.setDutyPercentage(cooler_duty);
+		rjs.AddItem("cooler_duty", cooler_duty);
 
-		reflux_cooling_motor.setDutyPercentage(100.0 - output);
 
 		if (emu.enabled) {
 		    rjs.AddItem("emulation", true);

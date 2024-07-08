@@ -212,12 +212,12 @@ extern "C" void app_main() {
 
 	//auto trigger = GPIOWrapper(GPIO_NUM_2);
 
-    MotorController reflux_pump(6, LEDC_TIMER_0, LEDC_CHANNEL_0); // Motor 1 on GPIO 5
-    MotorController condenser_pump(20, LEDC_TIMER_1, LEDC_CHANNEL_1); // Motor 2 on GPIO 18
-    Max31865Sensor boiler_temp(GPIO_NUM_7);
-    Max31865Sensor reflux_temp(GPIO_NUM_5);
-	ESP_LOGI(TAG, "Settings %s", settings.toJson().c_str());
+    MotorController reflux_pump(22, LEDC_TIMER_0, LEDC_CHANNEL_0); // Motor 1 on GPIO 5
+    MotorController condenser_pump(23, LEDC_TIMER_1, LEDC_CHANNEL_1); // Motor 2 on GPIO 18
+    Max31865Sensor boiler_temp(GPIO_NUM_1);
+    Max31865Sensor reflux_temp(GPIO_NUM_2);
 
+	ESP_LOGI(TAG, "Settings %s", settings.toJson().c_str());
 	pid_ctrl_parameter_t params = {};
 	params.kp = 3.0;
 	params.ki = 0.1;

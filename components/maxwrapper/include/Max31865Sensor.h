@@ -29,11 +29,11 @@ public:
 class Max31865Sensor {
 public:
 	// TODO: put these values in a Kconfig
-    Max31865Sensor(gpio_num_t cs_pin, int mosi_io = 22, int miso_io = 21, int clk_io = 23)
+    Max31865Sensor(gpio_num_t cs_pin, int mosi_io = 18, int miso_io = 20, int clk_io = 19)
         : csPin(cs_pin), mosiIO(mosi_io), misoIO(miso_io), clkIO(clk_io) {
         dev = {};
         dev.standard = MAX31865_DIN43760;
-        dev.r_ref = 430.0f;
+        dev.r_ref = 402.0f;
         dev.rtd_nominal = 100.0f;
         config = {};
         config.v_bias = true;

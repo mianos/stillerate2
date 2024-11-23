@@ -14,4 +14,5 @@ idf_component_register(SRCS main.cpp
                     nvsstoragemanager
                     jsonwrapper
                     pidwrapper
-                    maxwrapper)
+                    maxwrapper
+                    httpclient)

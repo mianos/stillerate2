@@ -214,8 +214,8 @@ extern "C" void app_main() {
 
     MotorController reflux_pump(22, LEDC_TIMER_0, LEDC_CHANNEL_0); // Motor 1 on GPIO 5
     MotorController condenser_pump(23, LEDC_TIMER_1, LEDC_CHANNEL_1); // Motor 2 on GPIO 18
-    Max31865Sensor boiler_temp(GPIO_NUM_1);
-    Max31865Sensor reflux_temp(GPIO_NUM_2);
+    Max31865Sensor boiler_temp(GPIO_NUM_2);
+    Max31865Sensor reflux_temp(GPIO_NUM_1);
 
 	ESP_LOGI(TAG, "Settings %s", settings.toJson().c_str());
 	pid_ctrl_parameter_t params = {};

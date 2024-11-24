@@ -49,6 +49,6 @@ private:
     int64_t lastStateChangeTime;
     enum State { OPEN, CLOSED, TRIGGERED };
     State state;
-    static constexpr int LONG_PRESS_TIME_MS = 5000; // Long press time in milliseconds
+    static constexpr int LONG_PRESS_TIME_MS = 3000; // Long press time in milliseconds
 };
 

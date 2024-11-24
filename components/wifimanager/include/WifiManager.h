@@ -22,9 +22,13 @@ private:
     static void localEventHandler(void* arg, esp_event_base_t event_base, int32_t event_id, void* event_data);
     static void smartConfigTask(void* param);
 
+	static void setHostname(const char* hostname);
+
     NvsStorageManager& storageManager; 
     static EventGroupHandle_t wifi_event_group;
     static constexpr int CONNECTED_BIT = BIT0;
     static constexpr int ESPTOUCH_DONE_BIT = BIT1;
     static const char* TAG;
+	bool saveHostname(const std::string& hostname);
+	bool loadHostname(std::string& hostname);
 };

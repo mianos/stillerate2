@@ -60,6 +60,13 @@ public:
         return result;
     }
 
+    template<typename T>
+    void AddItem(const std::string& key, const T& value) {
+        if (!jsonObj_) {
+            jsonObj_.reset(cJSON_CreateObject());
+        }
+        addItemInternal(key, value);
+    }
 
     bool Empty() const noexcept {
         return jsonObj_ == nullptr || cJSON_GetArraySize(jsonObj_.get()) == 0;
@@ -102,40 +109,28 @@ public:
 		}
 		return false;  // Type mismatch or unable to convert
 	}
-
+private:
 	static constexpr int floatDecimals = 4;
 
-    void AddItem(const std::string& key, bool value) {
-        if (!jsonObj_) {
-            jsonObj_.reset(cJSON_CreateObject());
-        }
-        cJSON_AddBoolToObject(jsonObj_.get(), key.c_str(), value);
-    }
 
-    void AddItem(const std::string& key, int value) {
-        if (!jsonObj_) {
-            jsonObj_.reset(cJSON_CreateObject());
-        }
-        cJSON_AddNumberToObject(jsonObj_.get(), key.c_str(), value);
-    }
 
-    void AddItem(const std::string& key, double value) {
-        if (!jsonObj_) {
-            jsonObj_.reset(cJSON_CreateObject());
-        }
-        double roundedValue = std::round(value * std::pow(10, floatDecimals)) / std::pow(10, floatDecimals);
-        cJSON_AddNumberToObject(jsonObj_.get(), key.c_str(), roundedValue);
-    }
-
-    void AddItem(const std::string& key, const std::string& value) {
-        if (!jsonObj_) {
-            jsonObj_.reset(cJSON_CreateObject());
-        }
-        cJSON_AddStringToObject(jsonObj_.get(), key.c_str(), value.c_str());
-    }
-
-private:
-
+	template<typename T>
+	void addItemInternal(const std::string& key, const T& value) {
+		if constexpr (std::is_integral_v<T>) {
+			cJSON_AddNumberToObject(jsonObj_.get(), key.c_str(), static_cast<double>(value));
+		} else if constexpr (std::is_floating_point_v<T>) {
+			double roundedValue = std::round(value * std::pow(10, floatDecimals)) / std::pow(10, floatDecimals);
+			cJSON_AddNumberToObject(jsonObj_.get(), key.c_str(), roundedValue);
+		} else if constexpr (std::is_same_v<T, std::string>) {
+			cJSON_AddStringToObject(jsonObj_.get(), key.c_str(), value.c_str());
+		} else if constexpr (std::is_same_v<T, const char*>) {  // Handle C-style string (const char*)
+			cJSON_AddStringToObject(jsonObj_.get(), key.c_str(), value);
+		} else if constexpr (std::is_array_v<T> && std::is_same_v<std::remove_extent_t<T>, char>) {  // Handle char[]
+			cJSON_AddStringToObject(jsonObj_.get(), key.c_str(), std::string(value).c_str());
+		} else {
+			static_assert(false, "Unsupported type for AddItem");
+		}
+	}
 
 	template<typename T>
 	bool assignValue(cJSON* item, T& value) const {

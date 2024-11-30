@@ -16,7 +16,7 @@ class PumpRequestHandler(BaseHTTPRequestHandler):
 
                 if duty is not None and isinstance(duty, (int, float)) and 0 <= duty <= 100:
                     duty = int(duty)
-                    print(f"Received valid POST request with duty: {duty}")
+                    print(f"Received valid POST request with duty: {duty} name: {data.get('name', 'indefined')}")
                     self.send_response(200)
                     self.send_header("Content-Type", "application/json")
                     self.end_headers()

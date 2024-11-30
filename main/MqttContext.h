@@ -6,5 +6,6 @@ struct MqttContext {
 	class PIDControlTimer *ptimer;
 	class RESTMotorController *reflux_pump;
 	class RESTMotorController *condenser_pump;
+	class SettingsManager *settings;
 };
 

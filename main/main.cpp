@@ -26,6 +26,7 @@
 #include "PidControlTimer.h"
 #include "SensorLoopTask.h"
 #include "RESTMotorController.h"
+#include "SettingsManager.h"
 
 static const char *TAG = "stillerate2";
 
@@ -205,15 +206,22 @@ esp_err_t pumpHandler(MqttClient* client, const std::string& topic, const JsonWr
 	return ESP_OK;
 }
 
+esp_err_t updateSettingsHandler(MqttClient* client, const std::string& topic, const JsonWrapper& data, void* context) {
+    auto* ctx = static_cast<MqttContext*>(context);
+	ESP_RETURN_ON_FALSE(context, ESP_FAIL, "updateSettingsHandler", "Context cannot be nullptr");
+	ESP_LOGI(TAG, "Update Settings handler called with '%s'", data.ToString().c_str());
+    ctx->settings->updateFromJsonWrapper(data);
+	return ESP_OK;
+}
+
 extern "C" void app_main() {
 	wifiSemaphore = xSemaphoreCreateBinary();
 	NvsStorageManager nv;
 	SettingsManager settings(nv);
 
 	//auto trigger = GPIOWrapper(GPIO_NUM_2);
-
-    RESTMotorController reflux_pump(settings.refluxPumpUrl);
-    RESTMotorController condenser_pump(settings.condenserPumpUrl);
+    RESTMotorController reflux_pump(settings.refluxPumpUrl, "reflux");
+    RESTMotorController condenser_pump(settings.condenserPumpUrl, "condenser");
     Max31865Sensor boiler_temp(GPIO_NUM_2);
     Max31865Sensor reflux_temp(GPIO_NUM_1);
 
@@ -239,7 +247,7 @@ extern "C" void app_main() {
 
 	Emulation emu;
 	PIDControlTimer ptimer(pid, client, settings, reflux_temp, reflux_pump, emu);
-	MqttContext ctx{&pid, &emu, &ptimer, &reflux_pump, &condenser_pump};
+	MqttContext ctx{&pid, &emu, &ptimer, &reflux_pump, &condenser_pump, &settings};
 
 	SensorLoopTask slt{client, settings, boiler_temp};
 
@@ -253,6 +261,8 @@ extern "C" void app_main() {
 	client.registerHandler(topic, std::regex(topic), pumpHandler, &ctx);
 	topic = "cmnd/" + settings.sensorName + "/pidparams";
 	client.registerHandler(topic, std::regex(topic), reportPidParamsHandler, &ctx);
+	topic = "cmnd/" + settings.sensorName + "/settings";
+	client.registerHandler(topic, std::regex(topic), updateSettingsHandler, &ctx);
 
 	WiFiManager wifiManager(nv, localEventHandler, nullptr);
 	xTaskCreate(button_task, "button_task", 2048, &wifiManager, 10, NULL);

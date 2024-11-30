@@ -69,9 +69,13 @@ public:
         return json.ToString();
     }
 
-   ChangeList updateFromJson(const std::string& jsonString) {
+   ChangeList updateFromJsonString(const std::string& jsonString) {
+        const JsonWrapper json = JsonWrapper::Parse(jsonString);
+		return updateFromJsonWrapper(json);
+   }
+
+   ChangeList updateFromJsonWrapper(const JsonWrapper& json) {
         ChangeList changes;
-        JsonWrapper json = JsonWrapper::Parse(jsonString);
         updateFieldIfChanged(json, "mqttBrokerUri", mqttBrokerUri, changes);
         updateFieldIfChanged(json, "mqttUserName", mqttUserName, changes);
         updateFieldIfChanged(json, "mqttPassword", mqttUserPassword, changes);
@@ -81,15 +85,15 @@ public:
         updateFieldIfChanged(json, "refluxPumpUrl", refluxPumpUrl, changes);
         updateFieldIfChanged(json, "condenserPumpUrl", condenserPumpUrl, changes);
 
-        // Save any changes to NVRAM
         for (const auto& [key, value] : changes) {
             nvs.store(key, value);
         }
         return changes;
-    }
+   }
+
 private:
     template <typename T>
-    void updateFieldIfChanged(JsonWrapper& json, const std::string& key, T& field, SettingsManager::ChangeList& changes) {
+    void updateFieldIfChanged(const JsonWrapper& json, const std::string& key, T& field, SettingsManager::ChangeList& changes) {
         if (json.ContainsField(key)) {  // Only proceed if the key exists in the JSON
             T newValue;
             if (json.GetField(key, newValue)) {  // Successfully retrieved new value

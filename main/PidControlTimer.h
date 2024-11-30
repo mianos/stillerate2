@@ -9,6 +9,7 @@
 #include "SettingsManager.h"
 #include "PidController.h"
 #include "Max31865Sensor.h"
+#include "RESTMotorController.h"
 
 class PIDControlTimer {
 private:
@@ -17,7 +18,7 @@ private:
 	MqttClient& mqtt_client;
 	SettingsManager& settings;
 	Max31865Sensor& reflux_temp_sensor;
-	MotorController& reflux_cooling_motor;
+	RESTMotorController& reflux_cooling_motor;
     Emulation& emu;
 
     static void pidTimerCallback(TimerHandle_t xTimer) {
@@ -61,7 +62,7 @@ public:
 			MqttClient& mqtt_client,
 			SettingsManager &settings,
 			Max31865Sensor& reflux_temp,
-			MotorController& reflux_cooling_motor,
+			RESTMotorController& reflux_cooling_motor,
 			Emulation& emu)
 		: pid(pid), mqtt_client(mqtt_client),
 		  settings(settings),

@@ -19,13 +19,13 @@
 #include "WifiManager.h"
 #include "SettingsManager.h"
 #include "Button.h"
-#include "Motormanager.h"
 #include "PidController.h"
 #include "Max31865Sensor.h"
 #include "MqttContext.h"
 #include "Emulation.h"
 #include "PidControlTimer.h"
 #include "SensorLoopTask.h"
+#include "RESTMotorController.h"
 
 static const char *TAG = "stillerate2";
 
@@ -212,8 +212,8 @@ extern "C" void app_main() {
 
 	//auto trigger = GPIOWrapper(GPIO_NUM_2);
 
-    MotorController reflux_pump(22, LEDC_TIMER_0, LEDC_CHANNEL_0); // Motor 1 on GPIO 5
-    MotorController condenser_pump(23, LEDC_TIMER_1, LEDC_CHANNEL_1); // Motor 2 on GPIO 18
+    RESTMotorController reflux_pump(settings.refluxPumpUrl);
+    RESTMotorController condenser_pump(settings.condenserPumpUrl);
     Max31865Sensor boiler_temp(GPIO_NUM_2);
     Max31865Sensor reflux_temp(GPIO_NUM_1);
 

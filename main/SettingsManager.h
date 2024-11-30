@@ -24,8 +24,8 @@ public:
     std::string sensorName = "still2";
     std::string tz = "AEST-10AEDT,M10.1.0,M4.1.0/3";
     std::string ntpServer = "time.google.com";
-    std::string refluxPumpUrl = "http://131.84.1.78/pump";
-    std::string condenserPumpUrl = "http://131.84.1.78/pump";
+    std::string refluxPumpUrl = "http://131.84.1.78:8080/pump";
+    std::string condenserPumpUrl = "http://131.84.1.78:8080/pump";
 
     std::string convertChangesToJson(const SettingsManager::ChangeList& changes) {
         cJSON *root = cJSON_CreateObject();

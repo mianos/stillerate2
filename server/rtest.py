@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 import json
 from http.server import BaseHTTPRequestHandler, HTTPServer
 
@@ -13,8 +14,8 @@ class PumpRequestHandler(BaseHTTPRequestHandler):
                 data = json.loads(post_data)
                 duty = data.get("duty", None)
 
-                if duty is not None and isinstance(duty, int) and 0 <= duty <= 100:
-                    # Valid duty cycle
+                if duty is not None and isinstance(duty, (int, float)) and 0 <= duty <= 100:
+                    duty = int(duty)
                     print(f"Received valid POST request with duty: {duty}")
                     self.send_response(200)
                     self.send_header("Content-Type", "application/json")

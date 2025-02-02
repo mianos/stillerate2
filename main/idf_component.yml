@@ -1,2 +1,26 @@
 dependencies:
   espressif/pid_ctrl: "^0.2.0"
+  jsonwrapper:
+    git: git@github.com:mianos/mianesp.git
+    path: components/jsonwrapper
+    version: main
+  nvsstoragemanager:
+    git: git@github.com:mianos/mianesp.git
+    path: components/nvsstoragemanager
+    version: main
+  wifimanager:
+    git: git@github.com:mianos/mianesp.git
+    path: components/wifimanager
+    version: main
+  button:
+    git: git@github.com:mianos/mianesp.git
+    path: components/button
+    version: main
+  webserver:
+    git: git@github.com:mianos/mianesp.git
+    path: components/webserver
+    version: main
+  httpclient:
+    git: git@github.com:mianos/mianesp.git
+    path: components/httpclient
+    version: main

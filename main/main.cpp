@@ -21,6 +21,7 @@
 #include "Button.h"
 #include "PidController.h"
 #include "Max31865Sensor.h"
+
 #include "MqttContext.h"
 #include "Emulation.h"
 #include "PidControlTimer.h"
@@ -57,7 +58,7 @@ void initialize_sntp(SettingsManager& settings) {
 void PublishMqttInit(MqttClient& client, SettingsManager& settings, PIDController &pid) {
     JsonWrapper doc;
 
-    doc.AddItem("version", 2);
+    doc.AddItem("version", 3);
 	doc.AddTime();
 	doc.AddTime(false, "gmt");
 
@@ -214,6 +215,20 @@ esp_err_t updateSettingsHandler(MqttClient* client, const std::string& topic, co
 	return ESP_OK;
 }
 
+esp_err_t wifiConfigHandler(MqttClient* client, const std::string& topic, const JsonWrapper& data, void* context) {
+    auto* ctx = static_cast<MqttContext*>(context);
+	ESP_RETURN_ON_FALSE(context, ESP_FAIL, "wifiConfig", "Context cannot be nullptr");
+
+    std::string host_name;
+    if (data.GetField("host_name", host_name, true)) {
+        ctx->wifiManager->configSetHostName(host_name);
+        ESP_LOGI(TAG, "Updated Wi-Fi hostname to '%s'", host_name.c_str());
+    } else {
+        ESP_LOGW(TAG, "Missing or invalid 'host_name'");
+    }
+	return ESP_OK;
+}
+
 extern "C" void app_main() {
 	wifiSemaphore = xSemaphoreCreateBinary();
 	NvsStorageManager nv;
@@ -247,7 +262,10 @@ extern "C" void app_main() {
 
 	Emulation emu;
 	PIDControlTimer ptimer(pid, client, settings, reflux_temp, reflux_pump, emu);
-	MqttContext ctx{&pid, &emu, &ptimer, &reflux_pump, &condenser_pump, &settings};
+	WiFiManager wifiManager(nv, localEventHandler, nullptr);
+	xTaskCreate(button_task, "button_task", 2048, &wifiManager, 10, NULL);
+
+	MqttContext ctx{&pid, &emu, &ptimer, &reflux_pump, &condenser_pump, &settings, &wifiManager};
 
 	SensorLoopTask slt{client, settings, boiler_temp};
 
@@ -263,9 +281,9 @@ extern "C" void app_main() {
 	client.registerHandler(topic, std::regex(topic), reportPidParamsHandler, &ctx);
 	topic = "cmnd/" + settings.sensorName + "/settings";
 	client.registerHandler(topic, std::regex(topic), updateSettingsHandler, &ctx);
+	topic = "cmnd/" + settings.sensorName + "/wificonfig";
+	client.registerHandler(topic, std::regex(topic), wifiConfigHandler, &ctx);
 
-	WiFiManager wifiManager(nv, localEventHandler, nullptr);
-	xTaskCreate(button_task, "button_task", 2048, &wifiManager, 10, NULL);
 
     if (xSemaphoreTake(wifiSemaphore, portMAX_DELAY) ) {
 		initialize_sntp(settings);

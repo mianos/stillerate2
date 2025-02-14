@@ -1,0 +1,7 @@
+build/
+managed_components/
+sdkconfig.old
+components/stepper_driver/tags
+dependencies.lock
+tags
+server/venv/

@@ -33,7 +33,7 @@ public:
         : csPin(cs_pin), mosiIO(mosi_io), misoIO(miso_io), clkIO(clk_io) {
         dev = {};
         dev.standard = MAX31865_DIN43760;
-        dev.r_ref = 402.0f;
+        dev.r_ref = 401.5f;	// measured by the HP3478A 4 wire
         dev.rtd_nominal = 100.0f;
         config = {};
         config.v_bias = true;

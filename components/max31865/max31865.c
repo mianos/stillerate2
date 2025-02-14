@@ -219,7 +219,9 @@ esp_err_t max31865_read_temperature(max31865_t *dev, float *temp)
         return ESP_FAIL;
     }
 
-    float r_rtd = raw * dev->r_ref / 32768;
+ //   float r_rtd = raw * dev->r_ref / 32768.0;
+	float r_rtd = (raw / 32768.0f) * dev->r_ref * (100.0f / dev->rtd_nominal);
+
 
     ESP_LOGD(TAG, "[CS %d] RTD resistance: %.8f", dev->spi_cfg.spics_io_num, r_rtd);
 
@@ -231,7 +233,7 @@ esp_err_t max31865_read_temperature(max31865_t *dev, float *temp)
         return ESP_OK;
 
     // below zero
-    r_rtd = r_rtd / dev->rtd_nominal * 100; // normalize to 100 Ohm
+    r_rtd = r_rtd / dev->rtd_nominal * 100.0; // normalize to 100 Ohm
 
     float rpoly = r_rtd;
 

@@ -24,10 +24,10 @@ public:
     std::string sensorName = "still2";
     std::string tz = "AEST-10AEDT,M10.1.0,M4.1.0/3";
     std::string ntpServer = "time.google.com";
-//    std::string refluxPumpUrl = "http://131.84.1.78:8080/pump";
-//    std::string condenserPumpUrl = "http://131.84.1.78:8080/pump";
-    std::string refluxPumpUrl = "http://reflux/pump";
-    std::string condenserPumpUrl = "http://condenser/pump";
+//    std::string refluxPump = "http://131.84.1.78:8080/pump";
+//    std::string condenserPump = "http://131.84.1.78:8080/pump";
+    std::string refluxPump = "http://reflux/pump";
+    std::string condenserPump = "http://condenser/pump";
 
 
 
@@ -52,8 +52,8 @@ public:
         nvs.retrieve("sensorName", sensorName);
         nvs.retrieve("tz", tz);
         nvs.retrieve("ntpServer", ntpServer);
-        nvs.retrieve("refluxPumpUrl", refluxPumpUrl);
-        nvs.retrieve("condenserPumpUrl", condenserPumpUrl);
+        nvs.retrieve("refluxPump", refluxPump);
+        nvs.retrieve("condenserPump", condenserPump);
     }
 
     void toJsonWrapper(JsonWrapper& json) const {
@@ -63,8 +63,8 @@ public:
         json.AddItem("sensorName", sensorName);
         json.AddItem("tz", tz);
         json.AddItem("ntpServer", ntpServer);
-        json.AddItem("refluxPumpUrl", refluxPumpUrl);
-        json.AddItem("condenserPumpUrl", condenserPumpUrl);
+        json.AddItem("refluxPump", refluxPump);
+        json.AddItem("condenserPump", condenserPump);
     }
 
     std::string toJson() const {
@@ -86,8 +86,8 @@ public:
         updateFieldIfChanged(json, "sensorName", sensorName, changes);
         updateFieldIfChanged(json, "tz", tz, changes);
         updateFieldIfChanged(json, "ntpServer", ntpServer, changes);
-        updateFieldIfChanged(json, "refluxPumpUrl", refluxPumpUrl, changes);
-        updateFieldIfChanged(json, "condenserPumpUrl", condenserPumpUrl, changes);
+        updateFieldIfChanged(json, "refluxPump", refluxPump, changes);
+        updateFieldIfChanged(json, "condenserPump", condenserPump, changes);
 
         for (const auto& [key, value] : changes) {
             nvs.store(key, value);

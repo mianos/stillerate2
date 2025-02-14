@@ -6,7 +6,8 @@
 Set the reflux pump url
 
 ```
-mosquitto_pub -h mqtt2.mianos.com -t "cmnd/still2/settings" -m '{"refluxPumpUrl": "http://reflux/pump"}'
+mosquitto_pub -h mqtt2.mianos.com -t "cmnd/still2/settings" -m '{"refluxPumpUrl": "http://reflux.mianos.com//pump"}'
+mosquitto_pub -h mqtt2.mianos.com -t "cmnd/still2/settings" -m '{"condenserPumpUrl": "http://condenser.mianos.com//pump"}'
 ```
 
 Set the device host name

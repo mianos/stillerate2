@@ -235,8 +235,8 @@ extern "C" void app_main() {
 	SettingsManager settings(nv);
 
 	//auto trigger = GPIOWrapper(GPIO_NUM_2);
-    RESTMotorController reflux_pump(settings.refluxPumpUrl, "reflux");
-    RESTMotorController condenser_pump(settings.condenserPumpUrl, "condenser");
+    RESTMotorController reflux_pump(settings.refluxPump, "reflux");
+    RESTMotorController condenser_pump(settings.condenserPump, "condenser");
     Max31865Sensor boiler_temp(GPIO_NUM_2);
     Max31865Sensor reflux_temp(GPIO_NUM_1);
 

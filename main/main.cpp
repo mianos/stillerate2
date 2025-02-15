@@ -237,8 +237,8 @@ extern "C" void app_main() {
 	//auto trigger = GPIOWrapper(GPIO_NUM_2);
     RESTMotorController reflux_pump(settings.refluxPump, "reflux");
     RESTMotorController condenser_pump(settings.condenserPump, "condenser");
-    Max31865Sensor boiler_temp(GPIO_NUM_2);
-    Max31865Sensor reflux_temp(GPIO_NUM_1);
+    Max31865Sensor boiler_temp(GPIO_NUM_1);
+    Max31865Sensor reflux_temp(GPIO_NUM_2);
 
 	ESP_LOGI(TAG, "Settings %s", settings.toJson().c_str());
 	pid_ctrl_parameter_t params = {};

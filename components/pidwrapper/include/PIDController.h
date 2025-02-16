@@ -4,12 +4,14 @@
 #include <cassert>
 #include <iostream>
 
+
+
 class PIDController {
 public:
     double kp{0.0}, ki{0.0}, kd{0.0}, set_point{0.0};
     double prev_error{0.0}, integral{0.0}, output_min{0.0}, output_max{100.0};
     double integral_limit{100.0}, lag_time_constant{0.0}, sample_time{0.0};
-    double prev_output{0.0}, rate_limit{0.0};
+    double prev_output{0.0}, rate_limit{0.0}, derivative_filter_state{0.0};
     NvsStorageManager& nvs;
     std::string nvsKey;
 
@@ -22,28 +24,33 @@ public:
         integral += input_error * sample_time;
         integral = std::clamp(integral, -integral_limit, integral_limit);
 
-        double filtered_derivative = (input_error - prev_error) / sample_time;
-        filtered_derivative = lag_time_constant * filtered_derivative + (1 - lag_time_constant) * (prev_output - prev_error);
+        double raw_derivative = (input_error - prev_error) / sample_time;
+        double alpha = sample_time / (lag_time_constant + sample_time);
+        derivative_filter_state += alpha * (raw_derivative - derivative_filter_state);
+        double filtered_derivative = derivative_filter_state;
 
-        double pid_output = kp * input_error + ki * integral + kd * filtered_derivative;
+        double pid_output = output_max - (kp * input_error + ki * integral + kd * filtered_derivative);
         pid_output = std::clamp(pid_output, output_min, output_max);
 
+        JsonWrapper json;
         if (rate_limit > 0.0) {
             double delta = pid_output - prev_output;
-            if (std::abs(delta) > rate_limit * sample_time)
+            json.AddItem("delta", delta);
+            if (std::abs(delta) > rate_limit * sample_time) {
                 pid_output = prev_output + std::copysign(rate_limit * sample_time, delta);
+            }
         }
 
         output = static_cast<float>(pid_output);
         prev_error = input_error;
         prev_output = pid_output;
 
-        JsonWrapper json;
         json.AddItem("input_error", input_error);
         json.AddItem("output", output);
+        json.AddItem("filtered_derivative", filtered_derivative);
+        json.AddItem("derivative_filter_state", derivative_filter_state);
         return json;
     }
-
     void setOutputLimits(double min, double max) { output_min = min; output_max = max; }
     void setIntegralLimit(double limit) { integral_limit = limit; }
     void setRateLimit(double limit) { rate_limit = limit; }

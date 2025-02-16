@@ -87,11 +87,11 @@ public:
             pidTimer = nullptr;
         }
 
+		pid.sample_time = periodMs / 1000.0;
         if (periodMs == 0) {
             ESP_LOGI("PIDControlTimer", "Timer stopped and not restarted (periodMs is 0)");
             return;
         }
-		pid.sample_time = periodMs / 1000.0;
         pidTimer = xTimerCreate("PIDTimer", pdMS_TO_TICKS(periodMs), pdTRUE, this, pidTimerCallback);
         if (pidTimer == nullptr) {
             ESP_LOGE("PIDControlTimer", "Failed to create timer");

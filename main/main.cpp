@@ -241,16 +241,7 @@ extern "C" void app_main() {
     Max31865Sensor reflux_temp(GPIO_NUM_2);
 
 	ESP_LOGI(TAG, "Settings %s", settings.toJson().c_str());
-	pid_ctrl_parameter_t params = {};
-	params.kp = 3.0;
-	params.ki = 0.1;
-	params.kd = 1.0;
-	params.max_output = 160.0;
-	params.min_output = 0;
-	params.min_integral = -100.0;
-	params.max_integral = 100.0;
-	params.cal_type = PID_CAL_TYPE_POSITIONAL;
-	PIDController pid(nv, 78.4, params);
+	PIDController pid(nv, 78.4, 0.01, 0.7, 0.01, 50, 0);
 
 
 	esp_mqtt_client_config_t mqtt_cfg = {};

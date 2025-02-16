@@ -1,6 +1,4 @@
 #pragma once
-
-#include "pid_ctrl.h"
 #include "JsonWrapper.h"
 #include "NvsStorageManager.h"
 #include <cassert>
@@ -8,127 +6,88 @@
 
 class PIDController {
 public:
-    // Constructor that takes a reference to an NvsStorageManager and initial PID parameters
-    PIDController(NvsStorageManager& nvsManager, double set_point, const pid_ctrl_parameter_t& initialParams, const std::string& nvsKey = "pid_params")
-        : nvs(nvsManager),
-          pid_handle(nullptr),
-          currentParams(initialParams),
-          nvsKey(nvsKey),
-		  set_point(set_point)
+    double kp;
+    double ki;
+    double kd;
+    double set_point;
+    double prev_error;
+    double integral;
+    double lag_time_constant;
+    double sample_time;
+    NvsStorageManager& nvs;
+    std::string nvsKey;
 
-    {
-        // Initialize PID control block
-        pid_ctrl_config_t config = {};
-        config.init_param = currentParams; // Ensure currentParams is fully initialized
-        esp_err_t result = pid_new_control_block(&config, &pid_handle);
-        assert(result == ESP_OK && "Failed to create PID control block");
-
-        // Load parameters or use initial parameters if not available
-        if (!loadParameters()) {
-            updateParameters(initialParams);
-        }
+    PIDController(NvsStorageManager& nvsManager, double set_point, double kp, double ki, double kd, double lag_time_constant, double sample_time, const std::string& nvsKey = "pid_params")
+        : kp(kp), ki(ki), kd(kd), set_point(set_point), prev_error(0.0), integral(0.0), lag_time_constant(lag_time_constant), sample_time(sample_time), nvs(nvsManager), nvsKey(nvsKey) {
+        loadParameters();
     }
 
-    ~PIDController() {
-        if (pid_handle) {
-            esp_err_t result = pid_del_control_block(pid_handle);
-            assert(result == ESP_OK && "Failed to delete PID control block");
-        }
+    JsonWrapper compute(double input_error, float& output) {  // Changed output to float reference
+        integral += input_error * sample_time;
+        double derivative = (input_error - prev_error) / sample_time;
+        double lagged_derivative = (derivative + prev_error * lag_time_constant / sample_time) / (1.0 + lag_time_constant / sample_time);
+        double pid_output = kp * input_error + ki * integral + kd * lagged_derivative;
+        output = static_cast<float>(pid_output);  // Cast output to float
+        prev_error = input_error;
+
+        JsonWrapper json;
+        json.AddItem("input_error", input_error);
+        json.AddItem("output", output);
+        return json;
     }
 
-    // Load parameters from NVS
-    bool loadParameters() {
-        std::string jsonParams;
-        if (nvs.retrieve(nvsKey, jsonParams)) {
-			ESP_LOGI("PID", "loaded '%s' from nvram", jsonParams.c_str());
-            return setParametersFromJson(jsonParams);
-        }
-        return false;
+    bool updateParameters(double new_kp, double new_ki, double new_kd, double new_lag_time_constant, double new_sample_time) {
+        kp = new_kp;
+        ki = new_ki;
+        kd = new_kd;
+        lag_time_constant = new_lag_time_constant;
+        sample_time = new_sample_time;
+        saveParameters();
+        return true;
     }
 
-    // Save parameters to NVS
-    void saveParameters() {
-        std::string jsonParams = getParametersAsJson();
-        nvs.store(nvsKey, jsonParams);
-    }
-
-    // Update the PID parameters
-    bool updateParameters(const pid_ctrl_parameter_t& params) {
-        currentParams = params; // Update local copy
-        esp_err_t result = pid_update_parameters(pid_handle, &params);
-        if (result == ESP_OK) {
-            saveParameters(); // Save updated parameters to NVS
+    bool setParametersFromJsonWrapper(const JsonWrapper& json) {
+        bool updated = false;
+        updated |= json.GetField("kp", kp, true);
+        updated |= json.GetField("ki", ki, true);
+        updated |= json.GetField("kd", kd, true);
+        updated |= json.GetField("set_point", set_point, true);
+        updated |= json.GetField("lag_time_constant", lag_time_constant, true);
+        updated |= json.GetField("sample_time", sample_time, true);
+        if (updated) {
+            saveParameters();
             return true;
         }
         return false;
     }
-    // Compute the PID output given an input error
-	JsonWrapper compute(float input_error, float& output) {
-        assert(pid_handle != nullptr && "PID handle is not initialized");
-        JsonWrapper json;
-        pid_compute(pid_handle, input_error, &output);
-        //esp_err_t result = pid_compute(pid_handle, input_error, &output);
-		// json.AddItem("cstatus", result);
-		json.AddItem("input_error", input_error);
-		json.AddItem("output", output);
-		return json;
-    }
 
-    // Reset the PID controller state
     bool reset() {
-        assert(pid_handle != nullptr && "PID handle is not initialized");
-        esp_err_t result = pid_reset_ctrl_block(pid_handle);
-        return result == ESP_OK;
+        prev_error = 0.0;
+        integral = 0.0;
+        return true;
     }
 
-	void toJsonWrapper(JsonWrapper& json) const {
-        json.AddItem("kp", currentParams.kp);
-        json.AddItem("ki", currentParams.ki);
-        json.AddItem("kd", currentParams.kd);
-        json.AddItem("max_output", currentParams.max_output);
-        json.AddItem("min_output", currentParams.min_output);
-        json.AddItem("max_integral", currentParams.max_integral);
-        json.AddItem("min_integral", currentParams.min_integral);
+    void toJsonWrapper(JsonWrapper& json) const {
+        json.AddItem("kp", kp);
+        json.AddItem("ki", ki);
+        json.AddItem("kd", kd);
         json.AddItem("set_point", set_point);
-	}
-
-    // Serialize current PID parameters to JSON
-    std::string getParametersAsJson() const {
-        JsonWrapper json;
-		toJsonWrapper(json);
-        return json.ToString();
+        json.AddItem("lag_time_constant", lag_time_constant);
+        json.AddItem("sample_time", sample_time);
     }
 
-    // Update parameters from JSON string
-    bool setParametersFromJson(const std::string& jsonString) {
-		return setParametersFromJsonWrapper(JsonWrapper::Parse(jsonString));
-	}
-
-    bool setParametersFromJsonWrapper(const JsonWrapper& json) {
-        pid_ctrl_parameter_t newParams = currentParams;  // Start with current parameters
-        bool updated = false;
-
-        updated |= json.GetField("kp", newParams.kp, true);
-        updated |= json.GetField("ki", newParams.ki, true);
-        updated |= json.GetField("kd", newParams.kd, true);
-        updated |= json.GetField("max_output", newParams.max_output, true);
-        updated |= json.GetField("min_output", newParams.min_output, true);
-        updated |= json.GetField("max_integral", newParams.max_integral, true);
-        updated |= json.GetField("min_integral", newParams.min_integral, true);
-        updated |= json.GetField("set_point", set_point, true);
-
-        if (updated) {
-			ESP_LOGI("PID", "Updating pid param");
-            return updateParameters(newParams);
+    bool loadParameters() {
+        std::string jsonParams;
+        if (nvs.retrieve(nvsKey, jsonParams)) {
+            JsonWrapper json = JsonWrapper::Parse(jsonParams);
+            return setParametersFromJsonWrapper(json);
         }
         return false;
     }
 
-private:
-    NvsStorageManager& nvs; // Reference to NVS storage manager
-    pid_ctrl_block_handle_t pid_handle; // Handle to the underlying PID control block
-    pid_ctrl_parameter_t currentParams; // Current PID parameters
-    std::string nvsKey; // NVS key for storing and retrieving PID parameters
-public:
-	double set_point;
+    void saveParameters() {
+        JsonWrapper json;
+        toJsonWrapper(json);
+        nvs.store(nvsKey, json.ToString());
+    }
 };

@@ -186,6 +186,15 @@ esp_err_t reportPidParamsHandler(MqttClient* client, const std::string& topic, c
 	return ESP_OK;
 }
 
+
+esp_err_t resetMaxHandler(MqttClient* client, const std::string& topic, const JsonWrapper& data, void* context) {
+    auto* ctx = static_cast<MqttContext*>(context); // Explicit cast required
+	ESP_RETURN_ON_FALSE(context, ESP_FAIL, "resetMaxHandler", "Context cannot be nullptr");
+	auto* ptt = ctx->ptimer;
+	ptt->clearFaults();
+	return ESP_OK;
+}
+
 esp_err_t pumpHandler(MqttClient* client, const std::string& topic, const JsonWrapper& data, void* context) {
     auto* ctx = static_cast<MqttContext*>(context);
 	ESP_RETURN_ON_FALSE(context, ESP_FAIL, "pumpHandler", "Context cannot be nullptr");
@@ -240,7 +249,7 @@ extern "C" void app_main() {
     Max31865Sensor reflux_temp(GPIO_NUM_2);
 
 	ESP_LOGI(TAG, "Settings %s", settings.toJson().c_str());
-	PIDController pid(nv, 78.4, 0.01, 0.7, 0.01, 50, 0);
+	PIDController pid(nv, 78.4, 0.01, 0.7, 0.01, 50, 0, 10);
 
 
 	esp_mqtt_client_config_t mqtt_cfg = {};
@@ -251,7 +260,7 @@ extern "C" void app_main() {
     MqttClient client(mqtt_cfg, settings.sensorName);
 
 	Emulation emu;
-	PIDControlTimer ptimer(pid, client, settings, reflux_temp, reflux_pump, emu);
+	PIDControlTimer ptimer(pid, client, settings, reflux_temp, reflux_pump, boiler_temp, emu);
 	WiFiManager wifiManager(nv, localEventHandler, nullptr);
 	xTaskCreate(button_task, "button_task", 2048, &wifiManager, 10, NULL);
 
@@ -273,6 +282,8 @@ extern "C" void app_main() {
 	client.registerHandler(topic, std::regex(topic), updateSettingsHandler, &ctx);
 	topic = "cmnd/" + settings.sensorName + "/wificonfig";
 	client.registerHandler(topic, std::regex(topic), wifiConfigHandler, &ctx);
+	topic = "cmnd/" + settings.sensorName + "/resetmax";
+	client.registerHandler(topic, std::regex(topic), resetMaxHandler, &ctx);
 
 
     if (xSemaphoreTake(wifiSemaphore, portMAX_DELAY) ) {

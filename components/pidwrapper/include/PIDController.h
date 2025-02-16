@@ -6,39 +6,37 @@
 
 class PIDController {
 public:
-    double kp{0.0};
-    double ki{0.0};
-    double kd{0.0};
-    double set_point{0.0};
-    double prev_error{0.0};
-    double integral{0.0};
-    double lag_time_constant{0.0};
-    double sample_time{0.0};
-    double output_min{0.0};
-    double output_max{100.0};
-    double integral_limit{100.0};
+    double kp{0.0}, ki{0.0}, kd{0.0}, set_point{0.0};
+    double prev_error{0.0}, integral{0.0}, output_min{0.0}, output_max{100.0};
+    double integral_limit{100.0}, lag_time_constant{0.0}, sample_time{0.0};
+    double prev_output{0.0}, rate_limit{0.0};
     NvsStorageManager& nvs;
     std::string nvsKey;
 
-    PIDController(NvsStorageManager& nvsManager, double set_point, double kp, double ki, double kd, double lag_time_constant, double sample_time, const std::string& nvsKey = "pid_params")
-        : kp{kp}, ki{ki}, kd{kd}, set_point{set_point}, lag_time_constant{lag_time_constant}, sample_time{sample_time}, nvs{nvsManager}, nvsKey{nvsKey} {
+    PIDController(NvsStorageManager& nvsManager, double set_point, double kp, double ki, double kd, double lag_time_constant, double sample_time, double rate_limit, const std::string& nvsKey = "pid_params")
+        : kp{kp}, ki{ki}, kd{kd}, set_point{set_point}, lag_time_constant{lag_time_constant}, sample_time{sample_time}, rate_limit{rate_limit}, nvs{nvsManager}, nvsKey{nvsKey} {
         loadParameters();
     }
 
     JsonWrapper compute(double input_error, float& output) {
         integral += input_error * sample_time;
-        if (integral > integral_limit) integral = integral_limit;
-        if (integral < -integral_limit) integral = -integral_limit;
+        integral = std::clamp(integral, -integral_limit, integral_limit);
 
-        double derivative = (input_error - prev_error) / sample_time;
-        double lagged_derivative = (derivative + prev_error * lag_time_constant / sample_time) / (1.0 + lag_time_constant / sample_time);
-        double pid_output = kp * input_error + ki * integral + kd * lagged_derivative;
+        double filtered_derivative = (input_error - prev_error) / sample_time;
+        filtered_derivative = lag_time_constant * filtered_derivative + (1 - lag_time_constant) * (prev_output - prev_error);
 
-        if (pid_output > output_max) pid_output = output_max;
-        if (pid_output < output_min) pid_output = output_min;
+        double pid_output = kp * input_error + ki * integral + kd * filtered_derivative;
+        pid_output = std::clamp(pid_output, output_min, output_max);
+
+        if (rate_limit > 0.0) {
+            double delta = pid_output - prev_output;
+            if (std::abs(delta) > rate_limit * sample_time)
+                pid_output = prev_output + std::copysign(rate_limit * sample_time, delta);
+        }
 
         output = static_cast<float>(pid_output);
         prev_error = input_error;
+        prev_output = pid_output;
 
         JsonWrapper json;
         json.AddItem("input_error", input_error);
@@ -48,6 +46,7 @@ public:
 
     void setOutputLimits(double min, double max) { output_min = min; output_max = max; }
     void setIntegralLimit(double limit) { integral_limit = limit; }
+    void setRateLimit(double limit) { rate_limit = limit; }
 
     bool setParametersFromJsonWrapper(const JsonWrapper& json) {
         bool updated = false;
@@ -60,6 +59,7 @@ public:
         updated |= json.GetField("output_min", output_min, true);
         updated |= json.GetField("output_max", output_max, true);
         updated |= json.GetField("integral_limit", integral_limit, true);
+        updated |= json.GetField("rate_limit", rate_limit, true);
         if (updated) { saveParameters(); return true; }
         return false;
     }
@@ -74,6 +74,7 @@ public:
         json.AddItem("output_min", output_min);
         json.AddItem("output_max", output_max);
         json.AddItem("integral_limit", integral_limit);
+        json.AddItem("rate_limit", rate_limit);
     }
 
     bool loadParameters() {

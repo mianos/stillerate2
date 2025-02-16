@@ -19,6 +19,7 @@ private:
 	SettingsManager& settings;
 	Max31865Sensor& reflux_temp_sensor;
 	RESTMotorController& reflux_cooling_motor;
+	Max31865Sensor& boiler_temp_sensor;
     Emulation& emu;
 
     static void pidTimerCallback(TimerHandle_t xTimer) {
@@ -63,11 +64,13 @@ public:
 			SettingsManager &settings,
 			Max31865Sensor& reflux_temp,
 			RESTMotorController& reflux_cooling_motor,
+			Max31865Sensor& boiler_temp,
 			Emulation& emu)
 		: pid(pid), mqtt_client(mqtt_client),
 		  settings(settings),
 		  reflux_temp_sensor(reflux_temp),
 		  reflux_cooling_motor(reflux_cooling_motor),
+		  boiler_temp_sensor(boiler_temp),
 		  emu(emu) {}
 
     ~PIDControlTimer() {
@@ -100,6 +103,10 @@ public:
             }
         }
     }
+	void clearFaults() {
+		reflux_temp_sensor.clearFaults();
+		boiler_temp_sensor.clearFaults();
+	}
 };
 
 

@@ -82,7 +82,7 @@ void PublishMqttInit(MqttClient& client, SettingsManager& settings, PIDControlle
         ESP_LOGE("NET_INFO", "Failed to get IP information");
     }
 	doc.AddItem("settings", "cmnd/" + settings.sensorName + "/settings");
-	doc.AddItem("period", 0);	// starts with Pid loop stopped
+	doc.AddItem("sample_time", 0);	// starts with Pid loop stopped
 	doc.AddItem("reflux", 0);	// reflux pump at 0
 	doc.AddItem("condenser", 0);	// condenser pump at 0
 	settings.toJsonWrapper(doc);
@@ -165,12 +165,12 @@ esp_err_t pidRun(MqttClient* client, const std::string& topic, const JsonWrapper
 	ESP_RETURN_ON_FALSE(context, ESP_FAIL, "pidRun", "Context cannot be nullptr");
 	auto* ptimer  = ctx->ptimer;
 
-    int period;
-    if (!data.GetField("period", period, true)) { // mandatory flag so not present will return false
-        ESP_LOGE(TAG, "pidRun failed: 'period' not found in JSON");
+    int sample_time;
+    if (!data.GetField("sample_time", sample_time, true)) { // mandatory flag so not present will return false
+        ESP_LOGE(TAG, "pidRun failed: 'sample_time' not found in JSON");
         return ESP_FAIL; // Handle the error appropriately
     }
-    ptimer->start(period * 1000);
+    ptimer->start(sample_time * 1000);
 	ESP_LOGI(TAG, "pidRun called '%s'", data.ToString().c_str());
 	return ESP_OK;
 }
@@ -180,7 +180,6 @@ esp_err_t reportPidParamsHandler(MqttClient* client, const std::string& topic, c
     auto* ctx = static_cast<MqttContext*>(context); // Explicit cast required
 	ESP_RETURN_ON_FALSE(context, ESP_FAIL, "reportParamsHandler", "Context cannot be nullptr");
     JsonWrapper doc;
-	doc.AddTime();
 	ctx->pid->toJsonWrapper(doc);
     client->publish("tele/" + client->sensorName + "/pidparams", doc.ToString());;
 	ESP_LOGI(TAG, "sent pid params '%s'", doc.ToString().c_str());

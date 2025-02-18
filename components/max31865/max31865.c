@@ -314,3 +314,25 @@ esp_err_t max31865_clear_fault_status(max31865_t *dev)
 
     return ESP_OK;
 }
+
+
+/**
+ * Reset the MAX31865 to default config, threshold registers, and clear faults.
+ */
+esp_err_t max31865_reset(max31865_t *device)
+{
+    CHECK_ARG(device);
+
+    CHECK(write_reg_8(device, REG_CONFIG, 0));
+    CHECK(write_reg_8(device, (uint8_t)(REG_HIGH_FAULT_MSB | 0x80), 0xFF));
+    CHECK(write_reg_8(device, (uint8_t)((REG_HIGH_FAULT_MSB + 1) | 0x80), 0xFF));
+    CHECK(write_reg_8(device, (uint8_t)(REG_LOW_FAULT_MSB | 0x80), 0x00));
+    CHECK(write_reg_8(device, (uint8_t)((REG_LOW_FAULT_MSB + 1) | 0x80), 0x00));
+
+    uint8_t configValueRegister;
+    CHECK(read_reg_8(device, REG_CONFIG, &configValueRegister));
+    configValueRegister |= BIT_CONFIG_FAULT_CLEAR;
+    CHECK(write_reg_8(device, REG_CONFIG, configValueRegister));
+
+    return ESP_OK;
+}

@@ -34,6 +34,8 @@ private:
 public:
     SensorLoopTask(MqttClient& mqtt_client, SettingsManager &settings, Max31865Sensor& boiler_temp, int period=30000)
         : mqtt_client(mqtt_client), settings(settings), boiler_temp(boiler_temp) {
+
+		ESP_LOGE("SensorLoopTask", "Creating task");
         sensorTimer = xTimerCreate("SensorTimer", pdMS_TO_TICKS(period), pdTRUE, this, timerCallback);
         if (sensorTimer == nullptr) {
             ESP_LOGE("SensorLoopTask", "Failed to create timer");

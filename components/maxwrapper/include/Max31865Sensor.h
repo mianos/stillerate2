@@ -1,7 +1,5 @@
 #pragma once
 
-#include <freertos/FreeRTOS.h>
-#include <freertos/task.h>
 #include <esp_timer.h>
 #include <esp_log.h>
 #include <esp_err.h>
@@ -45,11 +43,7 @@ public:
         config.connection = MAX31865_3WIRE;
 
         SPIBusInitializer::initialize(mosiIO, misoIO, clkIO);
-		vTaskDelay(pdMS_TO_TICKS(100));
         initializeSensor();
-		vTaskDelay(pdMS_TO_TICKS(100));
-
-
     }
 
     float measure() {
@@ -62,8 +56,8 @@ public:
         return temperature;
     }
 
-	esp_err_t clearFaults() {
-		return max31865_clear_fault_status(&dev);
+	esp_err_t reset() {
+		return max31865_reset(&dev);
 	}
 
 private:

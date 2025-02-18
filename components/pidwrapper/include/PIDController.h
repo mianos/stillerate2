@@ -3,6 +3,7 @@
 #include "NvsStorageManager.h"
 #include <cassert>
 #include <iostream>
+#include <string>
 
 
 
@@ -20,37 +21,48 @@ public:
         loadParameters();
     }
 
-    JsonWrapper compute(double input_error, float& output) {
-        integral += input_error * sample_time;
+
+    JsonWrapper compute(double current_temp, float& output) {
+        double error = set_point - current_temp; // Heating-mode PID error
+
+        double original_integral = integral;
+        integral += error * sample_time;
         integral = std::clamp(integral, -integral_limit, integral_limit);
 
-        double raw_derivative = (input_error - prev_error) / sample_time;
+        double raw_derivative = (error - prev_error) / sample_time;
         double alpha = sample_time / (lag_time_constant + sample_time);
         derivative_filter_state += alpha * (raw_derivative - derivative_filter_state);
-        double filtered_derivative = derivative_filter_state;
 
-        double pid_output = output_max - (kp * input_error + ki * integral + kd * filtered_derivative);
-        pid_output = std::clamp(pid_output, output_min, output_max);
+        double heat_output = std::clamp((kp * error) + (ki * integral) + (kd * derivative_filter_state), output_min, output_max);
 
-        JsonWrapper json;
+        if (heat_output == output_min || heat_output == output_max) integral = original_integral;
+
         if (rate_limit > 0.0) {
-            double delta = pid_output - prev_output;
-            json.AddItem("delta", delta);
-            if (std::abs(delta) > rate_limit * sample_time) {
-                pid_output = prev_output + std::copysign(rate_limit * sample_time, delta);
+            double delta = heat_output - prev_output;
+            double max_delta = rate_limit * sample_time;
+            if (std::abs(delta) > max_delta) {
+                heat_output = prev_output + std::copysign(max_delta, delta);
+                heat_output = std::clamp(heat_output, output_min, output_max);
             }
         }
 
-        output = static_cast<float>(pid_output);
-        prev_error = input_error;
-        prev_output = pid_output;
+        double cooling_output = std::clamp((output_max - output_min) - heat_output, output_min, output_max);
 
-        json.AddItem("input_error", input_error);
-        json.AddItem("output", output);
-        json.AddItem("filtered_derivative", filtered_derivative);
-        json.AddItem("derivative_filter_state", derivative_filter_state);
+        output = static_cast<float>(cooling_output);
+        prev_error = error;
+        prev_output = cooling_output;
+
+        JsonWrapper json;
+        json.AddItem("current_temp", current_temp);
+        json.AddItem("error", error);
+        json.AddItem("heat_output", heat_output);
+        json.AddItem("output", cooling_output);
+        json.AddItem("integral", integral);
+        json.AddItem("filtered_derivative", derivative_filter_state);
         return json;
     }
+
+
     void setOutputLimits(double min, double max) { output_min = min; output_max = max; }
     void setIntegralLimit(double limit) { integral_limit = limit; }
     void setRateLimit(double limit) { rate_limit = limit; }

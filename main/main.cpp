@@ -191,7 +191,7 @@ esp_err_t resetMaxHandler(MqttClient* client, const std::string& topic, const Js
     auto* ctx = static_cast<MqttContext*>(context); // Explicit cast required
 	ESP_RETURN_ON_FALSE(context, ESP_FAIL, "resetMaxHandler", "Context cannot be nullptr");
 	auto* ptt = ctx->ptimer;
-	ptt->clearFaults();
+	ptt->resetAll();
 	return ESP_OK;
 }
 

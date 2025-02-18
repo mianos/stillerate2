@@ -217,6 +217,9 @@ esp_err_t max31865_get_fault_status(max31865_t *dev, uint8_t *fault_status);
  */
 esp_err_t max31865_clear_fault_status(max31865_t *dev);
 
+/** try and reset
+ **/
+esp_err_t max31865_reset(max31865_t *device);
 #ifdef __cplusplus
 }
 #endif

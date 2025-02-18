@@ -42,13 +42,9 @@ private:
 		tjs.AddTime();
 		mqtt_client.publish(std::string("tele/") + settings.sensorName + "/temp", tjs.ToString());
 
-		auto error = pid.set_point - reflux_temp;
 		float output;
-	    auto rjs = pid.compute(error, output);
-		auto cooler_duty = 100.0 - output;
-		reflux_cooling_motor.setDutyPercentage(cooler_duty);
-		rjs.AddItem("cooler_duty", cooler_duty);
-
+	    auto rjs = pid.compute(reflux_temp, output);
+		reflux_cooling_motor.setDutyPercentage(output);
 
 		if (emu.enabled) {
 		    rjs.AddItem("emulation", true);
@@ -103,9 +99,9 @@ public:
             }
         }
     }
-	void clearFaults() {
-		reflux_temp_sensor.clearFaults();
-		boiler_temp_sensor.clearFaults();
+	void resetAll() {
+		reflux_temp_sensor.reset();
+		boiler_temp_sensor.reset();
 	}
 };
 

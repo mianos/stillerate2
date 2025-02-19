@@ -28,6 +28,7 @@
 #include "SensorLoopTask.h"
 #include "RESTMotorController.h"
 #include "SettingsManager.h"
+#include "Ota.h"
 
 static const char *TAG = "stillerate2";
 

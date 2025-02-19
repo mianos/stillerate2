@@ -7,6 +7,7 @@ idf_component_register(SRCS main.cpp
                 REQUIRES
 				    driver
                     esp_timer
+					esp_https_ota esp_system
 					mqtt
                     mqttwrapper
                     button

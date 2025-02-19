@@ -42,7 +42,7 @@ private:
 		tjs.AddTime();
 		mqtt_client.publish(std::string("tele/") + settings.sensorName + "/temp", tjs.ToString());
 
-		float output;
+		double output;
 	    auto rjs = pid.compute(reflux_temp, output);
 		reflux_cooling_motor.setDutyPercentage(output);
 

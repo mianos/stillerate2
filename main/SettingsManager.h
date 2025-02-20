@@ -28,6 +28,7 @@ public:
 //    std::string condenserPump = "http://131.84.1.78:8080/pump";
     std::string refluxPump = "http://reflux/pump";
     std::string condenserPump = "http://condenser/pump";
+    std::string otaUrl = "http://ota.mianos.com";
 
 
 
@@ -54,6 +55,7 @@ public:
         nvs.retrieve("ntpServer", ntpServer);
         nvs.retrieve("refluxPump", refluxPump);
         nvs.retrieve("condenserPump", condenserPump);
+        nvs.retrieve("otaUrl", otaUrl);
     }
 
     void toJsonWrapper(JsonWrapper& json) const {
@@ -65,6 +67,7 @@ public:
         json.AddItem("ntpServer", ntpServer);
         json.AddItem("refluxPump", refluxPump);
         json.AddItem("condenserPump", condenserPump);
+        json.AddItem("otaUrl", condenserPump);
     }
 
     std::string toJson() const {
@@ -88,6 +91,7 @@ public:
         updateFieldIfChanged(json, "ntpServer", ntpServer, changes);
         updateFieldIfChanged(json, "refluxPump", refluxPump, changes);
         updateFieldIfChanged(json, "condenserPump", condenserPump, changes);
+        updateFieldIfChanged(json, "otaUrl", otaUrl, changes);
 
         for (const auto& [key, value] : changes) {
             nvs.store(key, value);

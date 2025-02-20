@@ -8,5 +8,6 @@ struct MqttContext {
 	class RESTMotorController *condenser_pump;
 	class SettingsManager *settings;
 	class WiFiManager *wifiManager;
+	class OTAUpdater *ota;
 };
 

@@ -238,6 +238,22 @@ esp_err_t wifiConfigHandler(MqttClient* client, const std::string& topic, const 
 	return ESP_OK;
 }
 
+
+esp_err_t otaHandler(MqttClient* client, const std::string& topic, const JsonWrapper& data, void* context) {
+    auto* ctx = static_cast<MqttContext*>(context);
+	ESP_RETURN_ON_FALSE(context, ESP_FAIL, "wifiConfig", "Context cannot be nullptr");
+
+    std::string ota_url;
+    if (data.GetField("ota_url", ota_url, true)) {
+        ctx->ota->perform_update(ota_url);
+        ESP_LOGI(TAG, "Flashed from '%s'", ota_url.c_str());
+    } else {
+        ESP_LOGW(TAG, "Missing or invalid 'ota_url'");
+    }
+	return ESP_OK;
+}
+
+
 extern "C" void app_main() {
 	wifiSemaphore = xSemaphoreCreateBinary();
 	NvsStorageManager nv;
@@ -250,7 +266,7 @@ extern "C" void app_main() {
     Max31865Sensor reflux_temp(GPIO_NUM_2);
 
 	ESP_LOGI(TAG, "Settings %s", settings.toJson().c_str());
-	PIDController pid(nv, 78.4, 0.01, 0.7, 0.01, 50, 0, 10);
+	PIDController pid(nv);
 
 
 	esp_mqtt_client_config_t mqtt_cfg = {};
@@ -265,8 +281,12 @@ extern "C" void app_main() {
 	WiFiManager wifiManager(nv, localEventHandler, nullptr);
 	xTaskCreate(button_task, "button_task", 2048, &wifiManager, 10, NULL);
 
-	MqttContext ctx{&pid, &emu, &ptimer, &reflux_pump, &condenser_pump, &settings, &wifiManager};
+	OTAUpdater ota(settings.otaUrl, [&client, &settings](int progress) {
+		client.publish("tele/" + settings.sensorName + "/ota", std::to_string(progress));
+		ESP_LOGI("OTA", "%d", progress);
+	});
 
+	MqttContext ctx{&pid, &emu, &ptimer, &reflux_pump, &condenser_pump, &settings, &wifiManager, &ota};
 	SensorLoopTask slt{client, settings, boiler_temp};
 
 	std::string topic = "cmnd/" + settings.sensorName + "/pid";
@@ -285,6 +305,8 @@ extern "C" void app_main() {
 	client.registerHandler(topic, std::regex(topic), wifiConfigHandler, &ctx);
 	topic = "cmnd/" + settings.sensorName + "/resetmax";
 	client.registerHandler(topic, std::regex(topic), resetMaxHandler, &ctx);
+	topic = "cmnd/" + settings.sensorName + "/ota";
+	client.registerHandler(topic, std::regex(topic), otaHandler, &ctx);
 
 
     if (xSemaphoreTake(wifiSemaphore, portMAX_DELAY) ) {

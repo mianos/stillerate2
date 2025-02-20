@@ -13,17 +13,11 @@ class OTAUpdater {
 public:
     std::string url;
     std::function<void(int)> progress_callback;
+    int progress_step;  // Progress reporting interval
 
-    OTAUpdater(const std::string& ota_url)
-        : url(ota_url),
-          progress_callback([](int progress) {
-              ESP_LOGI("OTA", "Progress: %d%%", progress);
-          }) { }
-
-    // Allow setting a custom progress callback
-    void set_progress_callback(std::function<void(int)> callback) {
-        progress_callback = std::move(callback);
-    }
+    // Constructor with progress callback and percentage step (default 10%)
+    OTAUpdater(const std::string& ota_url, std::function<void(int)> callback, int step = 10)
+        : url(ota_url), progress_callback(std::move(callback)), progress_step(step) { }
 
     void start(const std::string& optional_url = "") {
         pending_url = optional_url.empty() ? url : optional_url;
@@ -54,7 +48,7 @@ public:
             return;
         }
 
-        int last_reported_progress = -1;
+        int last_reported_progress = -progress_step;  // Ensure 0% is reported
 
         while (true) {
             ret = esp_https_ota_perform(ota_handle);
@@ -66,15 +60,16 @@ public:
                 if (image_size > 0) {
                     int progress_percent = (received_size * 100) / image_size;
 
-                    // Report progress only if changed
-                    if (progress_percent != last_reported_progress) {
-                        progress_callback(progress_percent);
+                    // Report only at progress_step intervals
+                    if (progress_percent / progress_step != last_reported_progress / progress_step) {
+                        progress_callback((progress_percent / progress_step) * progress_step);
                         last_reported_progress = progress_percent;
                     }
                 }
 
-                vTaskDelay(pdMS_TO_TICKS(50));  // Reduced delay for better throughput
+                vTaskDelay(pdMS_TO_TICKS(50));
             } else if (ret == ESP_OK) {
+                progress_callback(100);  // Ensure 100% is reported
                 ESP_LOGI("OTA", "Download complete");
                 break;
             } else {

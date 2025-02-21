@@ -83,7 +83,7 @@ public:
             pidTimer = nullptr;
         }
 
-		pid.sample_time = periodMs / 1000.0;
+		pid.set_sample_time(periodMs / 1000.0);
         if (periodMs == 0) {
             ESP_LOGI("PIDControlTimer", "Timer stopped and not restarted (periodMs is 0)");
             return;

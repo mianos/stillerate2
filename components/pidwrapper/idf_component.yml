@@ -1,2 +1,6 @@
 version: "0.0.1"
 description: "Pid controller with lag control"
+dependencies:
+  AutoPID-for-ESP-IDF:
+    git: https://github.com/BrandonElectronic/AutoPID-for-ESP-IDF.git
+    version: main

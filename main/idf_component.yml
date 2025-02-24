@@ -1,5 +1,4 @@
 dependencies:
-  espressif/pid_ctrl: "^0.2.0"
   jsonwrapper:
     git: git@github.com:mianos/mianesp.git
     path: components/jsonwrapper

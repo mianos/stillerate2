@@ -44,10 +44,12 @@
         "y": 100,
         "wires": [
             [
-                "9c157de7a8c8a93f"
+                "9c157de7a8c8a93f",
+                "15811c80180f4d0f"
             ],
             [
-                "aac1b1fa69090b09"
+                "aac1b1fa69090b09",
+                "aa25d9e2770d5196"
             ]
         ]
     },
@@ -57,8 +59,8 @@
         "z": "b8f36cbcfc882e5f",
         "group": "5ee9dce5463cd662",
         "name": "",
-        "label": "Reflux Temp",
-        "order": 1,
+        "label": "",
+        "order": 2,
         "chartType": "line",
         "category": "topic",
         "categoryType": "msg",
@@ -89,8 +91,8 @@
         "width": "6",
         "height": "6",
         "className": "",
-        "x": 710,
-        "y": 60,
+        "x": 860,
+        "y": 180,
         "wires": [
             []
         ]
@@ -133,8 +135,8 @@
         "width": "0",
         "height": "0",
         "className": "",
-        "x": 710,
-        "y": 100,
+        "x": 870,
+        "y": 240,
         "wires": [
             []
         ]
@@ -153,7 +155,7 @@
         "rh": 0,
         "inputs": 0,
         "x": 190,
-        "y": 340,
+        "y": 420,
         "wires": [
             [
                 "719014c12aa211fb"
@@ -164,16 +166,16 @@
         "id": "719014c12aa211fb",
         "type": "function",
         "z": "b8f36cbcfc882e5f",
-        "name": "function 1",
-        "func": "var sensors = ['input_error', 'output'];\nvar messages = [];\n\n// Iterate over the predefined sensor order\nfor (var i = 0; i < sensors.length; i++) {\n    var sensor = sensors[i];\n    \n    // Check if the current sensor is present in the payload\n    if (msg.payload.hasOwnProperty(sensor)) {\n        // Create a message for the current sensor\n        var message = {\n            topic: msg.topic + '/' + sensor, // Append sensor name to the topic\n            payload: msg.payload[sensor], // Set temperature as payload\n            timestamp: msg.payload.time // Include timestamp in the message\n        };\n\n        // Add the message to the array\n        messages.push(message);\n    } else {\n        // If the sensor is not present, add a null message to the array\n        messages.push(null);\n    }\n}\n\n// Return the array of messages\nreturn messages;\n",
+        "name": "Split message to 2 outputs",
+        "func": "var sensors = ['error', 'output'];\nvar messages = [];\n\n// Iterate over the predefined sensor order\nfor (var i = 0; i < sensors.length; i++) {\n    var sensor = sensors[i];\n    \n    // Check if the current sensor is present in the payload\n    if (msg.payload.hasOwnProperty(sensor)) {\n        // Create a message for the current sensor\n        var message = {\n            topic: msg.topic + '/' + sensor, // Append sensor name to the topic\n            payload: msg.payload[sensor], // Set temperature as payload\n            timestamp: msg.payload.time // Include timestamp in the message\n        };\n\n        // Add the message to the array\n        messages.push(message);\n    } else {\n        // If the sensor is not present, add a null message to the array\n        messages.push(null);\n    }\n}\n\n// Return the array of messages\nreturn messages;\n",
         "outputs": 2,
         "timeout": 0,
         "noerr": 0,
         "initialize": "",
         "finalize": "",
         "libs": [],
-        "x": 400,
-        "y": 340,
+        "x": 460,
+        "y": 420,
         "wires": [
             [
                 "1b4ddda823d0dc7e"
@@ -184,56 +186,12 @@
         ]
     },
     {
-        "id": "1b4ddda823d0dc7e",
-        "type": "ui-chart",
-        "z": "b8f36cbcfc882e5f",
-        "group": "afe3e22da0747d54",
-        "name": "",
-        "label": "Input Error",
-        "order": 4,
-        "chartType": "line",
-        "category": "topic",
-        "categoryType": "msg",
-        "xAxisProperty": "",
-        "xAxisPropertyType": "msg",
-        "xAxisType": "time",
-        "yAxisProperty": "",
-        "ymin": "",
-        "ymax": "",
-        "action": "append",
-        "pointShape": "false",
-        "pointRadius": 4,
-        "showLegend": false,
-        "removeOlder": 1,
-        "removeOlderUnit": "3600",
-        "removeOlderPoints": "",
-        "colors": [
-            "#1f77b4",
-            "#aec7e8",
-            "#ff7f0e",
-            "#2ca02c",
-            "#98df8a",
-            "#d62728",
-            "#ff9896",
-            "#9467bd",
-            "#c5b0d5"
-        ],
-        "width": "0",
-        "height": "0",
-        "className": "",
-        "x": 610,
-        "y": 300,
-        "wires": [
-            []
-        ]
-    },
-    {
         "id": "b569b443fbd3d7f7",
         "type": "ui-chart",
         "z": "b8f36cbcfc882e5f",
         "group": "afe3e22da0747d54",
         "name": "",
-        "label": "Output",
+        "label": "Cooler Output",
         "order": 3,
         "chartType": "line",
         "category": "topic",
@@ -265,179 +223,10 @@
         "width": "0",
         "height": "0",
         "className": "",
-        "x": 610,
-        "y": 380,
+        "x": 840,
+        "y": 420,
         "wires": [
             []
-        ]
-    },
-    {
-        "id": "f6bd4dbda2cecba9",
-        "type": "change",
-        "z": "b8f36cbcfc882e5f",
-        "name": "",
-        "rules": [
-            {
-                "t": "move",
-                "p": "payload",
-                "pt": "msg",
-                "to": "payload.value",
-                "tot": "msg"
-            },
-            {
-                "t": "set",
-                "p": "payload.name",
-                "pt": "msg",
-                "to": "condenser",
-                "tot": "str"
-            }
-        ],
-        "action": "",
-        "property": "",
-        "from": "",
-        "to": "",
-        "reg": false,
-        "x": 360,
-        "y": 420,
-        "wires": [
-            [
-                "89964bdd38b10dbc"
-            ]
-        ]
-    },
-    {
-        "id": "89964bdd38b10dbc",
-        "type": "mqtt out",
-        "z": "b8f36cbcfc882e5f",
-        "name": "",
-        "topic": "cmnd/still2/pump",
-        "qos": "",
-        "retain": "",
-        "respTopic": "",
-        "contentType": "",
-        "userProps": "",
-        "correl": "",
-        "expiry": "",
-        "broker": "3fe3ac59af05955a",
-        "x": 650,
-        "y": 420,
-        "wires": []
-    },
-    {
-        "id": "bc7e2436136eed79",
-        "type": "change",
-        "z": "b8f36cbcfc882e5f",
-        "name": "",
-        "rules": [
-            {
-                "t": "move",
-                "p": "payload",
-                "pt": "msg",
-                "to": "payload.value",
-                "tot": "msg"
-            },
-            {
-                "t": "set",
-                "p": "payload.name",
-                "pt": "msg",
-                "to": "reflux",
-                "tot": "str"
-            }
-        ],
-        "action": "",
-        "property": "",
-        "from": "",
-        "to": "",
-        "reg": false,
-        "x": 360,
-        "y": 480,
-        "wires": [
-            [
-                "89964bdd38b10dbc"
-            ]
-        ]
-    },
-    {
-        "id": "bde06e267b92f170",
-        "type": "ui-slider",
-        "z": "b8f36cbcfc882e5f",
-        "group": "3a79b1215aa13ae5",
-        "name": "",
-        "label": "Condenser",
-        "tooltip": "",
-        "order": 0,
-        "width": 0,
-        "height": 0,
-        "passthru": false,
-        "outs": "end",
-        "topic": "topic",
-        "topicType": "msg",
-        "thumbLabel": true,
-        "min": 0,
-        "max": "100",
-        "step": 1,
-        "className": "",
-        "x": 150,
-        "y": 420,
-        "wires": [
-            [
-                "f6bd4dbda2cecba9"
-            ]
-        ]
-    },
-    {
-        "id": "5ecf77648bbeeda7",
-        "type": "ui-slider",
-        "z": "b8f36cbcfc882e5f",
-        "group": "3a79b1215aa13ae5",
-        "name": "",
-        "label": "Reflux - manual",
-        "tooltip": "",
-        "order": 0,
-        "width": 0,
-        "height": 0,
-        "passthru": false,
-        "outs": "end",
-        "topic": "topic",
-        "topicType": "msg",
-        "thumbLabel": true,
-        "min": 0,
-        "max": "100",
-        "step": 1,
-        "className": "",
-        "x": 160,
-        "y": 480,
-        "wires": [
-            [
-                "bc7e2436136eed79"
-            ]
-        ]
-    },
-    {
-        "id": "f605620d23d27738",
-        "type": "ui-text-input",
-        "z": "b8f36cbcfc882e5f",
-        "group": "e459568c74dfd8b2",
-        "name": "",
-        "label": "Target Temp",
-        "order": 0,
-        "width": 0,
-        "height": 0,
-        "topic": "topic",
-        "topicType": "msg",
-        "mode": "number",
-        "delay": 300,
-        "passthru": false,
-        "sendOnDelay": false,
-        "sendOnBlur": true,
-        "sendOnEnter": true,
-        "className": "",
-        "x": 510,
-        "y": 940,
-        "wires": [
-            [
-                "9b4087f10b4fcf62"
-            ]
         ]
     },
     {
@@ -468,24 +257,6 @@
         ]
     },
     {
-        "id": "a83a0c73e4e7ede0",
-        "type": "mqtt out",
-        "z": "b8f36cbcfc882e5f",
-        "name": "",
-        "topic": "cmnd/still2/pid",
-        "qos": "",
-        "retain": "",
-        "respTopic": "",
-        "contentType": "",
-        "userProps": "",
-        "correl": "",
-        "expiry": "",
-        "broker": "3fe3ac59af05955a",
-        "x": 1160,
-        "y": 680,
-        "wires": []
-    },
-    {
         "id": "adece1794b5b00d0",
         "type": "mqtt out",
         "z": "b8f36cbcfc882e5f",
@@ -499,56 +270,9 @@
         "correl": "",
         "expiry": "",
         "broker": "3fe3ac59af05955a",
-        "x": 770,
-        "y": 220,
+        "x": 450,
+        "y": 200,
         "wires": []
-    },
-    {
-        "id": "9b4087f10b4fcf62",
-        "type": "function",
-        "z": "b8f36cbcfc882e5f",
-        "name": "parse string to float",
-        "func": "// Parse the string received from the input field into a number\nvar numberValue = parseFloat(msg.payload);\n\n// Check if the parsed value is a valid number\nif (!isNaN(numberValue)) {\n    // Update the payload with the parsed number\n    msg.payload = numberValue;\n    return msg;\n} else {\n    // If the parsed value is not a valid number, log an error and return null\n    node.error('Invalid number received from input field: ' + msg.payload);\n    return null;\n}\n",
-        "outputs": 1,
-        "timeout": 0,
-        "noerr": 0,
-        "initialize": "",
-        "finalize": "",
-        "libs": [],
-        "x": 710,
-        "y": 940,
-        "wires": [
-            [
-                "bb0b8fd17c112ee2"
-            ]
-        ]
-    },
-    {
-        "id": "bb0b8fd17c112ee2",
-        "type": "change",
-        "z": "b8f36cbcfc882e5f",
-        "name": "",
-        "rules": [
-            {
-                "t": "move",
-                "p": "payload",
-                "pt": "msg",
-                "to": "payload.set_point",
-                "tot": "msg"
-            }
-        ],
-        "action": "",
-        "property": "",
-        "from": "",
-        "to": "",
-        "reg": false,
-        "x": 930,
-        "y": 940,
-        "wires": [
-            [
-                "a83a0c73e4e7ede0"
-            ]
-        ]
     },
     {
         "id": "f674675a643b348a",
@@ -562,8 +286,8 @@
         "initialize": "",
         "finalize": "",
         "libs": [],
-        "x": 350,
-        "y": 220,
+        "x": 170,
+        "y": 280,
         "wires": [
             [
                 "234b38437b0d8855"
@@ -580,7 +304,7 @@
                 "t": "move",
                 "p": "payload",
                 "pt": "msg",
-                "to": "payload.period",
+                "to": "payload.sample_time",
                 "tot": "msg"
             }
         ],
@@ -589,529 +313,11 @@
         "from": "",
         "to": "",
         "reg": false,
-        "x": 550,
-        "y": 220,
+        "x": 390,
+        "y": 280,
         "wires": [
             [
                 "adece1794b5b00d0"
-            ]
-        ]
-    },
-    {
-        "id": "ddb4b168328b970d",
-        "type": "ui-text-input",
-        "z": "b8f36cbcfc882e5f",
-        "group": "2052b505fc6e7465",
-        "name": "",
-        "label": "kP",
-        "order": 0,
-        "width": 0,
-        "height": 0,
-        "topic": "topic",
-        "topicType": "msg",
-        "mode": "number",
-        "delay": 300,
-        "passthru": false,
-        "sendOnDelay": false,
-        "sendOnBlur": true,
-        "sendOnEnter": true,
-        "className": "",
-        "x": 490,
-        "y": 580,
-        "wires": [
-            [
-                "834563cdefeb56dd"
-            ]
-        ]
-    },
-    {
-        "id": "834563cdefeb56dd",
-        "type": "function",
-        "z": "b8f36cbcfc882e5f",
-        "name": "parse string to float",
-        "func": "// Parse the string received from the input field into a number\nvar numberValue = parseFloat(msg.payload);\n\n// Check if the parsed value is a valid number\nif (!isNaN(numberValue)) {\n    // Update the payload with the parsed number\n    msg.payload = numberValue;\n    return msg;\n} else {\n    // If the parsed value is not a valid number, log an error and return null\n    node.error('Invalid number received from input field: ' + msg.payload);\n    return null;\n}\n",
-        "outputs": 1,
-        "timeout": 0,
-        "noerr": 0,
-        "initialize": "",
-        "finalize": "",
-        "libs": [],
-        "x": 710,
-        "y": 580,
-        "wires": [
-            [
-                "cfe67fadacb67a6c"
-            ]
-        ]
-    },
-    {
-        "id": "cfe67fadacb67a6c",
-        "type": "change",
-        "z": "b8f36cbcfc882e5f",
-        "name": "",
-        "rules": [
-            {
-                "t": "move",
-                "p": "payload",
-                "pt": "msg",
-                "to": "payload.kp",
-                "tot": "msg"
-            }
-        ],
-        "action": "",
-        "property": "",
-        "from": "",
-        "to": "",
-        "reg": false,
-        "x": 930,
-        "y": 580,
-        "wires": [
-            [
-                "a83a0c73e4e7ede0"
-            ]
-        ]
-    },
-    {
-        "id": "771567b1dad70170",
-        "type": "ui-text-input",
-        "z": "b8f36cbcfc882e5f",
-        "group": "2052b505fc6e7465",
-        "name": "",
-        "label": "kI",
-        "order": 0,
-        "width": 0,
-        "height": 0,
-        "topic": "topic",
-        "topicType": "msg",
-        "mode": "number",
-        "delay": 300,
-        "passthru": false,
-        "sendOnDelay": false,
-        "sendOnBlur": true,
-        "sendOnEnter": true,
-        "className": "",
-        "x": 490,
-        "y": 620,
-        "wires": [
-            [
-                "c425f6f6df97d0ee"
-            ]
-        ]
-    },
-    {
-        "id": "c425f6f6df97d0ee",
-        "type": "function",
-        "z": "b8f36cbcfc882e5f",
-        "name": "parse string to float",
-        "func": "// Parse the string received from the input field into a number\nvar numberValue = parseFloat(msg.payload);\n\n// Check if the parsed value is a valid number\nif (!isNaN(numberValue)) {\n    // Update the payload with the parsed number\n    msg.payload = numberValue;\n    return msg;\n} else {\n    // If the parsed value is not a valid number, log an error and return null\n    node.error('Invalid number received from input field: ' + msg.payload);\n    return null;\n}\n",
-        "outputs": 1,
-        "timeout": 0,
-        "noerr": 0,
-        "initialize": "",
-        "finalize": "",
-        "libs": [],
-        "x": 710,
-        "y": 620,
-        "wires": [
-            [
-                "3032e32150aed710"
-            ]
-        ]
-    },
-    {
-        "id": "3032e32150aed710",
-        "type": "change",
-        "z": "b8f36cbcfc882e5f",
-        "name": "",
-        "rules": [
-            {
-                "t": "move",
-                "p": "payload",
-                "pt": "msg",
-                "to": "payload.ki",
-                "tot": "msg"
-            }
-        ],
-        "action": "",
-        "property": "",
-        "from": "",
-        "to": "",
-        "reg": false,
-        "x": 930,
-        "y": 620,
-        "wires": [
-            [
-                "a83a0c73e4e7ede0"
-            ]
-        ]
-    },
-    {
-        "id": "0b36887f4db2b0a2",
-        "type": "ui-text-input",
-        "z": "b8f36cbcfc882e5f",
-        "group": "2052b505fc6e7465",
-        "name": "",
-        "label": "kD",
-        "order": 0,
-        "width": 0,
-        "height": 0,
-        "topic": "topic",
-        "topicType": "msg",
-        "mode": "number",
-        "delay": 300,
-        "passthru": false,
-        "sendOnDelay": false,
-        "sendOnBlur": true,
-        "sendOnEnter": true,
-        "className": "",
-        "x": 490,
-        "y": 660,
-        "wires": [
-            [
-                "7aaf2f852623aa21"
-            ]
-        ]
-    },
-    {
-        "id": "7aaf2f852623aa21",
-        "type": "function",
-        "z": "b8f36cbcfc882e5f",
-        "name": "parse string to float",
-        "func": "// Parse the string received from the input field into a number\nvar numberValue = parseFloat(msg.payload);\n\n// Check if the parsed value is a valid number\nif (!isNaN(numberValue)) {\n    // Update the payload with the parsed number\n    msg.payload = numberValue;\n    return msg;\n} else {\n    // If the parsed value is not a valid number, log an error and return null\n    node.error('Invalid number received from input field: ' + msg.payload);\n    return null;\n}\n",
-        "outputs": 1,
-        "timeout": 0,
-        "noerr": 0,
-        "initialize": "",
-        "finalize": "",
-        "libs": [],
-        "x": 710,
-        "y": 660,
-        "wires": [
-            [
-                "38f90450d4834e5a"
-            ]
-        ]
-    },
-    {
-        "id": "38f90450d4834e5a",
-        "type": "change",
-        "z": "b8f36cbcfc882e5f",
-        "name": "",
-        "rules": [
-            {
-                "t": "move",
-                "p": "payload",
-                "pt": "msg",
-                "to": "payload.kd",
-                "tot": "msg"
-            }
-        ],
-        "action": "",
-        "property": "",
-        "from": "",
-        "to": "",
-        "reg": false,
-        "x": 930,
-        "y": 660,
-        "wires": [
-            [
-                "a83a0c73e4e7ede0"
-            ]
-        ]
-    },
-    {
-        "id": "0e9e6d50b83c4936",
-        "type": "ui-text-input",
-        "z": "b8f36cbcfc882e5f",
-        "group": "e629bcb7c26cb922",
-        "name": "",
-        "label": "Max",
-        "order": 0,
-        "width": 0,
-        "height": 0,
-        "topic": "topic",
-        "topicType": "msg",
-        "mode": "number",
-        "delay": 300,
-        "passthru": false,
-        "sendOnDelay": false,
-        "sendOnBlur": true,
-        "sendOnEnter": true,
-        "className": "",
-        "x": 490,
-        "y": 740,
-        "wires": [
-            [
-                "259039efea24ce6c"
-            ]
-        ]
-    },
-    {
-        "id": "259039efea24ce6c",
-        "type": "function",
-        "z": "b8f36cbcfc882e5f",
-        "name": "parse string to float",
-        "func": "// Parse the string received from the input field into a number\nvar numberValue = parseFloat(msg.payload);\n\n// Check if the parsed value is a valid number\nif (!isNaN(numberValue)) {\n    // Update the payload with the parsed number\n    msg.payload = numberValue;\n    return msg;\n} else {\n    // If the parsed value is not a valid number, log an error and return null\n    node.error('Invalid number received from input field: ' + msg.payload);\n    return null;\n}\n",
-        "outputs": 1,
-        "timeout": 0,
-        "noerr": 0,
-        "initialize": "",
-        "finalize": "",
-        "libs": [],
-        "x": 710,
-        "y": 740,
-        "wires": [
-            [
-                "6f1d8f287380934c"
-            ]
-        ]
-    },
-    {
-        "id": "6f1d8f287380934c",
-        "type": "change",
-        "z": "b8f36cbcfc882e5f",
-        "name": "",
-        "rules": [
-            {
-                "t": "move",
-                "p": "payload",
-                "pt": "msg",
-                "to": "payload.max_output",
-                "tot": "msg"
-            }
-        ],
-        "action": "",
-        "property": "",
-        "from": "",
-        "to": "",
-        "reg": false,
-        "x": 930,
-        "y": 740,
-        "wires": [
-            [
-                "a83a0c73e4e7ede0"
-            ]
-        ]
-    },
-    {
-        "id": "2756333c07364ec5",
-        "type": "ui-text-input",
-        "z": "b8f36cbcfc882e5f",
-        "group": "e629bcb7c26cb922",
-        "name": "",
-        "label": "Min",
-        "order": 0,
-        "width": 0,
-        "height": 0,
-        "topic": "topic",
-        "topicType": "msg",
-        "mode": "number",
-        "delay": 300,
-        "passthru": false,
-        "sendOnDelay": false,
-        "sendOnBlur": true,
-        "sendOnEnter": true,
-        "className": "",
-        "x": 490,
-        "y": 780,
-        "wires": [
-            [
-                "b327fc252a2d5539"
-            ]
-        ]
-    },
-    {
-        "id": "b327fc252a2d5539",
-        "type": "function",
-        "z": "b8f36cbcfc882e5f",
-        "name": "parse string to float",
-        "func": "// Parse the string received from the input field into a number\nvar numberValue = parseFloat(msg.payload);\n\n// Check if the parsed value is a valid number\nif (!isNaN(numberValue)) {\n    // Update the payload with the parsed number\n    msg.payload = numberValue;\n    return msg;\n} else {\n    // If the parsed value is not a valid number, log an error and return null\n    node.error('Invalid number received from input field: ' + msg.payload);\n    return null;\n}\n",
-        "outputs": 1,
-        "timeout": 0,
-        "noerr": 0,
-        "initialize": "",
-        "finalize": "",
-        "libs": [],
-        "x": 710,
-        "y": 780,
-        "wires": [
-            [
-                "00c0feeac408b3ea"
-            ]
-        ]
-    },
-    {
-        "id": "00c0feeac408b3ea",
-        "type": "change",
-        "z": "b8f36cbcfc882e5f",
-        "name": "",
-        "rules": [
-            {
-                "t": "move",
-                "p": "payload",
-                "pt": "msg",
-                "to": "payload.min_output",
-                "tot": "msg"
-            }
-        ],
-        "action": "",
-        "property": "",
-        "from": "",
-        "to": "",
-        "reg": false,
-        "x": 930,
-        "y": 780,
-        "wires": [
-            [
-                "a83a0c73e4e7ede0"
-            ]
-        ]
-    },
-    {
-        "id": "b43e9438d0f98ad2",
-        "type": "ui-text-input",
-        "z": "b8f36cbcfc882e5f",
-        "group": "1a6dfd4456b79d04",
-        "name": "",
-        "label": "Max",
-        "order": 0,
-        "width": 0,
-        "height": 0,
-        "topic": "topic",
-        "topicType": "msg",
-        "mode": "number",
-        "delay": 300,
-        "passthru": false,
-        "sendOnDelay": false,
-        "sendOnBlur": true,
-        "sendOnEnter": true,
-        "className": "",
-        "x": 490,
-        "y": 840,
-        "wires": [
-            [
-                "f6a32539ca6488c0"
-            ]
-        ]
-    },
-    {
-        "id": "f6a32539ca6488c0",
-        "type": "function",
-        "z": "b8f36cbcfc882e5f",
-        "name": "parse string to float",
-        "func": "// Parse the string received from the input field into a number\nvar numberValue = parseFloat(msg.payload);\n\n// Check if the parsed value is a valid number\nif (!isNaN(numberValue)) {\n    // Update the payload with the parsed number\n    msg.payload = numberValue;\n    return msg;\n} else {\n    // If the parsed value is not a valid number, log an error and return null\n    node.error('Invalid number received from input field: ' + msg.payload);\n    return null;\n}\n",
-        "outputs": 1,
-        "timeout": 0,
-        "noerr": 0,
-        "initialize": "",
-        "finalize": "",
-        "libs": [],
-        "x": 710,
-        "y": 840,
-        "wires": [
-            [
-                "74539de83851a580"
-            ]
-        ]
-    },
-    {
-        "id": "74539de83851a580",
-        "type": "change",
-        "z": "b8f36cbcfc882e5f",
-        "name": "",
-        "rules": [
-            {
-                "t": "move",
-                "p": "payload",
-                "pt": "msg",
-                "to": "payload.max_integral",
-                "tot": "msg"
-            }
-        ],
-        "action": "",
-        "property": "",
-        "from": "",
-        "to": "",
-        "reg": false,
-        "x": 930,
-        "y": 840,
-        "wires": [
-            [
-                "a83a0c73e4e7ede0"
-            ]
-        ]
-    },
-    {
-        "id": "62bfb97cf878e385",
-        "type": "ui-text-input",
-        "z": "b8f36cbcfc882e5f",
-        "group": "1a6dfd4456b79d04",
-        "name": "",
-        "label": "Min",
-        "order": 0,
-        "width": 0,
-        "height": 0,
-        "topic": "topic",
-        "topicType": "msg",
-        "mode": "number",
-        "delay": 300,
-        "passthru": false,
-        "sendOnDelay": false,
-        "sendOnBlur": true,
-        "sendOnEnter": true,
-        "className": "",
-        "x": 490,
-        "y": 880,
-        "wires": [
-            [
-                "cee049d6b84587d5"
-            ]
-        ]
-    },
-    {
-        "id": "cee049d6b84587d5",
-        "type": "function",
-        "z": "b8f36cbcfc882e5f",
-        "name": "parse string to float",
-        "func": "// Parse the string received from the input field into a number\nvar numberValue = parseFloat(msg.payload);\n\n// Check if the parsed value is a valid number\nif (!isNaN(numberValue)) {\n    // Update the payload with the parsed number\n    msg.payload = numberValue;\n    return msg;\n} else {\n    // If the parsed value is not a valid number, log an error and return null\n    node.error('Invalid number received from input field: ' + msg.payload);\n    return null;\n}\n",
-        "outputs": 1,
-        "timeout": 0,
-        "noerr": 0,
-        "initialize": "",
-        "finalize": "",
-        "libs": [],
-        "x": 710,
-        "y": 880,
-        "wires": [
-            [
-                "48910c9aa323dd9b"
-            ]
-        ]
-    },
-    {
-        "id": "48910c9aa323dd9b",
-        "type": "change",
-        "z": "b8f36cbcfc882e5f",
-        "name": "",
-        "rules": [
-            {
-                "t": "move",
-                "p": "payload",
-                "pt": "msg",
-                "to": "payload.min_integral",
-                "tot": "msg"
-            }
-        ],
-        "action": "",
-        "property": "",
-        "from": "",
-        "to": "",
-        "reg": false,
-        "x": 930,
-        "y": 880,
-        "wires": [
-            [
-                "a83a0c73e4e7ede0"
             ]
         ]
     },
@@ -1128,52 +334,12 @@
         "rap": true,
         "rh": 0,
         "inputs": 0,
-        "x": 150,
-        "y": 560,
+        "x": 130,
+        "y": 520,
         "wires": [
             [
-                "7d35ece8291689c4"
-            ]
-        ]
-    },
-    {
-        "id": "7d35ece8291689c4",
-        "type": "function",
-        "z": "b8f36cbcfc882e5f",
-        "name": "demux",
-        "func": "// Extract values from the incoming MQTT message\nvar kp = msg.payload.kp;\nvar ki = msg.payload.ki;\nvar kd = msg.payload.kd;\nvar max_output = msg.payload.max_output;\nvar min_output = msg.payload.min_output;\nvar max_integral = msg.payload.max_integral;\nvar min_integral = msg.payload.min_integral;\nvar set_point = msg.payload.set_point;\n\n// Send values to the corresponding outputs\nnode.send([ { payload: kp }, { payload: ki }, { payload: kd }, { payload: max_output }, { payload: min_output }, { payload: max_integral }, { payload: min_integral }, { payload: set_point } ]);\n",
-        "outputs": 8,
-        "timeout": 0,
-        "noerr": 0,
-        "initialize": "",
-        "finalize": "",
-        "libs": [],
-        "x": 290,
-        "y": 680,
-        "wires": [
-            [
-                "ddb4b168328b970d"
-            ],
-            [
-                "771567b1dad70170"
-            ],
-            [
-                "0b36887f4db2b0a2"
-            ],
-            [
-                "0e9e6d50b83c4936"
-            ],
-            [
-                "2756333c07364ec5"
-            ],
-            [
-                "b43e9438d0f98ad2"
-            ],
-            [
-                "62bfb97cf878e385"
-            ],
-            [
-                "f605620d23d27738"
+                "e73ca6befbbec83d",
+                "c208941d1f665164"
             ]
         ]
     },
@@ -1190,14 +356,14 @@
         "topic": "topic",
         "topicType": "msg",
         "mode": "number",
-        "delay": 300,
+        "delay": "3000",
         "passthru": true,
         "sendOnDelay": true,
         "sendOnBlur": true,
         "sendOnEnter": true,
         "className": "",
         "x": 120,
-        "y": 1080,
+        "y": 1160,
         "wires": [
             [
                 "e465fcb08971f38f"
@@ -1218,8 +384,8 @@
         "correl": "",
         "expiry": "",
         "broker": "3fe3ac59af05955a",
-        "x": 750,
-        "y": 1120,
+        "x": 810,
+        "y": 1240,
         "wires": []
     },
     {
@@ -1234,8 +400,8 @@
         "initialize": "",
         "finalize": "",
         "libs": [],
-        "x": 310,
-        "y": 1080,
+        "x": 330,
+        "y": 1180,
         "wires": [
             [
                 "7c3df73e99eb2dc7"
@@ -1261,8 +427,8 @@
         "from": "",
         "to": "",
         "reg": false,
-        "x": 510,
-        "y": 1080,
+        "x": 550,
+        "y": 1180,
         "wires": [
             [
                 "da6af0e73d4d681c"
@@ -1293,7 +459,7 @@
         "officon": "",
         "offcolor": "",
         "x": 150,
-        "y": 1140,
+        "y": 1220,
         "wires": [
             [
                 "da6af0e73d4d681c"
@@ -1346,6 +512,1430 @@
             [
                 "c58c12c03de30f99"
             ]
+        ]
+    },
+    {
+        "id": "3286dd568ff3ab89",
+        "type": "ui-button",
+        "z": "b8f36cbcfc882e5f",
+        "group": "877facfa381dab12",
+        "name": "",
+        "label": "Clear Charts",
+        "order": 1,
+        "width": 0,
+        "height": 0,
+        "emulateClick": false,
+        "tooltip": "",
+        "color": "",
+        "bgcolor": "",
+        "className": "",
+        "icon": "",
+        "iconPosition": "left",
+        "payload": "[]",
+        "payloadType": "json",
+        "topic": "topic",
+        "topicType": "msg",
+        "x": 210,
+        "y": 340,
+        "wires": [
+            [
+                "9c157de7a8c8a93f",
+                "aac1b1fa69090b09",
+                "b569b443fbd3d7f7",
+                "1b4ddda823d0dc7e"
+            ]
+        ]
+    },
+    {
+        "id": "f332c63971df9383",
+        "type": "mqtt in",
+        "z": "b8f36cbcfc882e5f",
+        "name": "",
+        "topic": "tele/still2/init",
+        "qos": "2",
+        "datatype": "auto-detect",
+        "broker": "3fe3ac59af05955a",
+        "nl": false,
+        "rap": true,
+        "rh": 0,
+        "inputs": 0,
+        "x": 70,
+        "y": 680,
+        "wires": [
+            [
+                "c208941d1f665164"
+            ]
+        ]
+    },
+    {
+        "id": "aa25d9e2770d5196",
+        "type": "ui-text",
+        "z": "b8f36cbcfc882e5f",
+        "group": "5835c6daabcd58ef",
+        "order": 1,
+        "width": 0,
+        "height": 0,
+        "name": "",
+        "label": "Temp",
+        "format": "{{msg.payload}}",
+        "layout": "col-center",
+        "style": true,
+        "font": "Arial Black,Arial Black,Gadget,sans-serif",
+        "fontSize": 16,
+        "color": "#09770b",
+        "className": "",
+        "x": 870,
+        "y": 300,
+        "wires": []
+    },
+    {
+        "id": "15811c80180f4d0f",
+        "type": "ui-text",
+        "z": "b8f36cbcfc882e5f",
+        "group": "5ee9dce5463cd662",
+        "order": 1,
+        "width": "0",
+        "height": "0",
+        "name": "",
+        "label": "Temp",
+        "format": "{{msg.payload}}",
+        "layout": "col-center",
+        "style": true,
+        "font": "Arial Black,Arial Black,Gadget,sans-serif",
+        "fontSize": 16,
+        "color": "#09770b",
+        "className": "",
+        "x": 830,
+        "y": 140,
+        "wires": []
+    },
+    {
+        "id": "e73ca6befbbec83d",
+        "type": "function",
+        "z": "b8f36cbcfc882e5f",
+        "name": "function 1",
+        "func": "let data = msg.payload;\n\nmsg.payload = [\n    { \"Parameter\": \"kP\", \"Value\": data.kp },\n    { \"Parameter\": \"kI\", \"Value\": data.ki },\n    { \"Parameter\": \"kD\", \"Value\": data.kd },\n    { \"Parameter\": \"Set Point\", \"Value\": data.set_point },\n    { \"Parameter\": \"Lag Time Constant\", \"Value\": data.lag_time_constant },\n    { \"Parameter\": \"Sample Time\", \"Value\": data.sample_time },\n    { \"Parameter\": \"Output Min\", \"Value\": data.output_min },\n    { \"Parameter\": \"Output Max\", \"Value\": data.output_max },\n    { \"Parameter\": \"Integral Limit\", \"Value\": data.integral_limit }\n];\n\nreturn msg;\n",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 380,
+        "y": 480,
+        "wires": [
+            [
+                "e77123798a0a9e0e"
+            ]
+        ]
+    },
+    {
+        "id": "e77123798a0a9e0e",
+        "type": "ui-table",
+        "z": "b8f36cbcfc882e5f",
+        "group": "877facfa381dab12",
+        "name": "",
+        "label": "text",
+        "order": 2,
+        "width": 0,
+        "height": 0,
+        "maxrows": "0",
+        "passthru": false,
+        "autocols": true,
+        "showSearch": false,
+        "selectionType": "none",
+        "columns": [],
+        "mobileBreakpoint": "sm",
+        "mobileBreakpointType": "defaults",
+        "action": "replace",
+        "x": 690,
+        "y": 460,
+        "wires": [
+            []
+        ]
+    },
+    {
+        "id": "9edfea7cb30bb026",
+        "type": "ui-button",
+        "z": "b8f36cbcfc882e5f",
+        "group": "877facfa381dab12",
+        "name": "",
+        "label": "Report PID",
+        "order": 0,
+        "width": 0,
+        "height": 0,
+        "emulateClick": false,
+        "tooltip": "",
+        "color": "",
+        "bgcolor": "",
+        "className": "",
+        "icon": "",
+        "iconPosition": "left",
+        "payload": "{\"all\": true}",
+        "payloadType": "json",
+        "topic": "cmnd/still2/pidparams",
+        "topicType": "str",
+        "x": 170,
+        "y": 1340,
+        "wires": [
+            [
+                "849c8a8ff7dce888"
+            ]
+        ]
+    },
+    {
+        "id": "d13e7d23ce1da869",
+        "type": "ui-button",
+        "z": "b8f36cbcfc882e5f",
+        "group": "877facfa381dab12",
+        "name": "",
+        "label": "Reset MAX Temp Sensors",
+        "order": 0,
+        "width": 0,
+        "height": 0,
+        "emulateClick": false,
+        "tooltip": "",
+        "color": "",
+        "bgcolor": "",
+        "className": "",
+        "icon": "",
+        "iconPosition": "left",
+        "payload": "{}",
+        "payloadType": "json",
+        "topic": "cmnd/still2/resetmax",
+        "topicType": "str",
+        "x": 210,
+        "y": 1280,
+        "wires": [
+            [
+                "849c8a8ff7dce888"
+            ]
+        ]
+    },
+    {
+        "id": "849c8a8ff7dce888",
+        "type": "mqtt out",
+        "z": "b8f36cbcfc882e5f",
+        "name": "",
+        "topic": "",
+        "qos": "",
+        "retain": "",
+        "respTopic": "",
+        "contentType": "",
+        "userProps": "",
+        "correl": "",
+        "expiry": "",
+        "broker": "3fe3ac59af05955a",
+        "x": 510,
+        "y": 1280,
+        "wires": []
+    },
+    {
+        "id": "5ecf77648bbeeda7",
+        "type": "ui-slider",
+        "z": "b8f36cbcfc882e5f",
+        "group": "3a79b1215aa13ae5",
+        "name": "",
+        "label": "Reflux - manual",
+        "tooltip": "",
+        "order": 0,
+        "width": 0,
+        "height": 0,
+        "passthru": false,
+        "outs": "end",
+        "topic": "topic",
+        "topicType": "msg",
+        "thumbLabel": true,
+        "min": 0,
+        "max": "100",
+        "step": 1,
+        "className": "",
+        "x": 280,
+        "y": 1080,
+        "wires": [
+            [
+                "89f879361dbff6b3"
+            ]
+        ]
+    },
+    {
+        "id": "bde06e267b92f170",
+        "type": "ui-slider",
+        "z": "b8f36cbcfc882e5f",
+        "group": "3a79b1215aa13ae5",
+        "name": "",
+        "label": "Condenser",
+        "tooltip": "",
+        "order": 0,
+        "width": 0,
+        "height": 0,
+        "passthru": false,
+        "outs": "end",
+        "topic": "topic",
+        "topicType": "msg",
+        "thumbLabel": true,
+        "min": 0,
+        "max": "100",
+        "step": 1,
+        "className": "",
+        "x": 270,
+        "y": 1140,
+        "wires": [
+            [
+                "e3135429fcbd80e2"
+            ]
+        ]
+    },
+    {
+        "id": "89f879361dbff6b3",
+        "type": "function",
+        "z": "b8f36cbcfc882e5f",
+        "name": "Build Payload",
+        "func": "msg.payload = { duty: msg.payload };\nreturn msg;",
+        "outputs": 1,
+        "timeout": "",
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 500,
+        "y": 1080,
+        "wires": [
+            [
+                "ea448e88a5fc66a0"
+            ]
+        ]
+    },
+    {
+        "id": "ea448e88a5fc66a0",
+        "type": "http request",
+        "z": "b8f36cbcfc882e5f",
+        "name": "POST Duty",
+        "method": "POST",
+        "ret": "txt",
+        "paytoqs": "ignore",
+        "url": "http://reflux.mianos.com/pump",
+        "tls": "",
+        "persist": false,
+        "proxy": "",
+        "insecureHTTPParser": false,
+        "authType": "",
+        "senderr": false,
+        "headers": [
+            {
+                "keyType": "other",
+                "keyValue": "",
+                "valueType": "other",
+                "valueValue": ""
+            }
+        ],
+        "x": 750,
+        "y": 1080,
+        "wires": [
+            []
+        ]
+    },
+    {
+        "id": "e3135429fcbd80e2",
+        "type": "function",
+        "z": "b8f36cbcfc882e5f",
+        "name": "Build Payload",
+        "func": "msg.payload = { duty: msg.payload };\nreturn msg;",
+        "outputs": 1,
+        "timeout": "",
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 480,
+        "y": 1140,
+        "wires": [
+            [
+                "71f5c06c010ecd8b"
+            ]
+        ]
+    },
+    {
+        "id": "71f5c06c010ecd8b",
+        "type": "http request",
+        "z": "b8f36cbcfc882e5f",
+        "name": "POST Duty",
+        "method": "POST",
+        "ret": "txt",
+        "paytoqs": "ignore",
+        "url": "http://condenser.mianos.com/pump",
+        "tls": "",
+        "persist": false,
+        "proxy": "",
+        "insecureHTTPParser": false,
+        "authType": "",
+        "senderr": false,
+        "headers": [
+            {
+                "keyType": "other",
+                "keyValue": "",
+                "valueType": "other",
+                "valueValue": ""
+            }
+        ],
+        "x": 720,
+        "y": 1140,
+        "wires": [
+            []
+        ]
+    },
+    {
+        "id": "b83213f4f7c09366",
+        "type": "mqtt out",
+        "z": "b8f36cbcfc882e5f",
+        "name": "",
+        "topic": "cmnd/still2/pid",
+        "qos": "",
+        "retain": "",
+        "respTopic": "",
+        "contentType": "",
+        "userProps": "",
+        "correl": "",
+        "expiry": "",
+        "broker": "3fe3ac59af05955a",
+        "x": 1400,
+        "y": 660,
+        "wires": []
+    },
+    {
+        "id": "920fea5e45c85f59",
+        "type": "ui-text-input",
+        "z": "b8f36cbcfc882e5f",
+        "group": "2052b505fc6e7465",
+        "name": "",
+        "label": "kP",
+        "order": 1,
+        "width": 0,
+        "height": 0,
+        "topic": "topic",
+        "topicType": "msg",
+        "mode": "number",
+        "delay": 300,
+        "passthru": false,
+        "sendOnDelay": false,
+        "sendOnBlur": true,
+        "sendOnEnter": true,
+        "className": "",
+        "x": 650,
+        "y": 540,
+        "wires": [
+            [
+                "c840381ef8344a9d"
+            ]
+        ]
+    },
+    {
+        "id": "c840381ef8344a9d",
+        "type": "function",
+        "z": "b8f36cbcfc882e5f",
+        "name": "parse string to float",
+        "func": "var numberValue = parseFloat(msg.payload);\nif (!isNaN(numberValue)) {\n    msg.payload = numberValue;\n    return msg;\n} else {\n    node.error('Invalid number received from input field: ' + msg.payload);\n    return null;\n}",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 870,
+        "y": 540,
+        "wires": [
+            [
+                "b40b68560dd42720"
+            ]
+        ]
+    },
+    {
+        "id": "b40b68560dd42720",
+        "type": "change",
+        "z": "b8f36cbcfc882e5f",
+        "name": "",
+        "rules": [
+            {
+                "t": "move",
+                "p": "payload",
+                "pt": "msg",
+                "to": "payload.kp",
+                "tot": "msg"
+            }
+        ],
+        "action": "",
+        "property": "",
+        "from": "",
+        "to": "",
+        "reg": false,
+        "x": 1090,
+        "y": 540,
+        "wires": [
+            [
+                "b83213f4f7c09366"
+            ]
+        ]
+    },
+    {
+        "id": "f2914cf24293bfb2",
+        "type": "ui-text-input",
+        "z": "b8f36cbcfc882e5f",
+        "group": "2052b505fc6e7465",
+        "name": "",
+        "label": "kI",
+        "order": 2,
+        "width": 0,
+        "height": 0,
+        "topic": "topic",
+        "topicType": "msg",
+        "mode": "number",
+        "delay": 300,
+        "passthru": false,
+        "sendOnDelay": false,
+        "sendOnBlur": true,
+        "sendOnEnter": true,
+        "className": "",
+        "x": 650,
+        "y": 580,
+        "wires": [
+            [
+                "bc1db054466d0c70"
+            ]
+        ]
+    },
+    {
+        "id": "bc1db054466d0c70",
+        "type": "function",
+        "z": "b8f36cbcfc882e5f",
+        "name": "parse string to float",
+        "func": "var numberValue = parseFloat(msg.payload);\nif (!isNaN(numberValue)) {\n    msg.payload = numberValue;\n    return msg;\n} else {\n    node.error('Invalid number received from input field: ' + msg.payload);\n    return null;\n}",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 870,
+        "y": 580,
+        "wires": [
+            [
+                "f5c2ba8285069afe"
+            ]
+        ]
+    },
+    {
+        "id": "f5c2ba8285069afe",
+        "type": "change",
+        "z": "b8f36cbcfc882e5f",
+        "name": "",
+        "rules": [
+            {
+                "t": "move",
+                "p": "payload",
+                "pt": "msg",
+                "to": "payload.ki",
+                "tot": "msg"
+            }
+        ],
+        "action": "",
+        "property": "",
+        "from": "",
+        "to": "",
+        "reg": false,
+        "x": 1090,
+        "y": 580,
+        "wires": [
+            [
+                "b83213f4f7c09366"
+            ]
+        ]
+    },
+    {
+        "id": "921079cf054f5a26",
+        "type": "ui-text-input",
+        "z": "b8f36cbcfc882e5f",
+        "group": "2052b505fc6e7465",
+        "name": "",
+        "label": "kD",
+        "order": 3,
+        "width": 0,
+        "height": 0,
+        "topic": "topic",
+        "topicType": "msg",
+        "mode": "number",
+        "delay": 300,
+        "passthru": false,
+        "sendOnDelay": false,
+        "sendOnBlur": true,
+        "sendOnEnter": true,
+        "className": "",
+        "x": 650,
+        "y": 620,
+        "wires": [
+            [
+                "cfba15efec8dc396"
+            ]
+        ]
+    },
+    {
+        "id": "cfba15efec8dc396",
+        "type": "function",
+        "z": "b8f36cbcfc882e5f",
+        "name": "parse string to float",
+        "func": "var numberValue = parseFloat(msg.payload);\nif (!isNaN(numberValue)) {\n    msg.payload = numberValue;\n    return msg;\n} else {\n    node.error('Invalid number received from input field: ' + msg.payload);\n    return null;\n}",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 870,
+        "y": 620,
+        "wires": [
+            [
+                "6fc53ca13acb784d"
+            ]
+        ]
+    },
+    {
+        "id": "6fc53ca13acb784d",
+        "type": "change",
+        "z": "b8f36cbcfc882e5f",
+        "name": "",
+        "rules": [
+            {
+                "t": "move",
+                "p": "payload",
+                "pt": "msg",
+                "to": "payload.kd",
+                "tot": "msg"
+            }
+        ],
+        "action": "",
+        "property": "",
+        "from": "",
+        "to": "",
+        "reg": false,
+        "x": 1090,
+        "y": 620,
+        "wires": [
+            [
+                "b83213f4f7c09366"
+            ]
+        ]
+    },
+    {
+        "id": "ed6cddc288bb1e4b",
+        "type": "ui-text-input",
+        "z": "b8f36cbcfc882e5f",
+        "group": "e629bcb7c26cb922",
+        "name": "",
+        "label": "Output Max",
+        "order": 0,
+        "width": 0,
+        "height": 0,
+        "topic": "topic",
+        "topicType": "msg",
+        "mode": "number",
+        "delay": 300,
+        "passthru": false,
+        "sendOnDelay": false,
+        "sendOnBlur": true,
+        "sendOnEnter": true,
+        "className": "",
+        "x": 670,
+        "y": 840,
+        "wires": [
+            [
+                "cbacd523a6aa24da"
+            ]
+        ]
+    },
+    {
+        "id": "cbacd523a6aa24da",
+        "type": "function",
+        "z": "b8f36cbcfc882e5f",
+        "name": "parse string to float",
+        "func": "var numberValue = parseFloat(msg.payload);\nif (!isNaN(numberValue)) {\n    msg.payload = numberValue;\n    return msg;\n} else {\n    node.error('Invalid number received from input field: ' + msg.payload);\n    return null;\n}",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 870,
+        "y": 840,
+        "wires": [
+            [
+                "54f8ab334c13a54a"
+            ]
+        ]
+    },
+    {
+        "id": "54f8ab334c13a54a",
+        "type": "change",
+        "z": "b8f36cbcfc882e5f",
+        "name": "",
+        "rules": [
+            {
+                "t": "move",
+                "p": "payload",
+                "pt": "msg",
+                "to": "payload.output_max",
+                "tot": "msg"
+            }
+        ],
+        "action": "",
+        "property": "",
+        "from": "",
+        "to": "",
+        "reg": false,
+        "x": 1090,
+        "y": 840,
+        "wires": [
+            [
+                "b83213f4f7c09366"
+            ]
+        ]
+    },
+    {
+        "id": "5b7f13aa4daa80e9",
+        "type": "ui-text-input",
+        "z": "b8f36cbcfc882e5f",
+        "group": "e629bcb7c26cb922",
+        "name": "",
+        "label": "Output Min",
+        "order": 0,
+        "width": 0,
+        "height": 0,
+        "topic": "topic",
+        "topicType": "msg",
+        "mode": "number",
+        "delay": 300,
+        "passthru": false,
+        "sendOnDelay": false,
+        "sendOnBlur": true,
+        "sendOnEnter": true,
+        "className": "",
+        "x": 670,
+        "y": 800,
+        "wires": [
+            [
+                "90a18d9306cb1224"
+            ]
+        ]
+    },
+    {
+        "id": "90a18d9306cb1224",
+        "type": "function",
+        "z": "b8f36cbcfc882e5f",
+        "name": "parse string to float",
+        "func": "var numberValue = parseFloat(msg.payload);\nif (!isNaN(numberValue)) {\n    msg.payload = numberValue;\n    return msg;\n} else {\n    node.error('Invalid number received from input field: ' + msg.payload);\n    return null;\n}",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 870,
+        "y": 800,
+        "wires": [
+            [
+                "09ebda41c48ca282"
+            ]
+        ]
+    },
+    {
+        "id": "09ebda41c48ca282",
+        "type": "change",
+        "z": "b8f36cbcfc882e5f",
+        "name": "",
+        "rules": [
+            {
+                "t": "move",
+                "p": "payload",
+                "pt": "msg",
+                "to": "payload.output_min",
+                "tot": "msg"
+            }
+        ],
+        "action": "",
+        "property": "",
+        "from": "",
+        "to": "",
+        "reg": false,
+        "x": 1090,
+        "y": 800,
+        "wires": [
+            [
+                "b83213f4f7c09366"
+            ]
+        ]
+    },
+    {
+        "id": "c208941d1f665164",
+        "type": "function",
+        "z": "b8f36cbcfc882e5f",
+        "name": "demux",
+        "func": "/* {\n  \"kp\": 0.3,\n  \"ki\": 0.1,\n  \"kd\": 2,\n  \"set_point\": 60,\n  \"lag_time_constant\": 50,\n  \"sample_time\": 0,\n  \"output_min\": 0,\n  \"output_max\": 100,\n  \"integral_limit\": 50,\n  \"rate_limit\": 10,\n  \"dead_zone_threshold\": 30\n}\n*/\n\nvar kp = msg.payload.kp;\nvar ki = msg.payload.ki;\nvar kd = msg.payload.kd;\nvar set_point = msg.payload.set_point;\nvar lag_time_constant = msg.payload.lag_time_constant;\nvar sample_time = msg.payload.sample_time;\nvar output_min = msg.payload.output_min;\nvar output_max = msg.payload.output_max;\nvar integral_limit = msg.payload.integral_limit;\nvar rate_limit = msg.payload.rate_limit;\nvar dead_zone_threshold = msg.payload.dead_zone_threshold;\n\nnode.send([\n    { payload: kp },\n    { payload: ki },\n    { payload: kd },\n    { payload: set_point },\n    { payload: lag_time_constant },\n    { payload: sample_time },\n    { payload: output_min },\n    { payload: output_max },\n    { payload: integral_limit },\n    { payload: rate_limit },\n    { payload: dead_zone_threshold }\n]);",
+        "outputs": 11,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 450,
+        "y": 640,
+        "wires": [
+            [
+                "920fea5e45c85f59"
+            ],
+            [
+                "f2914cf24293bfb2"
+            ],
+            [
+                "921079cf054f5a26"
+            ],
+            [
+                "10695f8b3cb1be92"
+            ],
+            [
+                "92f085188dd97241"
+            ],
+            [
+                "e57a81e8e2dae9c9"
+            ],
+            [
+                "5b7f13aa4daa80e9"
+            ],
+            [
+                "ed6cddc288bb1e4b"
+            ],
+            [
+                "ee53acb2a4d6bb0c"
+            ],
+            [
+                "3f5059f155d95958"
+            ],
+            [
+                "1e2f133d43b51272"
+            ]
+        ]
+    },
+    {
+        "id": "92f085188dd97241",
+        "type": "ui-text-input",
+        "z": "b8f36cbcfc882e5f",
+        "group": "2052b505fc6e7465",
+        "name": "",
+        "label": "Lag TIme",
+        "order": 4,
+        "width": 0,
+        "height": 0,
+        "topic": "topic",
+        "topicType": "msg",
+        "mode": "number",
+        "delay": 300,
+        "passthru": false,
+        "sendOnDelay": false,
+        "sendOnBlur": true,
+        "sendOnEnter": true,
+        "className": "",
+        "x": 660,
+        "y": 700,
+        "wires": [
+            [
+                "bc4cfc147ce428e1"
+            ]
+        ]
+    },
+    {
+        "id": "bc4cfc147ce428e1",
+        "type": "function",
+        "z": "b8f36cbcfc882e5f",
+        "name": "parse string to float",
+        "func": "var numberValue = parseFloat(msg.payload);\nif (!isNaN(numberValue)) {\n    msg.payload = numberValue;\n    return msg;\n} else {\n    node.error('Invalid number received from input field: ' + msg.payload);\n    return null;\n}",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 870,
+        "y": 700,
+        "wires": [
+            [
+                "d16cf2e22a799b6a"
+            ]
+        ]
+    },
+    {
+        "id": "d16cf2e22a799b6a",
+        "type": "change",
+        "z": "b8f36cbcfc882e5f",
+        "name": "",
+        "rules": [
+            {
+                "t": "move",
+                "p": "payload",
+                "pt": "msg",
+                "to": "payload.lag_time_constant",
+                "tot": "msg"
+            }
+        ],
+        "action": "",
+        "property": "",
+        "from": "",
+        "to": "",
+        "reg": false,
+        "x": 1090,
+        "y": 700,
+        "wires": [
+            [
+                "b83213f4f7c09366"
+            ]
+        ]
+    },
+    {
+        "id": "3f5059f155d95958",
+        "type": "ui-text-input",
+        "z": "b8f36cbcfc882e5f",
+        "group": "2052b505fc6e7465",
+        "name": "",
+        "label": "Rate Limit",
+        "order": 0,
+        "width": 0,
+        "height": 0,
+        "topic": "topic",
+        "topicType": "msg",
+        "mode": "number",
+        "delay": 300,
+        "passthru": false,
+        "sendOnDelay": false,
+        "sendOnBlur": true,
+        "sendOnEnter": true,
+        "className": "",
+        "x": 640,
+        "y": 980,
+        "wires": [
+            [
+                "f1d095c9377542d5"
+            ]
+        ]
+    },
+    {
+        "id": "f1d095c9377542d5",
+        "type": "function",
+        "z": "b8f36cbcfc882e5f",
+        "name": "parse string to float",
+        "func": "var numberValue = parseFloat(msg.payload);\nif (!isNaN(numberValue)) {\n    msg.payload = numberValue;\n    return msg;\n} else {\n    node.error('Invalid number received from input field: ' + msg.payload);\n    return null;\n}",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 850,
+        "y": 980,
+        "wires": [
+            [
+                "0d4fdfa92e7fb8eb"
+            ]
+        ]
+    },
+    {
+        "id": "0d4fdfa92e7fb8eb",
+        "type": "change",
+        "z": "b8f36cbcfc882e5f",
+        "name": "",
+        "rules": [
+            {
+                "t": "move",
+                "p": "payload",
+                "pt": "msg",
+                "to": "payload.rate_limit",
+                "tot": "msg"
+            }
+        ],
+        "action": "",
+        "property": "",
+        "from": "",
+        "to": "",
+        "reg": false,
+        "x": 1070,
+        "y": 980,
+        "wires": [
+            [
+                "b83213f4f7c09366"
+            ]
+        ]
+    },
+    {
+        "id": "10695f8b3cb1be92",
+        "type": "ui-text-input",
+        "z": "b8f36cbcfc882e5f",
+        "group": "e459568c74dfd8b2",
+        "name": "",
+        "label": "Set Point",
+        "order": 0,
+        "width": 0,
+        "height": 0,
+        "topic": "topic",
+        "topicType": "msg",
+        "mode": "number",
+        "delay": 300,
+        "passthru": false,
+        "sendOnDelay": false,
+        "sendOnBlur": true,
+        "sendOnEnter": true,
+        "className": "",
+        "x": 660,
+        "y": 659,
+        "wires": [
+            [
+                "c6fc5e1ecc35fcd7"
+            ]
+        ]
+    },
+    {
+        "id": "c6fc5e1ecc35fcd7",
+        "type": "function",
+        "z": "b8f36cbcfc882e5f",
+        "name": "parse string to float",
+        "func": "var numberValue = parseFloat(msg.payload);\nif (!isNaN(numberValue)) {\n    msg.payload = numberValue;\n    return msg;\n} else {\n    node.error('Invalid number received from input field: ' + msg.payload);\n    return null;\n}",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 870,
+        "y": 660,
+        "wires": [
+            [
+                "e4dcb7a115a575c8"
+            ]
+        ]
+    },
+    {
+        "id": "e4dcb7a115a575c8",
+        "type": "change",
+        "z": "b8f36cbcfc882e5f",
+        "name": "",
+        "rules": [
+            {
+                "t": "move",
+                "p": "payload",
+                "pt": "msg",
+                "to": "payload.set_point",
+                "tot": "msg"
+            }
+        ],
+        "action": "",
+        "property": "",
+        "from": "",
+        "to": "",
+        "reg": false,
+        "x": 1090,
+        "y": 660,
+        "wires": [
+            [
+                "b83213f4f7c09366"
+            ]
+        ]
+    },
+    {
+        "id": "ee53acb2a4d6bb0c",
+        "type": "ui-text-input",
+        "z": "b8f36cbcfc882e5f",
+        "group": "1a6dfd4456b79d04",
+        "name": "",
+        "label": "Windup Limit",
+        "order": 0,
+        "width": 0,
+        "height": 0,
+        "topic": "topic",
+        "topicType": "msg",
+        "mode": "number",
+        "delay": 300,
+        "passthru": false,
+        "sendOnDelay": false,
+        "sendOnBlur": true,
+        "sendOnEnter": true,
+        "className": "",
+        "x": 670,
+        "y": 900,
+        "wires": [
+            [
+                "803b830038b0d882"
+            ]
+        ]
+    },
+    {
+        "id": "803b830038b0d882",
+        "type": "function",
+        "z": "b8f36cbcfc882e5f",
+        "name": "parse string to float",
+        "func": "var numberValue = parseFloat(msg.payload);\nif (!isNaN(numberValue)) {\n    msg.payload = numberValue;\n    return msg;\n} else {\n    node.error('Invalid number received from input field: ' + msg.payload);\n    return null;\n}",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 870,
+        "y": 900,
+        "wires": [
+            [
+                "75f5366a6441fbc0"
+            ]
+        ]
+    },
+    {
+        "id": "75f5366a6441fbc0",
+        "type": "change",
+        "z": "b8f36cbcfc882e5f",
+        "name": "",
+        "rules": [
+            {
+                "t": "move",
+                "p": "payload",
+                "pt": "msg",
+                "to": "payload.integral_limit",
+                "tot": "msg"
+            }
+        ],
+        "action": "",
+        "property": "",
+        "from": "",
+        "to": "",
+        "reg": false,
+        "x": 1090,
+        "y": 900,
+        "wires": [
+            [
+                "b83213f4f7c09366"
+            ]
+        ]
+    },
+    {
+        "id": "e57a81e8e2dae9c9",
+        "type": "ui-text-input",
+        "z": "b8f36cbcfc882e5f",
+        "group": "2052b505fc6e7465",
+        "name": "",
+        "label": "Sample Time",
+        "order": 0,
+        "width": 0,
+        "height": 0,
+        "topic": "topic",
+        "topicType": "msg",
+        "mode": "number",
+        "delay": 300,
+        "passthru": false,
+        "sendOnDelay": false,
+        "sendOnBlur": true,
+        "sendOnEnter": true,
+        "className": "",
+        "x": 690,
+        "y": 740,
+        "wires": [
+            [
+                "d7844a40deb74100"
+            ]
+        ]
+    },
+    {
+        "id": "d7844a40deb74100",
+        "type": "function",
+        "z": "b8f36cbcfc882e5f",
+        "name": "parse string to float",
+        "func": "var numberValue = parseFloat(msg.payload);\nif (!isNaN(numberValue)) {\n    msg.payload = numberValue;\n    return msg;\n} else {\n    node.error('Invalid number received from input field: ' + msg.payload);\n    return null;\n}",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 890,
+        "y": 740,
+        "wires": [
+            [
+                "9140d2ab9d070b19"
+            ]
+        ]
+    },
+    {
+        "id": "9140d2ab9d070b19",
+        "type": "change",
+        "z": "b8f36cbcfc882e5f",
+        "name": "",
+        "rules": [
+            {
+                "t": "move",
+                "p": "payload",
+                "pt": "msg",
+                "to": "payload.sample_time",
+                "tot": "msg"
+            }
+        ],
+        "action": "",
+        "property": "",
+        "from": "",
+        "to": "",
+        "reg": false,
+        "x": 1110,
+        "y": 740,
+        "wires": [
+            [
+                "b83213f4f7c09366"
+            ]
+        ]
+    },
+    {
+        "id": "1b4ddda823d0dc7e",
+        "type": "ui-chart",
+        "z": "b8f36cbcfc882e5f",
+        "group": "afe3e22da0747d54",
+        "name": "",
+        "label": "Input Error",
+        "order": 4,
+        "chartType": "line",
+        "category": "topic",
+        "categoryType": "msg",
+        "xAxisProperty": "",
+        "xAxisPropertyType": "msg",
+        "xAxisType": "time",
+        "yAxisProperty": "",
+        "ymin": "",
+        "ymax": "",
+        "action": "append",
+        "pointShape": "false",
+        "pointRadius": 4,
+        "showLegend": false,
+        "removeOlder": 1,
+        "removeOlderUnit": "3600",
+        "removeOlderPoints": "",
+        "colors": [
+            "#1f77b4",
+            "#aec7e8",
+            "#ff7f0e",
+            "#2ca02c",
+            "#98df8a",
+            "#d62728",
+            "#ff9896",
+            "#9467bd",
+            "#c5b0d5"
+        ],
+        "width": "0",
+        "height": "0",
+        "className": "",
+        "x": 810,
+        "y": 360,
+        "wires": [
+            []
+        ]
+    },
+    {
+        "id": "1e2f133d43b51272",
+        "type": "ui-text-input",
+        "z": "b8f36cbcfc882e5f",
+        "group": "2052b505fc6e7465",
+        "name": "",
+        "label": "Dead Zone Threshhold",
+        "order": 0,
+        "width": 0,
+        "height": 0,
+        "topic": "topic",
+        "topicType": "msg",
+        "mode": "number",
+        "delay": 300,
+        "passthru": false,
+        "sendOnDelay": false,
+        "sendOnBlur": true,
+        "sendOnEnter": true,
+        "className": "",
+        "x": 660,
+        "y": 1020,
+        "wires": [
+            [
+                "a08e2388d1e2e205"
+            ]
+        ]
+    },
+    {
+        "id": "a08e2388d1e2e205",
+        "type": "function",
+        "z": "b8f36cbcfc882e5f",
+        "name": "parse string to float",
+        "func": "var numberValue = parseFloat(msg.payload);\nif (!isNaN(numberValue)) {\n    msg.payload = numberValue;\n    return msg;\n} else {\n    node.error('Invalid number received from input field: ' + msg.payload);\n    return null;\n}",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 910,
+        "y": 1020,
+        "wires": [
+            [
+                "7d5371130af11590"
+            ]
+        ]
+    },
+    {
+        "id": "7d5371130af11590",
+        "type": "change",
+        "z": "b8f36cbcfc882e5f",
+        "name": "",
+        "rules": [
+            {
+                "t": "move",
+                "p": "payload",
+                "pt": "msg",
+                "to": "payload.dead_zone_threshold",
+                "tot": "msg"
+            }
+        ],
+        "action": "",
+        "property": "",
+        "from": "",
+        "to": "",
+        "reg": false,
+        "x": 1130,
+        "y": 1020,
+        "wires": [
+            [
+                "b83213f4f7c09366"
+            ]
+        ]
+    },
+    {
+        "id": "d1e1f1a1.123456",
+        "type": "function",
+        "z": "b8f36cbcfc882e5f",
+        "name": "Extract Variables",
+        "func": "msg.payload = [\n    { series: \"error\", value: msg.payload.error },\n    { series: \"output/10\", value: msg.payload.output },\n    { series: \"previous_error\", value: msg.payload.previous_error },\n    { series: \"proportional\", value: msg.payload.proportional },\n    { series: \"integral\", value: msg.payload.integral },\n    { series: \"derivative\", value: msg.payload.derivative }\n];\nreturn msg;\n",
+        "outputs": 1,
+        "timeout": "",
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 550,
+        "y": 1580,
+        "wires": [
+            [
+                "5c0c2aaaf24abf56"
+            ]
+        ]
+    },
+    {
+        "id": "5166ca6616d80ab8",
+        "type": "mqtt in",
+        "z": "b8f36cbcfc882e5f",
+        "name": "",
+        "topic": "tele/still2/pid",
+        "qos": "2",
+        "datatype": "auto-detect",
+        "broker": "3fe3ac59af05955a",
+        "nl": false,
+        "rap": true,
+        "rh": 0,
+        "inputs": 0,
+        "x": 290,
+        "y": 1500,
+        "wires": [
+            [
+                "d1e1f1a1.123456"
+            ]
+        ]
+    },
+    {
+        "id": "401a564794d1c7a3",
+        "type": "inject",
+        "z": "b8f36cbcfc882e5f",
+        "name": "Clear Chart",
+        "props": [
+            {
+                "p": "payload"
+            }
+        ],
+        "repeat": "",
+        "crontab": "",
+        "once": false,
+        "onceDelay": 0.1,
+        "topic": "",
+        "payload": "[]",
+        "payloadType": "json",
+        "x": 430,
+        "y": 1380,
+        "wires": [
+            [
+                "5c0c2aaaf24abf56"
+            ]
+        ]
+    },
+    {
+        "id": "5c0c2aaaf24abf56",
+        "type": "ui-chart",
+        "z": "b8f36cbcfc882e5f",
+        "group": "afe3e22da0747d54",
+        "name": "",
+        "label": "chart",
+        "order": 9007199254740991,
+        "chartType": "line",
+        "category": "series",
+        "categoryType": "property",
+        "xAxisLabel": "",
+        "xAxisProperty": "",
+        "xAxisPropertyType": "timestamp",
+        "xAxisType": "time",
+        "xAxisFormat": "",
+        "xAxisFormatType": "auto",
+        "xmin": "",
+        "xmax": "",
+        "yAxisLabel": "",
+        "yAxisProperty": "value",
+        "yAxisPropertyType": "property",
+        "ymin": "",
+        "ymax": "",
+        "bins": "",
+        "action": "append",
+        "stackSeries": false,
+        "pointShape": "false",
+        "pointRadius": 4,
+        "showLegend": true,
+        "removeOlder": 1,
+        "removeOlderUnit": "3600",
+        "removeOlderPoints": "",
+        "colors": [
+            "#1d84cd",
+            "#aec7e8",
+            "#ff7f0e",
+            "#2ca02c",
+            "#98df8a",
+            "#d62728",
+            "#ff9896",
+            "#9467bd",
+            "#c5b0d5"
+        ],
+        "textColor": [
+            "#666666"
+        ],
+        "textColorDefault": true,
+        "gridColor": [
+            "#e5e5e5"
+        ],
+        "gridColorDefault": true,
+        "width": 6,
+        "height": 8,
+        "className": "",
+        "interpolation": "linear",
+        "x": 890,
+        "y": 1520,
+        "wires": [
+            []
         ]
     },
     {
@@ -1407,7 +1997,46 @@
         "page": "98530696ee8cd926",
         "width": "6",
         "height": "1",
+        "order": 3,
+        "showTitle": true,
+        "className": "",
+        "visible": "true",
+        "disabled": "false"
+    },
+    {
+        "id": "e459568c74dfd8b2",
+        "type": "ui-group",
+        "name": "PID Control",
+        "page": "98530696ee8cd926",
+        "width": "6",
+        "height": "1",
         "order": 2,
+        "showTitle": true,
+        "className": "",
+        "visible": "true",
+        "disabled": "false"
+    },
+    {
+        "id": "6d55354a3ff5fc47",
+        "type": "ui-group",
+        "name": "Emulation",
+        "page": "32d822f9400e65fd",
+        "width": "6",
+        "height": "1",
+        "order": 3,
+        "showTitle": true,
+        "className": "",
+        "visible": "true",
+        "disabled": "false"
+    },
+    {
+        "id": "877facfa381dab12",
+        "type": "ui-group",
+        "name": "Report",
+        "page": "32d822f9400e65fd",
+        "width": "6",
+        "height": "1",
+        "order": 4,
         "showTitle": true,
         "className": "",
         "visible": "true",
@@ -1427,26 +2056,13 @@
         "disabled": "false"
     },
     {
-        "id": "e459568c74dfd8b2",
-        "type": "ui-group",
-        "name": "PID Control",
-        "page": "98530696ee8cd926",
-        "width": "6",
-        "height": "1",
-        "order": 3,
-        "showTitle": true,
-        "className": "",
-        "visible": "true",
-        "disabled": "false"
-    },
-    {
         "id": "2052b505fc6e7465",
         "type": "ui-group",
         "name": "basic params",
         "page": "32d822f9400e65fd",
         "width": "6",
         "height": "1",
-        "order": -1,
+        "order": 1,
         "showTitle": true,
         "className": "",
         "visible": "true",
@@ -1459,7 +2075,7 @@
         "page": "32d822f9400e65fd",
         "width": "6",
         "height": "1",
-        "order": -1,
+        "order": 5,
         "showTitle": true,
         "className": "",
         "visible": "true",
@@ -1472,20 +2088,7 @@
         "page": "32d822f9400e65fd",
         "width": "6",
         "height": "1",
-        "order": -1,
-        "showTitle": true,
-        "className": "",
-        "visible": "true",
-        "disabled": "false"
-    },
-    {
-        "id": "6d55354a3ff5fc47",
-        "type": "ui-group",
-        "name": "Emulation",
-        "page": "32d822f9400e65fd",
-        "width": "6",
-        "height": "1",
-        "order": -1,
+        "order": 2,
         "showTitle": true,
         "className": "",
         "visible": "true",
@@ -1506,13 +2109,13 @@
         "disabled": "false"
     },
     {
-        "id": "8344da34cf05e4fd",
+        "id": "32d822f9400e65fd",
         "type": "ui-page",
-        "name": "pumps",
+        "name": "pid",
         "ui": "c776e0d19c314f0d",
-        "path": "/pumps",
+        "path": "/pid",
         "icon": "home",
-        "layout": "grid",
+        "layout": "notebook",
         "theme": "ff6476dcafc85310",
         "order": -1,
         "className": "",
@@ -1520,11 +2123,11 @@
         "disabled": "false"
     },
     {
-        "id": "32d822f9400e65fd",
+        "id": "8344da34cf05e4fd",
         "type": "ui-page",
-        "name": "pid",
+        "name": "pumps",
         "ui": "c776e0d19c314f0d",
-        "path": "/pid",
+        "path": "/pumps",
         "icon": "home",
         "layout": "grid",
         "theme": "ff6476dcafc85310",

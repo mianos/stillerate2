@@ -26,8 +26,8 @@ public:
     std::string ntpServer = "time.google.com";
 //    std::string refluxPump = "http://131.84.1.78:8080/pump";
 //    std::string condenserPump = "http://131.84.1.78:8080/pump";
-    std::string refluxPump = "http://reflux/pump";
-    std::string condenserPump = "http://condenser/pump";
+    std::string refluxPump = "http://reflux.mianos.com/pump";
+    std::string condenserPump = "http://condenser.mianos.com/pump";
     std::string otaUrl = "http://ota.mianos.com";
 
 

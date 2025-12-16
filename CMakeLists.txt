@@ -1,27 +1,31 @@
-
 cmake_minimum_required(VERSION 3.16)
 
 include($ENV{IDF_PATH}/tools/cmake/project.cmake)
 project(stillerate2)
 
-# ------------------ Updated Post-Build Copy Step ------------------
+# ------------------ Post-Build OTA Copy ------------------
 
-# Use environment variable or default OTA target path
+# 1. Setup the path (Default or Env Var)
 if(DEFINED ENV{OTA_TARGET_PATH})
     set(OTA_TARGET_PATH $ENV{OTA_TARGET_PATH})
 else()
     set(OTA_TARGET_PATH "/Volumes/files/ota")
 endif()
 
-# Automatically determine firmware name from project
-set(FIRMWARE_NAME "${PROJECT_NAME}.bin")
-
-# Custom target to copy firmware after building .bin
+# 2. Define the exact command
+# We use 'add_custom_target' with 'ALL' so it runs on every build.
+# We 'DEPENDS gen_project_binary' so it waits for the .bin to be created.
 add_custom_target(copy_firmware ALL
+    # Ensure the destination directory exists
+    COMMAND ${CMAKE_COMMAND} -E make_directory ${OTA_TARGET_PATH}
+    
+    # Copy the binary
     COMMAND ${CMAKE_COMMAND} -E copy
-            ${CMAKE_BINARY_DIR}/${FIRMWARE_NAME}
-            ${OTA_TARGET_PATH}/${FIRMWARE_NAME}
-    DEPENDS ${CMAKE_BINARY_DIR}/${FIRMWARE_NAME}
-    COMMENT "Copying firmware (${FIRMWARE_NAME}) to OTA directory..."
+            ${CMAKE_BINARY_DIR}/${PROJECT_NAME}.bin
+            ${OTA_TARGET_PATH}/${PROJECT_NAME}.bin
+            
+    # Wait for the standard ESP-IDF binary generation to finish
+    DEPENDS gen_project_binary
+    
+    COMMENT "Copying ${PROJECT_NAME}.bin to ${OTA_TARGET_PATH}..."
 )
-

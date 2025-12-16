@@ -59,7 +59,7 @@ void initialize_sntp(SettingsManager& settings) {
 void PublishMqttInit(MqttClient& client, SettingsManager& settings, PIDController &pid) {
     JsonWrapper doc;
 
-    doc.AddItem("version", 3);
+    doc.AddItem("version", 6);
 	doc.AddTime();
 	doc.AddTime(false, "gmt");
 
@@ -188,11 +188,14 @@ esp_err_t reportPidParamsHandler(MqttClient* client, const std::string& topic, c
 }
 
 
-esp_err_t resetMaxHandler(MqttClient* client, const std::string& topic, const JsonWrapper& data, void* context) {
+esp_err_t pidResetHandler(MqttClient* client, const std::string& topic, const JsonWrapper& data, void* context) {
     auto* ctx = static_cast<MqttContext*>(context); // Explicit cast required
-	ESP_RETURN_ON_FALSE(context, ESP_FAIL, "resetMaxHandler", "Context cannot be nullptr");
-	auto* ptt = ctx->ptimer;
-	ptt->resetAll();
+	ESP_RETURN_ON_FALSE(context, ESP_FAIL, "pidResetHandler", "Context cannot be nullptr");
+	ctx->pid->reset();
+    JsonWrapper doc;
+	ctx->pid->toJsonWrapper(doc);
+	doc.AddItem("reset", true);
+    client->publish("tele/" + client->sensorName + "/pidparams", doc.ToString());;
 	return ESP_OK;
 }
 
@@ -291,6 +294,8 @@ extern "C" void app_main() {
 
 	std::string topic = "cmnd/" + settings.sensorName + "/pid";
 	client.registerHandler(topic, std::regex(topic), pidSettingsHandler, &ctx);
+	topic = "cmnd/" + settings.sensorName + "/pidreset";
+	client.registerHandler(topic, std::regex(topic), pidResetHandler, &ctx);
 	topic = "cmnd/" + settings.sensorName + "/pidemulation";
 	client.registerHandler(topic, std::regex(topic), pidEmulationHandler, &ctx);
 	topic = "cmnd/" + settings.sensorName + "/pidrun";
@@ -303,8 +308,6 @@ extern "C" void app_main() {
 	client.registerHandler(topic, std::regex(topic), updateSettingsHandler, &ctx);
 	topic = "cmnd/" + settings.sensorName + "/wificonfig";
 	client.registerHandler(topic, std::regex(topic), wifiConfigHandler, &ctx);
-	topic = "cmnd/" + settings.sensorName + "/resetmax";
-	client.registerHandler(topic, std::regex(topic), resetMaxHandler, &ctx);
 	topic = "cmnd/" + settings.sensorName + "/ota";
 	client.registerHandler(topic, std::regex(topic), otaHandler, &ctx);
 

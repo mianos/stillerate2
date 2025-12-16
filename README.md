@@ -15,6 +15,10 @@ Set the device host name
  mosquitto_pub -h mqtt2.mianos.com -t "cmnd/still2/wificonfig" -m '{"host_name": "still2"}'
 ```
 
+### OTA
+```
+mosquitto_pub -t "cmnd/still2/ota" -m '{"ota_url": "http://ota.mianos.com/stillerate2.bin"}'
+```
 # TODO
  examples for settings
  start stop control

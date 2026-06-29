@@ -5,10 +5,11 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 idf_component_register(SRCS main.cpp 
                 INCLUDE_DIRS "."
                 REQUIRES
-				    driver
+				    esp_driver_gpio
                     esp_timer
-					esp_https_ota esp_system
-					mqtt
+					esp_https_ota esp_system bootloader_support
+					espressif__mqtt
+					espressif__cjson
                     mqttwrapper
                     button
                     wifimanager

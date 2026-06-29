@@ -1,5 +1,7 @@
 #pragma once
 
+#include <limits>
+
 #include <esp_timer.h>
 #include <esp_log.h>
 #include <esp_err.h>
@@ -51,7 +53,9 @@ public:
         esp_err_t result = max31865_measure(&dev, &temperature);
         if (result != ESP_OK) {
             ESP_LOGE(Tag, "Failed to measure: %d (%s)", result, esp_err_to_name(result));
-            return -1.0f; // Use -1.0f to indicate an error condition
+            // NaN signals an unusable reading; callers check with isfinite().
+            // (A sentinel like -1.0 is indistinguishable from a real temperature.)
+            return std::numeric_limits<float>::quiet_NaN();
         }
         return temperature;
     }

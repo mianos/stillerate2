@@ -3,5 +3,5 @@
 nvs,        data, nvs,     0x9000,   24K,
 phy_init,   data, phy,     0xf000,   4K,
 ota_data,   data, ota,     0x10000,  8K,
-ota_0,      app,  ota_0,   0x20000,  1500K,
-ota_1,      app,  ota_1,   0x1A0000, 1500K,
+ota_0,      app,  ota_0,   0x20000,  1984K,
+ota_1,      app,  ota_1,   0x210000, 1984K,

@@ -1,4 +1,5 @@
 dependencies:
+  # Shared infrastructure — mianesp repo, IDF v6 branch.
   jsonwrapper:
     git: git@github.com:mianos/mianesp.git
     path: components/jsonwrapper
@@ -23,3 +24,13 @@ dependencies:
     git: git@github.com:mianos/mianesp.git
     path: components/httpclient
     version: main
+  mqttwrapper:
+    git: git@github.com:mianos/mianesp.git
+    path: components/mqttwrapper
+    version: main
+
+  # Espressif registry components (cJSON is no longer bundled in IDF v6;
+  # mqtt is now a managed component). network_provisioning is pulled
+  # transitively by wifimanager.
+  espressif/cjson: "*"
+  espressif/mqtt: "*"

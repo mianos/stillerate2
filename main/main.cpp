@@ -30,7 +30,7 @@
 #include "SensorLoopTask.h"
 #include "RESTMotorController.h"
 #include "SettingsManager.h"
-#include "Ota.h"
+#include "esp_ota_ops.h"
 #include "StillWebServer.h"
 
 static const char *TAG = "stillerate2";
@@ -102,10 +102,42 @@ void PublishMqttInit(MqttClient& client, SettingsManager& settings, PIDControlle
 
 
 
+// --- OTA rollback verification ---
+//
+// A freshly-OTA'd image boots in PENDING_VERIFY: the bootloader rolls it back
+// to the previous slot on the next reset unless the running app declares itself
+// good. We declare it good only once the device is back on the network, so an
+// image that boots but can't reach Wi-Fi is rolled back instead of stranding an
+// unreachable device. A wired first-flash is UNDEFINED, so this never touches
+// normal/bench boots.
+constexpr int OTA_VERIFY_TIMEOUT_MS = 120000;
+static SemaphoreHandle_t s_got_ip = nullptr;
+
 static void localEventHandler(void* arg, esp_event_base_t event_base, int32_t event_id, void* event_data) {
     if (event_id == IP_EVENT_STA_GOT_IP) {
         xSemaphoreGive(wifiSemaphore);
+        xSemaphoreGive(s_got_ip);
     }
+}
+
+static void otaVerifyTask(void*) {
+    const esp_partition_t* running = esp_ota_get_running_partition();
+    esp_ota_img_states_t state;
+    if (esp_ota_get_state_partition(running, &state) == ESP_OK &&
+        state == ESP_OTA_IMG_PENDING_VERIFY) {
+        ESP_LOGW(TAG, "OTA: image pending verify; waiting up to %ds for connectivity",
+                 OTA_VERIFY_TIMEOUT_MS / 1000);
+        if (xSemaphoreTake(s_got_ip, pdMS_TO_TICKS(OTA_VERIFY_TIMEOUT_MS)) == pdTRUE) {
+            esp_ota_mark_app_valid_cancel_rollback();
+            ESP_LOGI(TAG, "OTA: connectivity confirmed, image marked valid");
+        } else {
+            ESP_LOGE(TAG, "OTA: no IP within timeout; rolling back to previous image");
+            esp_ota_mark_app_invalid_rollback_and_reboot();  // reboots on success
+            ESP_LOGE(TAG, "OTA: rollback not possible; keeping current image");
+            esp_ota_mark_app_valid_cancel_rollback();
+        }
+    }
+    vTaskDelete(nullptr);
 }
 
 void button_task(void *pvParameters) {
@@ -249,23 +281,9 @@ esp_err_t wifiConfigHandler(MqttClient* client, const std::string& topic, const 
 }
 
 
-esp_err_t otaHandler(MqttClient* client, const std::string& topic, const JsonWrapper& data, void* context) {
-    auto* ctx = static_cast<MqttContext*>(context);
-    ESP_RETURN_ON_FALSE(context, ESP_FAIL, "wifiConfig", "Context cannot be nullptr");
-
-    std::string ota_url;
-    if (data.GetField("ota_url", ota_url, true)) {
-        ctx->ota->perform_update(ota_url);
-        ESP_LOGI(TAG, "Flashed from '%s'", ota_url.c_str());
-    } else {
-        ESP_LOGW(TAG, "Missing or invalid 'ota_url'");
-    }
-    return ESP_OK;
-}
-
-
 extern "C" void app_main() {
     wifiSemaphore = xSemaphoreCreateBinary();
+    s_got_ip = xSemaphoreCreateBinary();
     NvsStorageManager nv;
     SettingsManager settings(nv);
 
@@ -291,12 +309,9 @@ extern "C" void app_main() {
     WiFiManager wifiManager(nv, localEventHandler, nullptr);
     xTaskCreate(button_task, "button_task", 2048, &wifiManager, 10, NULL);
 
-    OTAUpdater ota(settings.otaUrl, [&client, &settings](int progress) {
-        client.publish("tele/" + settings.sensorName + "/ota", std::to_string(progress));
-        ESP_LOGI("OTA", "%d", progress);
-    });
+    xTaskCreate(otaVerifyTask, "ota_verify", 4096, nullptr, 4, nullptr);
 
-    MqttContext ctx{&pid, &emu, &ptimer, &reflux_pump, &condenser_pump, &settings, &wifiManager, &ota};
+    MqttContext ctx{&pid, &emu, &ptimer, &reflux_pump, &condenser_pump, &settings, &wifiManager};
     SensorLoopTask slt{client, settings, boiler_temp};
 
     std::string topic = "cmnd/" + settings.sensorName + "/pid";
@@ -315,8 +330,6 @@ extern "C" void app_main() {
     client.registerHandler(topic, std::regex(topic), updateSettingsHandler, &ctx);
     topic = "cmnd/" + settings.sensorName + "/wificonfig";
     client.registerHandler(topic, std::regex(topic), wifiConfigHandler, &ctx);
-    topic = "cmnd/" + settings.sensorName + "/ota";
-    client.registerHandler(topic, std::regex(topic), otaHandler, &ctx);
 
 
     if (xSemaphoreTake(wifiSemaphore, portMAX_DELAY) ) {

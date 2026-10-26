@@ -7,7 +7,7 @@ idf_component_register(SRCS main.cpp StillWebServer.cpp
                 REQUIRES
 				    esp_driver_gpio
                     esp_timer
-					esp_https_ota esp_system bootloader_support esp_app_format app_update esp_http_server webserver
+					esp_system bootloader_support esp_app_format app_update esp_http_server webserver
 					espressif__mqtt
 					espressif__cjson
                     mqttwrapper

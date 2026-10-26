@@ -59,7 +59,20 @@ public:
         bool updated = false;
         updated |= json.GetField("integral_limit", integral_limit, true);
         updated |= json.GetField("wind_down_threshold", wind_down_threshold, true);
-        updated |= json.GetField("integral_unwind_factor", integral_unwind_factor, true);
+        // integral_unwind_factor is applied as pow(1 - factor, dt); a value
+        // outside [0, 1) makes the base <= 0 and yields NaN, poisoning the
+        // integral. Reject an out-of-range value (keep the previous one) and log.
+        {
+            double f;
+            if (json.GetField("integral_unwind_factor", f, true)) {
+                if (f >= 0.0 && f < 1.0) {
+                    integral_unwind_factor = f;
+                    updated = true;
+                } else {
+                    ESP_LOGE("pid", "integral_unwind_factor %.4f out of range [0,1); ignoring", f);
+                }
+            }
+        }
         updated |= json.GetField("derivative_filter", derivative_filter, true);
         updated |= json.GetField("kd", kd, true);
         updated |= json.GetField("ki", ki, true);

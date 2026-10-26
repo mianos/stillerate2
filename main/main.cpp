@@ -13,6 +13,7 @@
 #include "esp_netif.h"
 #include "esp_check.h"
 #include "esp_timer.h" // Added for high-res timing
+#include "esp_app_desc.h"
 
 #include "sdkconfig.h"
 
@@ -30,6 +31,7 @@
 #include "RESTMotorController.h"
 #include "SettingsManager.h"
 #include "Ota.h"
+#include "StillWebServer.h"
 
 static const char *TAG = "stillerate2";
 
@@ -61,6 +63,10 @@ void PublishMqttInit(MqttClient& client, SettingsManager& settings, PIDControlle
     JsonWrapper doc;
 
     doc.AddItem("version", 6);
+    const esp_app_desc_t* app = esp_app_get_description();
+    doc.AddItem("fw_version", std::string(app->version));
+    doc.AddItem("idf_version", std::string(app->idf_ver));
+    doc.AddItem("build_date", std::string(app->date) + " " + app->time);
     doc.AddTime();
     doc.AddTime(false, "gmt");
 
@@ -317,6 +323,10 @@ extern "C" void app_main() {
         initialize_sntp(settings);
         client.start();
         PublishMqttInit(client, settings, pid);
+
+        static WebContext webctx(&wifiManager);
+        static StillWebServer web(&webctx);
+        web.start();
 
         // Variables for Pump Health Checking
         int64_t last_pump_check = 0;

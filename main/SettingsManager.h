@@ -67,7 +67,7 @@ public:
         json.AddItem("ntpServer", ntpServer);
         json.AddItem("refluxPump", refluxPump);
         json.AddItem("condenserPump", condenserPump);
-        json.AddItem("otaUrl", condenserPump);
+        json.AddItem("otaUrl", otaUrl);
     }
 
     std::string toJson() const {

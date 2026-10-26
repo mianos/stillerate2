@@ -210,6 +210,10 @@ esp_err_t pidRun(MqttClient* client, const std::string& topic, const JsonWrapper
         ESP_LOGE(TAG, "pidRun failed: 'sample_time' not found in JSON");
         return ESP_FAIL; // Handle the error appropriately
     }
+    if (sample_time < 0) {
+        ESP_LOGE(TAG, "pidRun failed: 'sample_time' %d must be >= 0 (0 stops the loop)", sample_time);
+        return ESP_FAIL;
+    }
     ptimer->start(sample_time * 1000);
     ESP_LOGI(TAG, "pidRun called '%s'", data.ToString().c_str());
     return ESP_OK;

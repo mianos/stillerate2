@@ -123,7 +123,49 @@ static void test_reverse_gains_via_json() {
     CHECK_NEAR(reloaded.kp, -2.0);
 }
 
+// Output limits are validated as a pair: 0 <= min <= max <= 100. A bad pair is
+// rejected whole (the old pair stays), a good one is applied, and either field
+// may arrive on its own and is checked against the other.
+static void test_output_limits_validated() {
+    NvsStorageManager nvs;
+    PIDController pid(nvs);
+    pid.setParametersFromJsonWrapper(oneField("output_min", 5.0));
+    pid.setParametersFromJsonWrapper(oneField("output_max", 90.0));
+    CHECK_NEAR(pid.output_min, 5.0);
+    CHECK_NEAR(pid.output_max, 90.0);
+
+    CHECK(!pid.setParametersFromJsonWrapper(oneField("output_min", 95.0)));   // > max
+    CHECK(!pid.setParametersFromJsonWrapper(oneField("output_max", 120.0)));  // > 100
+    CHECK(!pid.setParametersFromJsonWrapper(oneField("output_min", -1.0)));   // < 0
+    CHECK_NEAR(pid.output_min, 5.0);
+    CHECK_NEAR(pid.output_max, 90.0);
+
+    JsonWrapper both(cJSON_CreateObject());    // reversed pair in one message
+    both.AddItem("output_min", 60.0);
+    both.AddItem("output_max", 40.0);
+    CHECK(!pid.setParametersFromJsonWrapper(both));
+    CHECK_NEAR(pid.output_min, 5.0);
+    CHECK_NEAR(pid.output_max, 90.0);
+
+    JsonWrapper ok(cJSON_CreateObject());      // valid pair swaps the range
+    ok.AddItem("output_min", 40.0);
+    ok.AddItem("output_max", 60.0);
+    CHECK(pid.setParametersFromJsonWrapper(ok));
+    CHECK_NEAR(pid.output_min, 40.0);
+    CHECK_NEAR(pid.output_max, 60.0);
+    CHECK_NEAR(pid.failSafeOutput(), 60.0);
+
+    double out = 0.0;                          // output honours the new range
+    pid.setParametersFromJsonWrapper(oneField("kp", 2.0));
+    pid.setParametersFromJsonWrapper(oneField("set_point", 50.0));
+    pid.compute(0.0, 5.0, out);
+    CHECK_NEAR(out, 40.0);
+    pid.compute(100.0, 5.0, out);
+    CHECK_NEAR(out, 60.0);
+}
+
 int main() {
+    run("output limits validated as a pair", test_output_limits_validated);
     run("reverse-acting gains via JSON/MQTT path", test_reverse_gains_via_json);
     run("valid unwind factor accepted", test_valid_unwind_accepted);
     run("out-of-range unwind factor rejected", test_out_of_range_rejected);

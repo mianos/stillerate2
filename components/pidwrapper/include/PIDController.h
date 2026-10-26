@@ -77,8 +77,23 @@ public:
         updated |= json.GetField("kd", kd, true);
         updated |= json.GetField("ki", ki, true);
         updated |= json.GetField("kp", kp, true);
-        updated |= json.GetField("output_max", output_max, true);
-        updated |= json.GetField("output_min", output_min, true);
+        // Output limits are validated as a pair: the pump accepts 0..100 only
+        // (anything else is silently refused), and std::clamp with min > max is
+        // undefined behaviour. A bad pair is rejected whole, keeping the old one.
+        {
+            double lo = output_min, hi = output_max;
+            const bool got_lo = json.GetField("output_min", lo, true);
+            const bool got_hi = json.GetField("output_max", hi, true);
+            if (got_lo || got_hi) {
+                if (lo >= 0.0 && hi <= 100.0 && lo <= hi) {
+                    output_min = lo;
+                    output_max = hi;
+                    updated = true;
+                } else {
+                    ESP_LOGE("pid", "output limits [%.1f, %.1f] invalid (need 0 <= min <= max <= 100); ignoring", lo, hi);
+                }
+            }
+        }
         updated |= json.GetField("set_point", set_point, true);
 
         if (updated) {
@@ -102,6 +117,12 @@ public:
         JsonWrapper json;
         toJsonWrapperImpl(json);
         nvs.store(nvsKey, json.ToString());
+    }
+
+    // Fail-safe output for a cooling loop: maximum coolant (total reflux).
+    double failSafeOutput() const {
+        std::lock_guard<std::recursive_mutex> lock(mtx_);
+        return output_max;
     }
 
     // Full reset: clears integral and derivative history.

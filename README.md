@@ -1,25 +1,66 @@
 # Reflux Still Control
 
+ESP32-C6 controller for the still: reads the reflux and boiler RTDs and runs a
+PID loop that drives the reflux (dephlegmator) coolant pump.
 
-# Examples
+Commands are REST on `http://still2.mianos.com`. MQTT carries telemetry only:
+`tele/still2/{init,temp,pid,pumps}` and a retained `Online`/`Offline` on
+`tele/still2/LWT`. Every POST is logged with the caller's address.
 
-Set the reflux pump url
+Success is a 2xx whose body is the resulting state. Errors return
+`{"error", "statusCode"}` with the same HTTP status: 400 bad input, 404/405
+unknown path or method, 413 body too large.
 
-```
-mosquitto_pub -h mqtt2.mianos.com -t "cmnd/still2/settings" -m '{"refluxPumpUrl": "http://reflux.mianos.com//pump"}'
-mosquitto_pub -h mqtt2.mianos.com -t "cmnd/still2/settings" -m '{"condenserPumpUrl": "http://condenser.mianos.com//pump"}'
+## Loop
+
+```sh
+curl -X POST -d '{"sample_time": 5}' http://still2.mianos.com/pid/run   # start, 5 s period
+curl -X POST -d '{"sample_time": 0}' http://still2.mianos.com/pid/run   # stop (pump off)
+curl http://still2.mianos.com/pid                                       # params, running, last start/stop and who sent it
+curl -X POST -d '{"set_point": 78, "kp": 2}' http://still2.mianos.com/pid
+curl -X POST http://still2.mianos.com/pid/reset                         # clear integral and derivative history
 ```
 
-Set the device host name
-```
- mosquitto_pub -h mqtt2.mianos.com -t "cmnd/still2/wificonfig" -m '{"host_name": "still2"}'
+`POST /pid` accepts any subset of `kp ki kd set_point output_min output_max
+integral_limit wind_down_threshold integral_unwind_factor derivative_filter`.
+Invalid values are rejected and the reply shows the parameters in force. A bad
+request returns 400 with an error message.
+
+## Emulation
+
+```sh
+curl -X POST -d '{"enabled": true, "temp": 72}' http://still2.mianos.com/emulation
+curl -X POST -d '{"enabled": false}' http://still2.mianos.com/emulation
 ```
 
-### OTA
+Feeds the loop a fixed reflux temperature; the real probes keep publishing.
+
+## Sensors
+
+```sh
+curl http://still2.mianos.com/sensors           # raw code, ohms, temperature, faults per RTD
+curl -X POST http://still2.mianos.com/sensors/reset
 ```
-mosquitto_pub -t "cmnd/still2/ota" -m '{"ota_url": "http://ota.mianos.com/stillerate2.bin"}'
+
+## Settings
+
+```sh
+curl http://still2.mianos.com/settings
+curl -X POST -d '{"refluxPump": "http://reflux.mianos.com/pump"}' http://still2.mianos.com/settings
+curl -X POST -d '{"refluxRref": 401.5, "refluxOffset": 0}' http://still2.mianos.com/settings
 ```
-# TODO
- examples for settings
- start stop control
- runtime posts
+
+RTD calibration (`refluxRref boilerRref refluxOffset boilerOffset`) applies at
+once; broker, `sensorName` and pump URLs take effect after a reboot. Hostname:
+`curl -X POST -d '{"host_name": "still2"}' http://still2.mianos.com/set_hostname`.
+
+## Build and update
+
+```sh
+./build.sh
+curl -X POST --data-binary @build/stillerate2.bin http://still2.mianos.com/firmware
+curl http://still2.mianos.com/firmware
+```
+
+An update boots pending verification and rolls back unless it reaches Wi-Fi
+within 120 s.

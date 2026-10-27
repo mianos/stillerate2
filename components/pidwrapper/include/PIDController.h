@@ -59,13 +59,41 @@ public:
         bool updated = false;
         updated |= json.GetField("integral_limit", integral_limit, true);
         updated |= json.GetField("wind_down_threshold", wind_down_threshold, true);
-        updated |= json.GetField("integral_unwind_factor", integral_unwind_factor, true);
+        // integral_unwind_factor is applied as pow(1 - factor, dt); a value
+        // outside [0, 1) makes the base <= 0 and yields NaN, poisoning the
+        // integral. Reject an out-of-range value (keep the previous one) and log.
+        {
+            double f;
+            if (json.GetField("integral_unwind_factor", f, true)) {
+                if (f >= 0.0 && f < 1.0) {
+                    integral_unwind_factor = f;
+                    updated = true;
+                } else {
+                    ESP_LOGE("pid", "integral_unwind_factor %.4f out of range [0,1); ignoring", f);
+                }
+            }
+        }
         updated |= json.GetField("derivative_filter", derivative_filter, true);
         updated |= json.GetField("kd", kd, true);
         updated |= json.GetField("ki", ki, true);
         updated |= json.GetField("kp", kp, true);
-        updated |= json.GetField("output_max", output_max, true);
-        updated |= json.GetField("output_min", output_min, true);
+        // Output limits are validated as a pair: the pump accepts 0..100 only
+        // (anything else is silently refused), and std::clamp with min > max is
+        // undefined behaviour. A bad pair is rejected whole, keeping the old one.
+        {
+            double lo = output_min, hi = output_max;
+            const bool got_lo = json.GetField("output_min", lo, true);
+            const bool got_hi = json.GetField("output_max", hi, true);
+            if (got_lo || got_hi) {
+                if (lo >= 0.0 && hi <= 100.0 && lo <= hi) {
+                    output_min = lo;
+                    output_max = hi;
+                    updated = true;
+                } else {
+                    ESP_LOGE("pid", "output limits [%.1f, %.1f] invalid (need 0 <= min <= max <= 100); ignoring", lo, hi);
+                }
+            }
+        }
         updated |= json.GetField("set_point", set_point, true);
 
         if (updated) {
@@ -89,6 +117,12 @@ public:
         JsonWrapper json;
         toJsonWrapperImpl(json);
         nvs.store(nvsKey, json.ToString());
+    }
+
+    // Fail-safe output for a cooling loop: maximum coolant (total reflux).
+    double failSafeOutput() const {
+        std::lock_guard<std::recursive_mutex> lock(mtx_);
+        return output_max;
     }
 
     // Full reset: clears integral and derivative history.

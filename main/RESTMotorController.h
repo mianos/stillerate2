@@ -13,6 +13,7 @@ private:
     HttpClient httpClient;
     std::string motorName;
     std::string healthUrl;
+    std::optional<int> lastRpm_;
 
     // Helper: Converts "http://ip:port/pump" to "http://ip:port/healthz"
     std::string generateHealthUrl(std::string url) {
@@ -64,6 +65,18 @@ public:
         }
 
         auto [success, response] = httpClient.post(payload.ToString());
+        lastRpm_.reset();
+        if (success) {
+            const JsonWrapper reply = JsonWrapper::Parse(response);
+            bool fresh = false;
+            int rpm = 0;
+            if (reply.GetField("telem_fresh", fresh) && fresh && reply.GetField("rpm_mech", rpm)) {
+                lastRpm_ = rpm;
+            }
+        }
         return success;
     }
+
+    // Empty with old pump firmware, stale telemetry or a failed post.
+    std::optional<int> lastRpm() const { return lastRpm_; }
 };

@@ -215,10 +215,17 @@ esp_err_t pidRun(MqttClient* client, const std::string& topic, const JsonWrapper
         return ESP_FAIL;
     }
     ptimer->start(sample_time * 1000);
-    ESP_LOGI(TAG, "pidRun called '%s'", data.ToString().c_str());
+    ESP_LOGW(TAG, "pidrun '%s'", data.ToString().c_str());
     return ESP_OK;
 }
 
+
+esp_err_t resetMaxHandler(MqttClient* client, const std::string& topic, const JsonWrapper& data, void* context) {
+    auto* ctx = static_cast<MqttContext*>(context);
+    ESP_RETURN_ON_FALSE(context, ESP_FAIL, "resetMaxHandler", "Context cannot be nullptr");
+    ctx->ptimer->resetAll();
+    return ESP_OK;
+}
 
 esp_err_t reportPidParamsHandler(MqttClient* client, const std::string& topic, const JsonWrapper& data, void* context) {
     auto* ctx = static_cast<MqttContext*>(context); // Explicit cast required
@@ -330,6 +337,8 @@ extern "C" void app_main() {
     client.registerHandler(topic, std::regex(topic), pidRun, &ctx);
     topic = "cmnd/" + settings.sensorName + "/pump";
     client.registerHandler(topic, std::regex(topic), pumpHandler, &ctx);
+    topic = "cmnd/" + settings.sensorName + "/resetmax";
+    client.registerHandler(topic, std::regex(topic), resetMaxHandler, &ctx);
     topic = "cmnd/" + settings.sensorName + "/pidparams";
     client.registerHandler(topic, std::regex(topic), reportPidParamsHandler, &ctx);
     topic = "cmnd/" + settings.sensorName + "/settings";

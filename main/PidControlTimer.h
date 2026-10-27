@@ -51,6 +51,7 @@ private:
     int      consecutive_faults_ = 0;
     bool     pump_ok_ = true;
     bool     pump_stalled_ = false;
+    bool     drivingPump_ = false;    // loop has commanded the pump since it last started
     bool     wasRunning_ = false;
     int      pump_rpm_ = -1;          // -1: not reported
     TickType_t lastRunTicks_ = 0;   // how long the previous runPIDControl took
@@ -79,6 +80,13 @@ private:
     void taskLoop() {
         for (;;) {
             if (!running_.load()) {
+                // Done here, not in the stop handler, so a sample already in
+                // progress can't turn the pump back on after it.
+                if (drivingPump_) {
+                    commandPump(0.0);
+                    drivingPump_ = false;
+                    ESP_LOGI("PIDControlTimer", "Loop stopped; reflux pump off");
+                }
                 ulTaskNotifyTake(pdTRUE, portMAX_DELAY);  // sleep until start()
                 continue;
             }
@@ -97,6 +105,7 @@ private:
                 continue;
             }
             const TickType_t started = xTaskGetTickCount();
+            drivingPump_ = true;
             (void)runPIDControl();
             lastRunTicks_ = xTaskGetTickCount() - started;
         }

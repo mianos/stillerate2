@@ -191,7 +191,14 @@ public:
           reflux_temp_sensor(reflux_temp),
           reflux_cooling_motor(reflux_cooling_motor),
           boiler_temp_sensor(boiler_temp),
-          emu(emu) {}
+          emu(emu) {
+        applySensorCalibration();
+    }
+
+    void applySensorCalibration() {
+        reflux_temp_sensor.setCalibration(settings.refluxRref, settings.refluxOffset);
+        boiler_temp_sensor.setCalibration(settings.boilerRref, settings.boilerOffset);
+    }
 
     ~PIDControlTimer() {
         running_.store(false);

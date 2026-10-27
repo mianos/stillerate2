@@ -267,6 +267,7 @@ esp_err_t updateSettingsHandler(MqttClient* client, const std::string& topic, co
     ESP_RETURN_ON_FALSE(context, ESP_FAIL, "updateSettingsHandler", "Context cannot be nullptr");
     ESP_LOGI(TAG, "Update Settings handler called with '%s'", data.ToString().c_str());
     ctx->settings->updateFromJsonWrapper(data);
+    ctx->ptimer->applySensorCalibration();
     return ESP_OK;
 }
 
@@ -294,8 +295,8 @@ extern "C" void app_main() {
     //auto trigger = GPIOWrapper(GPIO_NUM_2);
     RESTMotorController reflux_pump(settings.refluxPump, "reflux");
     RESTMotorController condenser_pump(settings.condenserPump, "condenser");
-    Max31865Sensor boiler_temp(GPIO_NUM_1);
-    Max31865Sensor reflux_temp(GPIO_NUM_2);
+    Max31865Sensor boiler_temp(GPIO_NUM_1, "boiler");
+    Max31865Sensor reflux_temp(GPIO_NUM_2, "reflux");
 
     ESP_LOGI(TAG, "Settings %s", settings.toJson().c_str());
     PIDController pid(nv);
@@ -342,7 +343,7 @@ extern "C" void app_main() {
         PublishMqttInit(client, settings, pid);
 
         static WebContext webctx(&wifiManager);
-        static StillWebServer web(&webctx);
+        static StillWebServer web(&webctx, &reflux_temp, &boiler_temp);
         web.start();
 
         // Variables for Pump Health Checking

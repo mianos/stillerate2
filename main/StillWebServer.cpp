@@ -3,6 +3,7 @@
 #include <algorithm>
 #include <array>
 #include <cinttypes>
+#include <cmath>
 #include <string>
 
 #include "esp_app_desc.h"
@@ -24,7 +25,8 @@ esp_err_t send_json(httpd_req_t* req, const JsonWrapper& json) {
 
 }  // namespace
 
-StillWebServer::StillWebServer(WebContext* ctx) : WebServer(ctx) {}
+StillWebServer::StillWebServer(WebContext* ctx, Max31865Sensor* reflux, Max31865Sensor* boiler)
+    : WebServer(ctx), reflux_(reflux), boiler_(boiler) {}
 
 esp_err_t StillWebServer::start() {
     esp_err_t r = WebServer::start();
@@ -35,9 +37,11 @@ esp_err_t StillWebServer::start() {
         httpd_method_t method;
         esp_err_t (*handler)(httpd_req_t*);
     };
-    const std::array<Route, 2> routes = {{
-        {"/firmware", HTTP_POST, firmware_post_handler},
-        {"/firmware", HTTP_GET,  firmware_get_handler},
+    const std::array<Route, 4> routes = {{
+        {"/firmware",      HTTP_POST, firmware_post_handler},
+        {"/firmware",      HTTP_GET,  firmware_get_handler},
+        {"/sensors",       HTTP_GET,  sensors_get_handler},
+        {"/sensors/reset", HTTP_POST, sensors_reset_handler},
     }};
 
     for (const Route& route : routes) {
@@ -117,6 +121,42 @@ esp_err_t StillWebServer::firmware_post_handler(httpd_req_t* req) {
     vTaskDelay(pdMS_TO_TICKS(500));
     esp_restart();
     return ESP_OK;
+}
+
+namespace {
+
+void add_sensor_fields(JsonWrapper& json, const std::string& prefix, Max31865Sensor* sensor) {
+    if (sensor == nullptr) return;
+    const Max31865Sensor::Diagnostics d = sensor->diagnostics();
+    json.AddItem(prefix + "_err",    std::string(esp_err_to_name(d.err)));
+    json.AddItem(prefix + "_rref",   d.rRef);
+    json.AddItem(prefix + "_offset", d.offsetC);
+    if (d.err != ESP_OK) return;
+    json.AddItem(prefix + "_raw",    static_cast<int>(d.raw));
+    json.AddItem(prefix + "_ohms",   d.ohms);
+    json.AddItem(prefix + "_fault",  d.fault);
+    json.AddItem(prefix + "_fault_status", static_cast<int>(d.faultStatus));
+    if (std::isfinite(d.temperatureC)) json.AddItem(prefix + "_c", d.temperatureC);
+}
+
+}  // namespace
+
+esp_err_t StillWebServer::sensors_get_handler(httpd_req_t* req) {
+    auto* self = static_cast<StillWebServer*>(req->user_ctx);
+    JsonWrapper resp;
+    add_sensor_fields(resp, "reflux", self->reflux_);
+    add_sensor_fields(resp, "boiler", self->boiler_);
+    return send_json(req, resp);
+}
+
+esp_err_t StillWebServer::sensors_reset_handler(httpd_req_t* req) {
+    auto* self = static_cast<StillWebServer*>(req->user_ctx);
+    JsonWrapper resp;
+    if (self->reflux_) resp.AddItem("reflux_reset", std::string(esp_err_to_name(self->reflux_->reset())));
+    if (self->boiler_) resp.AddItem("boiler_reset", std::string(esp_err_to_name(self->boiler_->reset())));
+    add_sensor_fields(resp, "reflux", self->reflux_);
+    add_sensor_fields(resp, "boiler", self->boiler_);
+    return send_json(req, resp);
 }
 
 esp_err_t StillWebServer::firmware_get_handler(httpd_req_t* req) {

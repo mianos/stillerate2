@@ -144,23 +144,16 @@ private:
     }
 
     esp_err_t runPIDControl() {
-        JsonWrapper tjs;
         float reflux_temp;
         bool valid = true;
 
         if (emu.enabled) {
             reflux_temp = emu.temp;
-            tjs.AddItem("emulation", true);
         } else {
             reflux_temp = reflux_temp_sensor.measure();
             valid = std::isfinite(reflux_temp) &&
                     reflux_temp > kMinValidTemp && reflux_temp < kMaxValidTemp;
         }
-
-        tjs.AddItem("reflux", reflux_temp);
-        tjs.AddItem("fault", !valid);
-        tjs.AddTime();
-        mqtt_client.publish(std::string("tele/") + settings.sensorName + "/temp", tjs.ToString());
 
         // On a sensor fault, do NOT run the PID (a garbage reading would corrupt
         // the integral and spike the derivative). See kFaultHoldSamples.

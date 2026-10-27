@@ -318,7 +318,7 @@ extern "C" void app_main() {
     xTaskCreate(otaVerifyTask, "ota_verify", 4096, nullptr, 4, nullptr);
 
     MqttContext ctx{&pid, &emu, &ptimer, &reflux_pump, &condenser_pump, &settings, &wifiManager};
-    SensorLoopTask slt{client, settings, boiler_temp};
+    SensorLoopTask slt{client, settings, {{"reflux", &reflux_temp}, {"boiler", &boiler_temp}}};
 
     std::string topic = "cmnd/" + settings.sensorName + "/pid";
     client.registerHandler(topic, std::regex(topic), pidSettingsHandler, &ctx);

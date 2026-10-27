@@ -307,6 +307,7 @@ extern "C" void app_main() {
     mqtt_cfg.credentials.username = settings.mqttUserName.c_str();
     mqtt_cfg.credentials.client_id = settings.sensorName.c_str();
     mqtt_cfg.credentials.authentication.password = settings.mqttUserPassword.c_str();
+    mqtt_cfg.session.keepalive = 30;  // broker publishes the Offline will ~1.5x this after a drop
     MqttClient client(mqtt_cfg, settings.sensorName);
 
     Emulation emu;

@@ -50,6 +50,9 @@ private:
     bool     have_output_ = false;  // a good sample has been controlled on
     int      consecutive_faults_ = 0;
     bool     pump_ok_ = true;
+    bool     pump_stalled_ = false;
+    bool     wasRunning_ = false;
+    int      pump_rpm_ = -1;          // -1: not reported
     TickType_t lastRunTicks_ = 0;   // how long the previous runPIDControl took
 
     // Sensor-fault policy. A transient bad read holds the last good output so a
@@ -58,6 +61,7 @@ private:
     // fails safe to maximum coolant (total reflux: nothing leaves the column).
     // Holding 0 here would switch the dephlegmator pump OFF with the boiler on.
     static constexpr int kFaultHoldSamples = 3;
+    static constexpr double kPumpOffDuty = 0.5;  // pump controller disables the drive at or below this
 
     // Plausible reflux-temperature window (degrees C). Anything outside this, or
     // non-finite (the sensor returns NaN on a read failure), is treated as a
@@ -104,6 +108,7 @@ private:
     // visible instead of silent.
     void commandPump(double duty) {
         const bool ok = reflux_cooling_motor.setDutyPercentage(duty);
+        updateStall(duty, ok);
         if (ok != pump_ok_) {
             if (ok) {
                 ESP_LOGI("PIDControlTimer", "Reflux pump reachable again");
@@ -112,6 +117,30 @@ private:
             }
             pump_ok_ = ok;
         }
+    }
+
+    // pump_ok can't see a stall: the controller answers either way. The rpm in
+    // its reply predates the command, so only judge a duty held for a full sample.
+    void updateStall(double duty, bool ok) {
+        const bool running = ok && duty > kPumpOffDuty;
+        const auto rpm = reflux_cooling_motor.lastRpm();
+        pump_rpm_ = rpm.value_or(-1);
+        const bool stalled = running && wasRunning_ && rpm && *rpm == 0;
+        wasRunning_ = running;
+        if (stalled != pump_stalled_) {
+            if (stalled) {
+                ESP_LOGE("PIDControlTimer", "Reflux pump stalled at %.1f%%", duty);
+            } else {
+                ESP_LOGI("PIDControlTimer", "Reflux pump no longer stalled");
+            }
+            pump_stalled_ = stalled;
+        }
+    }
+
+    void addPumpFields(JsonWrapper& js) const {
+        js.AddItem("pump_ok", pump_ok_);
+        js.AddItem("pump_stalled", pump_stalled_);
+        if (pump_rpm_ >= 0) js.AddItem("pump_rpm", pump_rpm_);
     }
 
     esp_err_t runPIDControl() {
@@ -148,7 +177,7 @@ private:
             fjs.AddItem("fail_safe", fail_safe);
             fjs.AddItem("held_output", fault_output);
             fjs.AddItem("consecutive_faults", consecutive_faults_);
-            fjs.AddItem("pump_ok", pump_ok_);
+            addPumpFields(fjs);
             fjs.AddTime();
             mqtt_client.publish(std::string("tele/") + settings.sensorName + "/pid", fjs.ToString());
             return ESP_OK;
@@ -172,7 +201,7 @@ private:
         if (emu.enabled) {
             rjs.AddItem("emulation", true);
         }
-        rjs.AddItem("pump_ok", pump_ok_);
+        addPumpFields(rjs);
         rjs.AddTime();
         mqtt_client.publish(std::string("tele/") + settings.sensorName + "/pid", rjs.ToString());
         return ESP_OK;

@@ -47,8 +47,6 @@ private:
     static esp_err_t settings_post_handler(httpd_req_t* req);
 
     void addPidState(JsonWrapper& json);
-    // Reads a JSON body; on failure has already sent the error reply.
-    bool readJson(httpd_req_t* req, JsonWrapper& json);
 
     StillContext* still_;
     Max31865Sensor* reflux_;

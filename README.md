@@ -7,6 +7,10 @@ Commands are REST on `http://still2.mianos.com`. MQTT carries telemetry only:
 `tele/still2/{init,temp,pid,pumps}` and a retained `Online`/`Offline` on
 `tele/still2/LWT`. Every POST is logged with the caller's address.
 
+Success is a 2xx whose body is the resulting state. Errors return
+`{"error", "statusCode"}` with the same HTTP status: 400 bad input, 404/405
+unknown path or method, 413 body too large.
+
 ## Loop
 
 ```sh

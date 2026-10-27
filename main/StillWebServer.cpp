@@ -12,7 +12,6 @@
 #include "esp_system.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
-#include "lwip/sockets.h"
 
 #include "Emulation.h"
 #include "PIDController.h"
@@ -22,26 +21,6 @@
 namespace {
 
 constexpr const char* TAG = "stillweb";
-constexpr int kMaxJsonBody = 2048;
-
-std::string caller(httpd_req_t* req) {
-    struct sockaddr_in6 addr = {};
-    socklen_t len = sizeof(addr);
-    if (getpeername(httpd_req_to_sockfd(req), reinterpret_cast<struct sockaddr*>(&addr), &len) != 0) {
-        return "?";
-    }
-    char buf[INET6_ADDRSTRLEN] = {};
-    if (addr.sin6_family == AF_INET) {
-        inet_ntop(AF_INET, &reinterpret_cast<struct sockaddr_in*>(&addr)->sin_addr, buf, sizeof(buf));
-        return buf;
-    }
-    inet_ntop(AF_INET6, &addr.sin6_addr, buf, sizeof(buf));
-    std::string s(buf);
-    for (const char* prefix : {"::FFFF:", "::ffff:"}) {
-        if (s.rfind(prefix, 0) == 0) return s.substr(7);
-    }
-    return s;
-}
 
 std::string now_iso() {
     char buf[32];
@@ -52,11 +31,6 @@ std::string now_iso() {
     return buf;
 }
 
-esp_err_t send_json(httpd_req_t* req, const JsonWrapper& json) {
-    httpd_resp_set_type(req, "application/json");
-    std::string out = json.ToString();
-    return httpd_resp_sendstr(req, out.c_str());
-}
 
 }  // namespace
 
@@ -124,6 +98,7 @@ esp_err_t StillWebServer::firmware_post_handler(httpd_req_t* req) {
     if (req->content_len > static_cast<int>(target->size)) {
         return sendJsonError(req, 413, "image larger than OTA partition");
     }
+    ESP_LOGW(TAG, "POST /firmware from %s", callerAddress(req).c_str());
     ESP_LOGI(TAG, "OTA: writing %d bytes to %s @ 0x%" PRIx32,
         req->content_len, target->label, target->address);
 
@@ -157,10 +132,10 @@ esp_err_t StillWebServer::firmware_post_handler(httpd_req_t* req) {
 
     ESP_LOGW(TAG, "OTA: %d bytes written to %s; rebooting", written, target->label);
     JsonWrapper resp;
-    resp.AddItem("status",    std::string("ok"));
     resp.AddItem("written",   written);
     resp.AddItem("partition", std::string(target->label));
-    send_json(req, resp);
+    resp.AddItem("rebooting", true);
+    sendJson(req, resp);
 
     vTaskDelay(pdMS_TO_TICKS(500));
     esp_restart();
@@ -190,17 +165,18 @@ esp_err_t StillWebServer::sensors_get_handler(httpd_req_t* req) {
     JsonWrapper resp;
     add_sensor_fields(resp, "reflux", self->reflux_);
     add_sensor_fields(resp, "boiler", self->boiler_);
-    return send_json(req, resp);
+    return sendJson(req, resp);
 }
 
 esp_err_t StillWebServer::sensors_reset_handler(httpd_req_t* req) {
     auto* self = static_cast<StillWebServer*>(req->user_ctx);
+    ESP_LOGW(TAG, "POST /sensors/reset from %s", callerAddress(req).c_str());
     JsonWrapper resp;
     if (self->reflux_) resp.AddItem("reflux_reset", std::string(esp_err_to_name(self->reflux_->reset())));
     if (self->boiler_) resp.AddItem("boiler_reset", std::string(esp_err_to_name(self->boiler_->reset())));
     add_sensor_fields(resp, "reflux", self->reflux_);
     add_sensor_fields(resp, "boiler", self->boiler_);
-    return send_json(req, resp);
+    return sendJson(req, resp);
 }
 
 esp_err_t StillWebServer::firmware_get_handler(httpd_req_t* req) {
@@ -212,38 +188,7 @@ esp_err_t StillWebServer::firmware_get_handler(httpd_req_t* req) {
     resp.AddItem("date",      std::string(desc->date));
     resp.AddItem("time",      std::string(desc->time));
     resp.AddItem("partition", std::string(running->label));
-    return send_json(req, resp);
-}
-
-bool StillWebServer::readJson(httpd_req_t* req, JsonWrapper& json) {
-    if (req->content_len <= 0) {
-        sendJsonError(req, 400, "JSON body required");
-        return false;
-    }
-    if (req->content_len > kMaxJsonBody) {
-        sendJsonError(req, 413, "request body too large");
-        return false;
-    }
-    std::string body(req->content_len, '\0');
-    int received = 0;
-    while (received < req->content_len) {
-        int got = httpd_req_recv(req, body.data() + received, req->content_len - received);
-        if (got == HTTPD_SOCK_ERR_TIMEOUT) continue;
-        if (got <= 0) {
-            sendJsonError(req, 400, "request body truncated");
-            return false;
-        }
-        received += got;
-    }
-    cJSON* parsed = cJSON_Parse(body.c_str());
-    if (parsed == nullptr || !cJSON_IsObject(parsed)) {
-        cJSON_Delete(parsed);
-        sendJsonError(req, 400, "invalid JSON");
-        return false;
-    }
-    cJSON_Delete(parsed);
-    json = JsonWrapper::Parse(body);
-    return true;
+    return sendJson(req, resp);
 }
 
 void StillWebServer::addPidState(JsonWrapper& json) {
@@ -264,7 +209,7 @@ esp_err_t StillWebServer::pid_get_handler(httpd_req_t* req) {
     auto* self = static_cast<StillWebServer*>(req->user_ctx);
     JsonWrapper resp;
     self->addPidState(resp);
-    return send_json(req, resp);
+    return sendJson(req, resp);
 }
 
 // Invalid values are rejected field by field (see PIDController); the reply
@@ -272,21 +217,21 @@ esp_err_t StillWebServer::pid_get_handler(httpd_req_t* req) {
 esp_err_t StillWebServer::pid_post_handler(httpd_req_t* req) {
     auto* self = static_cast<StillWebServer*>(req->user_ctx);
     JsonWrapper json;
-    if (!self->readJson(req, json)) return ESP_FAIL;
-    ESP_LOGW(TAG, "POST /pid from %s: %s", caller(req).c_str(), json.ToString().c_str());
+    if (!readJsonBody(req, json)) return ESP_FAIL;
+    ESP_LOGW(TAG, "POST /pid from %s: %s", callerAddress(req).c_str(), json.ToString().c_str());
     if (!self->still_->pid->setParametersFromJsonWrapper(json)) {
         return sendJsonError(req, 400, "no valid PID parameters in request");
     }
     JsonWrapper resp;
     self->addPidState(resp);
-    return send_json(req, resp);
+    return sendJson(req, resp);
 }
 
 esp_err_t StillWebServer::pid_run_handler(httpd_req_t* req) {
     auto* self = static_cast<StillWebServer*>(req->user_ctx);
     JsonWrapper json;
-    if (!self->readJson(req, json)) return ESP_FAIL;
-    const std::string from = caller(req);
+    if (!readJsonBody(req, json)) return ESP_FAIL;
+    const std::string from = callerAddress(req);
     ESP_LOGW(TAG, "POST /pid/run from %s: %s", from.c_str(), json.ToString().c_str());
 
     double sample_time = -1.0;
@@ -305,44 +250,44 @@ esp_err_t StillWebServer::pid_run_handler(httpd_req_t* req) {
     }
     JsonWrapper resp;
     self->addPidState(resp);
-    return send_json(req, resp);
+    return sendJson(req, resp);
 }
 
 esp_err_t StillWebServer::pid_reset_handler(httpd_req_t* req) {
     auto* self = static_cast<StillWebServer*>(req->user_ctx);
-    ESP_LOGW(TAG, "POST /pid/reset from %s", caller(req).c_str());
+    ESP_LOGW(TAG, "POST /pid/reset from %s", callerAddress(req).c_str());
     self->still_->pid->reset();
     JsonWrapper resp;
     self->addPidState(resp);
     resp.AddItem("reset", true);
-    return send_json(req, resp);
+    return sendJson(req, resp);
 }
 
 esp_err_t StillWebServer::emulation_get_handler(httpd_req_t* req) {
     auto* self = static_cast<StillWebServer*>(req->user_ctx);
     JsonWrapper resp;
     self->still_->emu->addTo(resp);
-    return send_json(req, resp);
+    return sendJson(req, resp);
 }
 
 esp_err_t StillWebServer::emulation_post_handler(httpd_req_t* req) {
     auto* self = static_cast<StillWebServer*>(req->user_ctx);
     JsonWrapper json;
-    if (!self->readJson(req, json)) return ESP_FAIL;
-    ESP_LOGW(TAG, "POST /emulation from %s: %s", caller(req).c_str(), json.ToString().c_str());
+    if (!readJsonBody(req, json)) return ESP_FAIL;
+    ESP_LOGW(TAG, "POST /emulation from %s: %s", callerAddress(req).c_str(), json.ToString().c_str());
     if (!self->still_->emu->fromJsonWrapper(json)) {
         return sendJsonError(req, 400, "need 'enabled' (bool) and/or 'temp' (-50..300 C)");
     }
     JsonWrapper resp;
     self->still_->emu->addTo(resp);
-    return send_json(req, resp);
+    return sendJson(req, resp);
 }
 
 esp_err_t StillWebServer::settings_get_handler(httpd_req_t* req) {
     auto* self = static_cast<StillWebServer*>(req->user_ctx);
     JsonWrapper resp;
     self->still_->settings->toJsonWrapper(resp, /*maskPassword=*/true);
-    return send_json(req, resp);
+    return sendJson(req, resp);
 }
 
 // Network settings (broker, sensorName, pump URLs) take effect on reboot; the
@@ -350,8 +295,8 @@ esp_err_t StillWebServer::settings_get_handler(httpd_req_t* req) {
 esp_err_t StillWebServer::settings_post_handler(httpd_req_t* req) {
     auto* self = static_cast<StillWebServer*>(req->user_ctx);
     JsonWrapper json;
-    if (!self->readJson(req, json)) return ESP_FAIL;
-    ESP_LOGW(TAG, "POST /settings from %s", caller(req).c_str());
+    if (!readJsonBody(req, json)) return ESP_FAIL;
+    ESP_LOGW(TAG, "POST /settings from %s", callerAddress(req).c_str());
     const SettingsManager::ChangeList changes = self->still_->settings->updateFromJsonWrapper(json);
     self->still_->ptimer->applySensorCalibration();
     JsonWrapper resp;
@@ -359,5 +304,5 @@ esp_err_t StillWebServer::settings_post_handler(httpd_req_t* req) {
     for (const auto& [key, value] : changes) {
         resp.AddItem(key, key == "mqttPassword" ? std::string("***") : value);
     }
-    return send_json(req, resp);
+    return sendJson(req, resp);
 }

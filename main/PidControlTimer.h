@@ -7,7 +7,7 @@
 #include "esp_log.h"
 
 #include "MqttClient.h"
-#include "MqttContext.h"
+#include "StillContext.h"
 #include "Emulation.h"
 #include "SettingsManager.h"
 #include "PidController.h"
@@ -240,6 +240,8 @@ public:
     }
 
     // (Re)start the loop at periodMs, or stop it when periodMs == 0.
+    uint32_t periodMs() const { return periodMs_.load(); }
+
     void start(uint32_t periodMs) {
         periodMs_.store(periodMs);
         resyncDt_.store(true);   // reset dt baseline on (re)start

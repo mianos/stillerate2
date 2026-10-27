@@ -66,10 +66,10 @@ public:
         retrieveFloat("boilerOffset", boilerOffset);
     }
 
-    void toJsonWrapper(JsonWrapper& json) const {
+    void toJsonWrapper(JsonWrapper& json, bool maskPassword = false) const {
         json.AddItem("mqttBrokerUri", mqttBrokerUri);
         json.AddItem("mqttUserName", mqttUserName);
-        json.AddItem("mqttPassword", mqttUserPassword);
+        json.AddItem("mqttPassword", maskPassword && !mqttUserPassword.empty() ? std::string("***") : mqttUserPassword);
         json.AddItem("sensorName", sensorName);
         json.AddItem("tz", tz);
         json.AddItem("ntpServer", ntpServer);
@@ -83,7 +83,7 @@ public:
 
     std::string toJson() const {
         JsonWrapper json;
-        toJsonWrapper(json);
+        toJsonWrapper(json, /*maskPassword=*/true);
         return json.ToString();
     }
 

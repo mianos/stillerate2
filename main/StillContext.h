@@ -1,6 +1,7 @@
 #pragma once
 
-struct MqttContext {
+// Everything the REST command handlers act on.
+struct StillContext {
 	class PIDController *pid;
 	class Emulation *emu;
 	class PIDControlTimer *ptimer;
@@ -9,4 +10,3 @@ struct MqttContext {
 	class SettingsManager *settings;
 	class WiFiManager *wifiManager;
 };
-

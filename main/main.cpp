@@ -24,7 +24,7 @@
 #include "PidController.h"
 #include "Max31865Sensor.h"
 
-#include "MqttContext.h"
+#include "StillContext.h"
 #include "Emulation.h"
 #include "PidControlTimer.h"
 #include "SensorLoopTask.h"
@@ -93,7 +93,7 @@ void PublishMqttInit(MqttClient& client, SettingsManager& settings, PIDControlle
     doc.AddItem("sample_time", 0);  // starts with Pid loop stopped
     doc.AddItem("reflux", 0);   // reflux pump at 0
     doc.AddItem("condenser", 0);    // condenser pump at 0
-    settings.toJsonWrapper(doc);
+    settings.toJsonWrapper(doc, /*maskPassword=*/true);
     pid.toJsonWrapper(doc);
     std::string status_topic = std::string("tele/") + settings.sensorName + "/init";
     std::string output = doc.ToString();
@@ -181,118 +181,6 @@ private:
 
 
 
-esp_err_t pidSettingsHandler(MqttClient* client, const std::string& topic, const JsonWrapper& data, void* context) {
-    auto* ctx = static_cast<MqttContext*>(context); // Explicit cast required
-    ESP_RETURN_ON_FALSE(context, ESP_FAIL, "pidSettingsHandler", "Context cannot be nullptr");
-    // Use settings and other parameters to handle settings
-    ESP_LOGI(TAG, "PID settings handler called with '%s'", data.ToString().c_str());
-    ctx->pid->setParametersFromJsonWrapper(data);
-    return ESP_OK;
-}
-
-esp_err_t pidEmulationHandler(MqttClient* client, const std::string& topic, const JsonWrapper& data, void* context) {
-    auto* ctx = static_cast<MqttContext*>(context); // Explicit cast required
-    ESP_RETURN_ON_FALSE(context, ESP_FAIL, "pidEmulationHandler", "Context cannot be nullptr");
-    auto* emu = ctx->emu;
-    emu->fromJsonWrapper(data);
-    ESP_LOGI(TAG, "pidemulation called '%s'", emu->toJsonWrapper().ToString().c_str());
-    return ESP_OK;
-}
-
-
-esp_err_t pidRun(MqttClient* client, const std::string& topic, const JsonWrapper& data, void* context) {
-    auto* ctx = static_cast<MqttContext*>(context); // Explicit cast required
-    ESP_RETURN_ON_FALSE(context, ESP_FAIL, "pidRun", "Context cannot be nullptr");
-    auto* ptimer  = ctx->ptimer;
-
-    int sample_time;
-    if (!data.GetField("sample_time", sample_time, true)) { // mandatory flag so not present will return false
-        ESP_LOGE(TAG, "pidRun failed: 'sample_time' not found in JSON");
-        return ESP_FAIL; // Handle the error appropriately
-    }
-    if (sample_time < 0) {
-        ESP_LOGE(TAG, "pidRun failed: 'sample_time' %d must be >= 0 (0 stops the loop)", sample_time);
-        return ESP_FAIL;
-    }
-    ptimer->start(sample_time * 1000);
-    ESP_LOGW(TAG, "pidrun '%s'", data.ToString().c_str());
-    return ESP_OK;
-}
-
-
-esp_err_t resetMaxHandler(MqttClient* client, const std::string& topic, const JsonWrapper& data, void* context) {
-    auto* ctx = static_cast<MqttContext*>(context);
-    ESP_RETURN_ON_FALSE(context, ESP_FAIL, "resetMaxHandler", "Context cannot be nullptr");
-    ctx->ptimer->resetAll();
-    return ESP_OK;
-}
-
-esp_err_t reportPidParamsHandler(MqttClient* client, const std::string& topic, const JsonWrapper& data, void* context) {
-    auto* ctx = static_cast<MqttContext*>(context); // Explicit cast required
-    ESP_RETURN_ON_FALSE(context, ESP_FAIL, "reportParamsHandler", "Context cannot be nullptr");
-    JsonWrapper doc;
-    ctx->pid->toJsonWrapper(doc);
-    client->publish("tele/" + client->sensorName + "/pidparams", doc.ToString());;
-    ESP_LOGI(TAG, "sent pid params '%s'", doc.ToString().c_str());
-    return ESP_OK;
-}
-
-
-esp_err_t pidResetHandler(MqttClient* client, const std::string& topic, const JsonWrapper& data, void* context) {
-    auto* ctx = static_cast<MqttContext*>(context); // Explicit cast required
-    ESP_RETURN_ON_FALSE(context, ESP_FAIL, "pidResetHandler", "Context cannot be nullptr");
-    ctx->pid->reset();
-    JsonWrapper doc;
-    ctx->pid->toJsonWrapper(doc);
-    doc.AddItem("reset", true);
-    client->publish("tele/" + client->sensorName + "/pidparams", doc.ToString());;
-    return ESP_OK;
-}
-
-esp_err_t pumpHandler(MqttClient* client, const std::string& topic, const JsonWrapper& data, void* context) {
-    auto* ctx = static_cast<MqttContext*>(context);
-    ESP_RETURN_ON_FALSE(context, ESP_FAIL, "pumpHandler", "Context cannot be nullptr");
-
-    std::string name;
-    ESP_RETURN_ON_FALSE(data.GetField("name", name, true), ESP_FAIL, "pumpHandler", "pump name field not present");
-    float value;
-    ESP_RETURN_ON_FALSE(data.GetField("value", value, true), ESP_FAIL, "pumpHandler", "pump value field not present");
-    if (name == "condenser") {
-        ctx->condenser_pump->setDutyPercentage(value);
-    } else if (name == "reflux") {
-        ctx->reflux_pump->setDutyPercentage(value);
-    } else {
-        ESP_LOGE(TAG, "invalid pump name '%s'", name.c_str());
-        return ESP_FAIL;
-    }
-    ESP_LOGI(TAG, "motor handler called '%s'", data.ToString().c_str());
-    return ESP_OK;
-}
-
-esp_err_t updateSettingsHandler(MqttClient* client, const std::string& topic, const JsonWrapper& data, void* context) {
-    auto* ctx = static_cast<MqttContext*>(context);
-    ESP_RETURN_ON_FALSE(context, ESP_FAIL, "updateSettingsHandler", "Context cannot be nullptr");
-    ESP_LOGI(TAG, "Update Settings handler called with '%s'", data.ToString().c_str());
-    ctx->settings->updateFromJsonWrapper(data);
-    ctx->ptimer->applySensorCalibration();
-    return ESP_OK;
-}
-
-esp_err_t wifiConfigHandler(MqttClient* client, const std::string& topic, const JsonWrapper& data, void* context) {
-    auto* ctx = static_cast<MqttContext*>(context);
-    ESP_RETURN_ON_FALSE(context, ESP_FAIL, "wifiConfig", "Context cannot be nullptr");
-
-    std::string host_name;
-    if (data.GetField("host_name", host_name, true)) {
-        ctx->wifiManager->configSetHostName(host_name);
-        ESP_LOGI(TAG, "Updated Wi-Fi hostname to '%s'", host_name.c_str());
-    } else {
-        ESP_LOGW(TAG, "Missing or invalid 'host_name'");
-    }
-    return ESP_OK;
-}
-
-
 extern "C" void app_main() {
     wifiSemaphore = xSemaphoreCreateBinary();
     s_got_ip = xSemaphoreCreateBinary();
@@ -324,28 +212,8 @@ extern "C" void app_main() {
 
     xTaskCreate(otaVerifyTask, "ota_verify", 4096, nullptr, 4, nullptr);
 
-    MqttContext ctx{&pid, &emu, &ptimer, &reflux_pump, &condenser_pump, &settings, &wifiManager};
+    StillContext ctx{&pid, &emu, &ptimer, &reflux_pump, &condenser_pump, &settings, &wifiManager};
     SensorLoopTask slt{client, settings, {{"reflux", &reflux_temp}, {"boiler", &boiler_temp}}};
-
-    std::string topic = "cmnd/" + settings.sensorName + "/pid";
-    client.registerHandler(topic, std::regex(topic), pidSettingsHandler, &ctx);
-    topic = "cmnd/" + settings.sensorName + "/pidreset";
-    client.registerHandler(topic, std::regex(topic), pidResetHandler, &ctx);
-    topic = "cmnd/" + settings.sensorName + "/pidemulation";
-    client.registerHandler(topic, std::regex(topic), pidEmulationHandler, &ctx);
-    topic = "cmnd/" + settings.sensorName + "/pidrun";
-    client.registerHandler(topic, std::regex(topic), pidRun, &ctx);
-    topic = "cmnd/" + settings.sensorName + "/pump";
-    client.registerHandler(topic, std::regex(topic), pumpHandler, &ctx);
-    topic = "cmnd/" + settings.sensorName + "/resetmax";
-    client.registerHandler(topic, std::regex(topic), resetMaxHandler, &ctx);
-    topic = "cmnd/" + settings.sensorName + "/pidparams";
-    client.registerHandler(topic, std::regex(topic), reportPidParamsHandler, &ctx);
-    topic = "cmnd/" + settings.sensorName + "/settings";
-    client.registerHandler(topic, std::regex(topic), updateSettingsHandler, &ctx);
-    topic = "cmnd/" + settings.sensorName + "/wificonfig";
-    client.registerHandler(topic, std::regex(topic), wifiConfigHandler, &ctx);
-
 
     if (xSemaphoreTake(wifiSemaphore, portMAX_DELAY) ) {
         initialize_sntp(settings);
@@ -353,7 +221,7 @@ extern "C" void app_main() {
         PublishMqttInit(client, settings, pid);
 
         static WebContext webctx(&wifiManager);
-        static StillWebServer web(&webctx, &reflux_temp, &boiler_temp);
+        static StillWebServer web(&webctx, &ctx, &reflux_temp, &boiler_temp);
         web.start();
 
         // Variables for Pump Health Checking

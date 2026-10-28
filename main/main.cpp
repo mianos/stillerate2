@@ -190,8 +190,8 @@ extern "C" void app_main() {
     //auto trigger = GPIOWrapper(GPIO_NUM_2);
     RESTMotorController reflux_pump(settings.refluxPump, "reflux");
     RESTMotorController condenser_pump(settings.condenserPump, "condenser");
-    Max31865Sensor boiler_temp(GPIO_NUM_1, "boiler");
-    Max31865Sensor reflux_temp(GPIO_NUM_2, "reflux");
+    Max31865Sensor head_temp(GPIO_NUM_1, "head");
+    Max31865Sensor middle_temp(GPIO_NUM_2, "middle");
 
     ESP_LOGI(TAG, "Settings %s", settings.toJson().c_str());
     PIDController pid(nv);
@@ -206,14 +206,14 @@ extern "C" void app_main() {
     MqttClient client(mqtt_cfg, settings.sensorName);
 
     Emulation emu;
-    PIDControlTimer ptimer(pid, client, settings, reflux_temp, reflux_pump, boiler_temp, emu);
+    PIDControlTimer ptimer(pid, client, settings, middle_temp, reflux_pump, head_temp, emu);
     WiFiManager wifiManager(nv, localEventHandler, nullptr);
     xTaskCreate(button_task, "button_task", 2048, &wifiManager, 10, NULL);
 
     xTaskCreate(otaVerifyTask, "ota_verify", 4096, nullptr, 4, nullptr);
 
     StillContext ctx{&pid, &emu, &ptimer, &reflux_pump, &condenser_pump, &settings, &wifiManager};
-    SensorLoopTask slt{client, settings, {{"reflux", &reflux_temp}, {"boiler", &boiler_temp}}};
+    SensorLoopTask slt{client, settings, {{"middle", &middle_temp}, {"head", &head_temp}}};
 
     if (xSemaphoreTake(wifiSemaphore, portMAX_DELAY) ) {
         initialize_sntp(settings);
@@ -221,7 +221,7 @@ extern "C" void app_main() {
         PublishMqttInit(client, settings, pid);
 
         static WebContext webctx(&wifiManager);
-        static StillWebServer web(&webctx, &ctx, &reflux_temp, &boiler_temp);
+        static StillWebServer web(&webctx, &ctx, &middle_temp, &head_temp);
         web.start();
 
         // Variables for Pump Health Checking

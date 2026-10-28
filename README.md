@@ -1,7 +1,8 @@
 # Reflux Still Control
 
-ESP32-C6 controller for the still: reads the reflux and boiler RTDs and runs a
-PID loop that drives the reflux (dephlegmator) coolant pump.
+ESP32-C6 controller for the still: reads RTDs mid-column (above the plates,
+below the packing) and at the head, and runs a PID loop on the middle probe
+that drives the reflux (dephlegmator) coolant pump.
 
 Commands are REST on `http://still2.mianos.com`. MQTT carries telemetry only:
 `tele/still2/{init,temp,pid,pumps}` and a retained `Online`/`Offline` on
@@ -33,7 +34,7 @@ curl -X POST -d '{"enabled": true, "temp": 72}' http://still2.mianos.com/emulati
 curl -X POST -d '{"enabled": false}' http://still2.mianos.com/emulation
 ```
 
-Feeds the loop a fixed reflux temperature; the real probes keep publishing.
+Feeds the loop a fixed middle temperature; the real probes keep publishing.
 
 ## Sensors
 
@@ -47,10 +48,10 @@ curl -X POST http://still2.mianos.com/sensors/reset
 ```sh
 curl http://still2.mianos.com/settings
 curl -X POST -d '{"refluxPump": "http://reflux.mianos.com/pump"}' http://still2.mianos.com/settings
-curl -X POST -d '{"refluxRref": 401.5, "refluxOffset": 0}' http://still2.mianos.com/settings
+curl -X POST -d '{"middleRref": 401.5, "middleOffset": 0}' http://still2.mianos.com/settings
 ```
 
-RTD calibration (`refluxRref boilerRref refluxOffset boilerOffset`) applies at
+RTD calibration (`middleRref headRref middleOffset headOffset`) applies at
 once; broker, `sensorName` and pump URLs take effect after a reboot. Hostname:
 `curl -X POST -d '{"host_name": "still2"}' http://still2.mianos.com/set_hostname`.
 

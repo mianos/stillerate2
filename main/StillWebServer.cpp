@@ -34,8 +34,8 @@ std::string now_iso() {
 
 }  // namespace
 
-StillWebServer::StillWebServer(WebContext* ctx, StillContext* still, Max31865Sensor* reflux, Max31865Sensor* boiler)
-    : WebServer(ctx), still_(still), reflux_(reflux), boiler_(boiler) {}
+StillWebServer::StillWebServer(WebContext* ctx, StillContext* still, Max31865Sensor* middle, Max31865Sensor* head)
+    : WebServer(ctx), still_(still), middle_(middle), head_(head) {}
 
 esp_err_t StillWebServer::start() {
     esp_err_t r = WebServer::start();
@@ -163,8 +163,8 @@ void add_sensor_fields(JsonWrapper& json, const std::string& prefix, Max31865Sen
 esp_err_t StillWebServer::sensors_get_handler(httpd_req_t* req) {
     auto* self = static_cast<StillWebServer*>(req->user_ctx);
     JsonWrapper resp;
-    add_sensor_fields(resp, "reflux", self->reflux_);
-    add_sensor_fields(resp, "boiler", self->boiler_);
+    add_sensor_fields(resp, "middle", self->middle_);
+    add_sensor_fields(resp, "head", self->head_);
     return sendJson(req, resp);
 }
 
@@ -172,10 +172,10 @@ esp_err_t StillWebServer::sensors_reset_handler(httpd_req_t* req) {
     auto* self = static_cast<StillWebServer*>(req->user_ctx);
     ESP_LOGW(TAG, "POST /sensors/reset from %s", callerAddress(req).c_str());
     JsonWrapper resp;
-    if (self->reflux_) resp.AddItem("reflux_reset", std::string(esp_err_to_name(self->reflux_->reset())));
-    if (self->boiler_) resp.AddItem("boiler_reset", std::string(esp_err_to_name(self->boiler_->reset())));
-    add_sensor_fields(resp, "reflux", self->reflux_);
-    add_sensor_fields(resp, "boiler", self->boiler_);
+    if (self->middle_) resp.AddItem("middle_reset", std::string(esp_err_to_name(self->middle_->reset())));
+    if (self->head_) resp.AddItem("head_reset", std::string(esp_err_to_name(self->head_->reset())));
+    add_sensor_fields(resp, "middle", self->middle_);
+    add_sensor_fields(resp, "head", self->head_);
     return sendJson(req, resp);
 }
 

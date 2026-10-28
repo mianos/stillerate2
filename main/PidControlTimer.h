@@ -34,9 +34,9 @@ private:
     PIDController& pid;
     MqttClient& mqtt_client;
     SettingsManager& settings;
-    Max31865Sensor& reflux_temp_sensor;
+    Max31865Sensor& middle_temp_sensor;
     RESTMotorController& reflux_cooling_motor;
-    Max31865Sensor& boiler_temp_sensor;
+    Max31865Sensor& head_temp_sensor;
     Emulation& emu;
 
     // Set by start() (MQTT task), consumed by the PID task: the next sample uses
@@ -64,9 +64,9 @@ private:
     static constexpr int kFaultHoldSamples = 3;
     static constexpr double kPumpOffDuty = 0.5;  // pump controller disables the drive at or below this
 
-    // Plausible reflux-temperature window (degrees C). Anything outside this, or
+    // Plausible column-temperature window (degrees C). Anything outside this, or
     // non-finite (the sensor returns NaN on a read failure), is treated as a
-    // fault. Reflux temps live in roughly 0..100 C; the margin covers transients.
+    // fault. Column temps live in roughly 0..100 C; the margin covers transients.
     static constexpr float kMinValidTemp = -40.0f;
     static constexpr float kMaxValidTemp = 200.0f;
 
@@ -153,15 +153,15 @@ private:
     }
 
     esp_err_t runPIDControl() {
-        float reflux_temp;
+        float middle_temp;
         bool valid = true;
 
         if (emu.enabled) {
-            reflux_temp = emu.temp;
+            middle_temp = emu.temp;
         } else {
-            reflux_temp = reflux_temp_sensor.measure();
-            valid = std::isfinite(reflux_temp) &&
-                    reflux_temp > kMinValidTemp && reflux_temp < kMaxValidTemp;
+            middle_temp = middle_temp_sensor.measure();
+            valid = std::isfinite(middle_temp) &&
+                    middle_temp > kMinValidTemp && middle_temp < kMaxValidTemp;
         }
 
         // On a sensor fault, do NOT run the PID (a garbage reading would corrupt
@@ -171,8 +171,8 @@ private:
             const bool fail_safe = !have_output_ || consecutive_faults_ > kFaultHoldSamples;
             const double fault_output = fail_safe ? pid.failSafeOutput() : last_output_;
             ESP_LOGW("PIDControlTimer",
-                     "Invalid reflux temperature (%.2f); %s output %.1f%% (fault #%d)",
-                     reflux_temp, fail_safe ? "fail-safe" : "holding", fault_output, consecutive_faults_);
+                     "Invalid middle temperature (%.2f); %s output %.1f%% (fault #%d)",
+                     middle_temp, fail_safe ? "fail-safe" : "holding", fault_output, consecutive_faults_);
             commandPump(fault_output);
             JsonWrapper fjs;
             fjs.AddItem("fault", true);
@@ -195,7 +195,7 @@ private:
         lastTime = current_time;
 
         double output;
-        auto rjs = pid.compute(reflux_temp, dt, output);
+        auto rjs = pid.compute(middle_temp, dt, output);
         commandPump(output);
         last_output_ = output;
         have_output_ = true;
@@ -213,22 +213,22 @@ public:
     PIDControlTimer(PIDController& pid,
                       MqttClient& mqtt_client,
                       SettingsManager &settings,
-                      Max31865Sensor& reflux_temp,
+                      Max31865Sensor& middle_temp,
                       RESTMotorController& reflux_cooling_motor,
-                      Max31865Sensor& boiler_temp,
+                      Max31865Sensor& head_temp,
                       Emulation& emu)
         : pid(pid), mqtt_client(mqtt_client),
           settings(settings),
-          reflux_temp_sensor(reflux_temp),
+          middle_temp_sensor(middle_temp),
           reflux_cooling_motor(reflux_cooling_motor),
-          boiler_temp_sensor(boiler_temp),
+          head_temp_sensor(head_temp),
           emu(emu) {
         applySensorCalibration();
     }
 
     void applySensorCalibration() {
-        reflux_temp_sensor.setCalibration(settings.refluxRref, settings.refluxOffset);
-        boiler_temp_sensor.setCalibration(settings.boilerRref, settings.boilerOffset);
+        middle_temp_sensor.setCalibration(settings.middleRref, settings.middleOffset);
+        head_temp_sensor.setCalibration(settings.headRref, settings.headOffset);
     }
 
     ~PIDControlTimer() {
@@ -267,7 +267,7 @@ public:
     }
 
     void resetAll() {
-        reflux_temp_sensor.reset();
-        boiler_temp_sensor.reset();
+        middle_temp_sensor.reset();
+        head_temp_sensor.reset();
     }
 };

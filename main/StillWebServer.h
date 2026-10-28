@@ -25,7 +25,7 @@
 //   GET      /firmware       running image version / partition
 class StillWebServer : public WebServer {
 public:
-    StillWebServer(WebContext* ctx, StillContext* still, Max31865Sensor* reflux, Max31865Sensor* boiler);
+    StillWebServer(WebContext* ctx, StillContext* still, Max31865Sensor* middle, Max31865Sensor* head);
 
     esp_err_t start() override;
 
@@ -49,8 +49,8 @@ private:
     void addPidState(JsonWrapper& json);
 
     StillContext* still_;
-    Max31865Sensor* reflux_;
-    Max31865Sensor* boiler_;
+    Max31865Sensor* middle_;
+    Max31865Sensor* head_;
 
     std::mutex lastRunMu_;
     double lastRunSampleTime_ = -1.0;  // -1: no change since boot

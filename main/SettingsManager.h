@@ -31,10 +31,10 @@ public:
     std::string refluxPump = "http://reflux.mianos.com/pump";
     std::string condenserPump = "http://condenser.mianos.com/pump";
 
-    float refluxRref   = 401.5f;
-    float boilerRref   = 401.5f;
-    float refluxOffset = 0.0f;
-    float boilerOffset = 0.0f;
+    float middleRref   = 401.5f;
+    float headRref     = 401.5f;
+    float middleOffset = 0.0f;
+    float headOffset   = 0.0f;
 
 
     std::string convertChangesToJson(const SettingsManager::ChangeList& changes) {
@@ -60,10 +60,10 @@ public:
         nvs.retrieve("ntpServer", ntpServer);
         nvs.retrieve("refluxPump", refluxPump);
         nvs.retrieve("condenserPump", condenserPump);
-        retrieveFloat("refluxRref", refluxRref);
-        retrieveFloat("boilerRref", boilerRref);
-        retrieveFloat("refluxOffset", refluxOffset);
-        retrieveFloat("boilerOffset", boilerOffset);
+        retrieveFloat("middleRref", middleRref);
+        retrieveFloat("headRref", headRref);
+        retrieveFloat("middleOffset", middleOffset);
+        retrieveFloat("headOffset", headOffset);
     }
 
     void toJsonWrapper(JsonWrapper& json, bool maskPassword = false) const {
@@ -75,10 +75,10 @@ public:
         json.AddItem("ntpServer", ntpServer);
         json.AddItem("refluxPump", refluxPump);
         json.AddItem("condenserPump", condenserPump);
-        json.AddItem("refluxRref", refluxRref);
-        json.AddItem("boilerRref", boilerRref);
-        json.AddItem("refluxOffset", refluxOffset);
-        json.AddItem("boilerOffset", boilerOffset);
+        json.AddItem("middleRref", middleRref);
+        json.AddItem("headRref", headRref);
+        json.AddItem("middleOffset", middleOffset);
+        json.AddItem("headOffset", headOffset);
     }
 
     std::string toJson() const {
@@ -102,10 +102,10 @@ public:
         updateFieldIfChanged(json, "ntpServer", ntpServer, changes);
         updateFieldIfChanged(json, "refluxPump", refluxPump, changes);
         updateFieldIfChanged(json, "condenserPump", condenserPump, changes);
-        updateFieldIfChanged(json, "refluxRref", refluxRref, changes);
-        updateFieldIfChanged(json, "boilerRref", boilerRref, changes);
-        updateFieldIfChanged(json, "refluxOffset", refluxOffset, changes);
-        updateFieldIfChanged(json, "boilerOffset", boilerOffset, changes);
+        updateFieldIfChanged(json, "middleRref", middleRref, changes);
+        updateFieldIfChanged(json, "headRref", headRref, changes);
+        updateFieldIfChanged(json, "middleOffset", middleOffset, changes);
+        updateFieldIfChanged(json, "headOffset", headOffset, changes);
 
         for (const auto& [key, value] : changes) {
             nvs.store(key, value);

@@ -21,7 +21,7 @@
         "rh": 0,
         "inputs": 0,
         "x": 180,
-        "y": 60,
+        "y": 160,
         "wires": [
             [
                 "433500282fc4c0ec"
@@ -32,24 +32,22 @@
         "id": "433500282fc4c0ec",
         "type": "function",
         "z": "b8f36cbcfc882e5f",
-        "name": "split reflux and boiler",
-        "func": "var sensors = ['reflux', 'boiler'];\nvar messages = [];\n\n// Iterate over the predefined sensor order\nfor (var i = 0; i < sensors.length; i++) {\n    var sensor = sensors[i];\n    \n    // Check if the current sensor is present in the payload\n    if (msg.payload.hasOwnProperty(sensor)) {\n        // Create a message for the current sensor\n        var message = {\n            topic: msg.topic + '/' + sensor, // Append sensor name to the topic\n            payload: msg.payload[sensor], // Set temperature as payload\n            timestamp: msg.payload.time // Include timestamp in the message\n        };\n\n        // Add the message to the array\n        messages.push(message);\n    } else {\n        // If the sensor is not present, add a null message to the array\n        messages.push(null);\n    }\n}\n\n// Return the array of messages\nreturn messages;",
+        "name": "split middle and head",
+        "func": "var sensors = ['middle', 'head'];\nvar messages = [];\n\n// Iterate over the predefined sensor order\nfor (var i = 0; i < sensors.length; i++) {\n    var sensor = sensors[i];\n    \n    // Check if the current sensor is present in the payload\n    if (msg.payload.hasOwnProperty(sensor)) {\n        // Create a message for the current sensor\n        var message = {\n            topic: msg.topic + '/' + sensor, // Append sensor name to the topic\n            payload: msg.payload[sensor], // Set temperature as payload\n            timestamp: msg.payload.time, // Include timestamp in the message\n            fault: msg.payload.fault === true\n        };\n\n        // Add the message to the array\n        messages.push(message);\n    } else {\n        // If the sensor is not present, add a null message to the array\n        messages.push(null);\n    }\n}\n\n// Return the array of messages\nreturn messages;",
         "outputs": 2,
         "timeout": 0,
         "noerr": 0,
         "initialize": "",
         "finalize": "",
         "libs": [],
-        "x": 420,
-        "y": 100,
+        "x": 460,
+        "y": 160,
         "wires": [
             [
-                "9c157de7a8c8a93f",
-                "15811c80180f4d0f"
+                "still2dispreflux"
             ],
             [
-                "aac1b1fa69090b09",
-                "aa25d9e2770d5196"
+                "still2dispboiler"
             ]
         ]
     },
@@ -91,8 +89,8 @@
         "width": "6",
         "height": "6",
         "className": "",
-        "x": 860,
-        "y": 180,
+        "x": 1140,
+        "y": 140,
         "wires": [
             []
         ]
@@ -103,7 +101,7 @@
         "z": "b8f36cbcfc882e5f",
         "group": "5835c6daabcd58ef",
         "name": "",
-        "label": "Boiler Temp",
+        "label": "",
         "order": 2,
         "chartType": "line",
         "category": "topic",
@@ -132,11 +130,11 @@
             "#9467bd",
             "#c5b0d5"
         ],
-        "width": "0",
-        "height": "0",
+        "width": "6",
+        "height": "6",
         "className": "",
-        "x": 870,
-        "y": 240,
+        "x": 1130,
+        "y": 180,
         "wires": [
             []
         ]
@@ -154,8 +152,8 @@
         "rap": true,
         "rh": 0,
         "inputs": 0,
-        "x": 190,
-        "y": 420,
+        "x": 170,
+        "y": 300,
         "wires": [
             [
                 "719014c12aa211fb"
@@ -174,8 +172,8 @@
         "initialize": "",
         "finalize": "",
         "libs": [],
-        "x": 460,
-        "y": 420,
+        "x": 480,
+        "y": 300,
         "wires": [
             [
                 "1b4ddda823d0dc7e"
@@ -192,7 +190,7 @@
         "group": "afe3e22da0747d54",
         "name": "",
         "label": "Cooler Output",
-        "order": 3,
+        "order": 1,
         "chartType": "line",
         "category": "topic",
         "categoryType": "msg",
@@ -223,8 +221,8 @@
         "width": "0",
         "height": "0",
         "className": "",
-        "x": 840,
-        "y": 420,
+        "x": 1140,
+        "y": 300,
         "wires": [
             []
         ]
@@ -236,7 +234,7 @@
         "group": "e459568c74dfd8b2",
         "name": "",
         "label": "PID Period",
-        "order": 0,
+        "order": 2,
         "width": 0,
         "height": 0,
         "topic": "topic",
@@ -245,11 +243,11 @@
         "delay": 300,
         "passthru": false,
         "sendOnDelay": false,
-        "sendOnBlur": true,
+        "sendOnBlur": false,
         "sendOnEnter": true,
         "className": "",
-        "x": 150,
-        "y": 220,
+        "x": 230,
+        "y": 1780,
         "wires": [
             [
                 "f674675a643b348a"
@@ -258,21 +256,23 @@
     },
     {
         "id": "adece1794b5b00d0",
-        "type": "mqtt out",
+        "type": "function",
         "z": "b8f36cbcfc882e5f",
-        "name": "",
-        "topic": "cmnd/still2/pidrun",
-        "qos": "",
-        "retain": "",
-        "respTopic": "",
-        "contentType": "",
-        "userProps": "",
-        "correl": "",
-        "expiry": "",
-        "broker": "3fe3ac59af05955a",
-        "x": 450,
-        "y": 200,
-        "wires": []
+        "name": "POST /pid/run",
+        "func": "msg.method = \"POST\";\nmsg.url = \"http://still2.mianos.com/pid/run\";\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 750,
+        "y": 1820,
+        "wires": [
+            [
+                "still2req0000001"
+            ]
+        ]
     },
     {
         "id": "f674675a643b348a",
@@ -286,8 +286,8 @@
         "initialize": "",
         "finalize": "",
         "libs": [],
-        "x": 170,
-        "y": 280,
+        "x": 250,
+        "y": 1840,
         "wires": [
             [
                 "234b38437b0d8855"
@@ -313,33 +313,11 @@
         "from": "",
         "to": "",
         "reg": false,
-        "x": 390,
-        "y": 280,
+        "x": 530,
+        "y": 1800,
         "wires": [
             [
                 "adece1794b5b00d0"
-            ]
-        ]
-    },
-    {
-        "id": "c2e76731691c8f0c",
-        "type": "mqtt in",
-        "z": "b8f36cbcfc882e5f",
-        "name": "",
-        "topic": "tele/still2/pidparams",
-        "qos": "2",
-        "datatype": "auto-detect",
-        "broker": "3fe3ac59af05955a",
-        "nl": false,
-        "rap": true,
-        "rh": 0,
-        "inputs": 0,
-        "x": 130,
-        "y": 520,
-        "wires": [
-            [
-                "e73ca6befbbec83d",
-                "c208941d1f665164"
             ]
         ]
     },
@@ -350,7 +328,7 @@
         "group": "6d55354a3ff5fc47",
         "name": "",
         "label": "Emulation Temp",
-        "order": 0,
+        "order": 2,
         "width": 0,
         "height": 0,
         "topic": "topic",
@@ -359,11 +337,11 @@
         "delay": "3000",
         "passthru": true,
         "sendOnDelay": true,
-        "sendOnBlur": true,
+        "sendOnBlur": false,
         "sendOnEnter": true,
         "className": "",
-        "x": 120,
-        "y": 1160,
+        "x": 200,
+        "y": 1340,
         "wires": [
             [
                 "e465fcb08971f38f"
@@ -372,21 +350,23 @@
     },
     {
         "id": "da6af0e73d4d681c",
-        "type": "mqtt out",
+        "type": "function",
         "z": "b8f36cbcfc882e5f",
-        "name": "",
-        "topic": "cmnd/still2/pidemulation",
-        "qos": "",
-        "retain": "",
-        "respTopic": "",
-        "contentType": "",
-        "userProps": "",
-        "correl": "",
-        "expiry": "",
-        "broker": "3fe3ac59af05955a",
-        "x": 810,
-        "y": 1240,
-        "wires": []
+        "name": "POST /emulation",
+        "func": "msg.method = \"POST\";\nmsg.url = \"http://still2.mianos.com/emulation\";\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 890,
+        "y": 1420,
+        "wires": [
+            [
+                "still2req0000001"
+            ]
+        ]
     },
     {
         "id": "e465fcb08971f38f",
@@ -400,8 +380,8 @@
         "initialize": "",
         "finalize": "",
         "libs": [],
-        "x": 330,
-        "y": 1180,
+        "x": 410,
+        "y": 1360,
         "wires": [
             [
                 "7c3df73e99eb2dc7"
@@ -427,8 +407,8 @@
         "from": "",
         "to": "",
         "reg": false,
-        "x": 550,
-        "y": 1180,
+        "x": 630,
+        "y": 1360,
         "wires": [
             [
                 "da6af0e73d4d681c"
@@ -442,7 +422,7 @@
         "name": "",
         "label": "Enable emulation",
         "group": "6d55354a3ff5fc47",
-        "order": 0,
+        "order": 1,
         "width": 0,
         "height": 0,
         "passthru": false,
@@ -458,8 +438,8 @@
         "offvalueType": "json",
         "officon": "",
         "offcolor": "",
-        "x": 150,
-        "y": 1220,
+        "x": 230,
+        "y": 1400,
         "wires": [
             [
                 "da6af0e73d4d681c"
@@ -479,8 +459,8 @@
         "rap": true,
         "rh": 0,
         "inputs": 0,
-        "x": 90,
-        "y": 140,
+        "x": 170,
+        "y": 1700,
         "wires": [
             [
                 "1f71eea3bb570d71"
@@ -506,8 +486,8 @@
         "from": "",
         "to": "",
         "reg": false,
-        "x": 260,
-        "y": 140,
+        "x": 340,
+        "y": 1700,
         "wires": [
             [
                 "c58c12c03de30f99"
@@ -521,7 +501,7 @@
         "group": "877facfa381dab12",
         "name": "",
         "label": "Clear Charts",
-        "order": 1,
+        "order": 2,
         "width": 0,
         "height": 0,
         "emulateClick": false,
@@ -535,14 +515,16 @@
         "payloadType": "json",
         "topic": "topic",
         "topicType": "msg",
-        "x": 210,
-        "y": 340,
+        "x": 650,
+        "y": 40,
         "wires": [
             [
                 "9c157de7a8c8a93f",
                 "aac1b1fa69090b09",
                 "b569b443fbd3d7f7",
-                "1b4ddda823d0dc7e"
+                "1b4ddda823d0dc7e",
+                "5c0c2aaaf24abf56",
+                "still2colchart1"
             ]
         ]
     },
@@ -559,8 +541,8 @@
         "rap": true,
         "rh": 0,
         "inputs": 0,
-        "x": 70,
-        "y": 680,
+        "x": 150,
+        "y": 860,
         "wires": [
             [
                 "c208941d1f665164"
@@ -584,8 +566,8 @@
         "fontSize": 16,
         "color": "#09770b",
         "className": "",
-        "x": 870,
-        "y": 300,
+        "x": 1110,
+        "y": 220,
         "wires": []
     },
     {
@@ -605,8 +587,8 @@
         "fontSize": 16,
         "color": "#09770b",
         "className": "",
-        "x": 830,
-        "y": 140,
+        "x": 1110,
+        "y": 100,
         "wires": []
     },
     {
@@ -614,15 +596,15 @@
         "type": "function",
         "z": "b8f36cbcfc882e5f",
         "name": "function 1",
-        "func": "let data = msg.payload;\n\nmsg.payload = [\n    { \"Parameter\": \"kP\", \"Value\": data.kp },\n    { \"Parameter\": \"kI\", \"Value\": data.ki },\n    { \"Parameter\": \"kD\", \"Value\": data.kd },\n    { \"Parameter\": \"Set Point\", \"Value\": data.set_point },\n    { \"Parameter\": \"Lag Time Constant\", \"Value\": data.lag_time_constant },\n    { \"Parameter\": \"Sample Time\", \"Value\": data.sample_time },\n    { \"Parameter\": \"Output Min\", \"Value\": data.output_min },\n    { \"Parameter\": \"Output Max\", \"Value\": data.output_max },\n    { \"Parameter\": \"Integral Limit\", \"Value\": data.integral_limit }\n];\n\nreturn msg;\n",
+        "func": "let data = msg.payload;\n\nmsg.payload = [\n    { \"Parameter\": \"kP\", \"Value\": data.kp },\n    { \"Parameter\": \"kI\", \"Value\": data.ki },\n    { \"Parameter\": \"kD\", \"Value\": data.kd },\n\n    { \"Parameter\": \"Set Point\", \"Value\": data.set_point },\n    { \"Parameter\": \"Sample Time\", \"Value\": data.sample_time },\n    { \"Parameter\": \"Output Min\", \"Value\": data.output_min },\n    { \"Parameter\": \"Output Max\", \"Value\": data.output_max },\n    { \"Parameter\": \"Integral Limit\", \"Value\": data.integral_limit },\n    { \"Parameter\": \"Dead Zone\", \"Value\": data.dead_zone_threshold }\n\n];\n\nreturn msg;\n",
         "outputs": 1,
         "timeout": 0,
         "noerr": 0,
         "initialize": "",
         "finalize": "",
         "libs": [],
-        "x": 380,
-        "y": 480,
+        "x": 460,
+        "y": 660,
         "wires": [
             [
                 "e77123798a0a9e0e"
@@ -636,7 +618,7 @@
         "group": "877facfa381dab12",
         "name": "",
         "label": "text",
-        "order": 2,
+        "order": 4,
         "width": 0,
         "height": 0,
         "maxrows": "0",
@@ -648,8 +630,8 @@
         "mobileBreakpoint": "sm",
         "mobileBreakpointType": "defaults",
         "action": "replace",
-        "x": 690,
-        "y": 460,
+        "x": 770,
+        "y": 640,
         "wires": [
             []
         ]
@@ -661,7 +643,7 @@
         "group": "877facfa381dab12",
         "name": "",
         "label": "Report PID",
-        "order": 0,
+        "order": 3,
         "width": 0,
         "height": 0,
         "emulateClick": false,
@@ -675,8 +657,18 @@
         "payloadType": "json",
         "topic": "cmnd/still2/pidparams",
         "topicType": "str",
-        "x": 170,
-        "y": 1340,
+        "buttonColor": "",
+        "textColor": "",
+        "iconColor": "",
+        "enableClick": true,
+        "enablePointerdown": false,
+        "pointerdownPayload": "",
+        "pointerdownPayloadType": "str",
+        "enablePointerup": false,
+        "pointerupPayload": "",
+        "pointerupPayloadType": "str",
+        "x": 250,
+        "y": 1520,
         "wires": [
             [
                 "849c8a8ff7dce888"
@@ -690,7 +682,7 @@
         "group": "877facfa381dab12",
         "name": "",
         "label": "Reset MAX Temp Sensors",
-        "order": 0,
+        "order": 5,
         "width": 0,
         "height": 0,
         "emulateClick": false,
@@ -704,8 +696,8 @@
         "payloadType": "json",
         "topic": "cmnd/still2/resetmax",
         "topicType": "str",
-        "x": 210,
-        "y": 1280,
+        "x": 290,
+        "y": 1460,
         "wires": [
             [
                 "849c8a8ff7dce888"
@@ -714,21 +706,23 @@
     },
     {
         "id": "849c8a8ff7dce888",
-        "type": "mqtt out",
+        "type": "function",
         "z": "b8f36cbcfc882e5f",
-        "name": "",
-        "topic": "",
-        "qos": "",
-        "retain": "",
-        "respTopic": "",
-        "contentType": "",
-        "userProps": "",
-        "correl": "",
-        "expiry": "",
-        "broker": "3fe3ac59af05955a",
-        "x": 510,
-        "y": 1280,
-        "wires": []
+        "name": "button to still2",
+        "func": "const routes = {\n    \"cmnd/still2/pidparams\": [\"GET\", \"http://still2.mianos.com/pid\"],\n    \"cmnd/still2/pidreset\": [\"POST\", \"http://still2.mianos.com/pid/reset\"],\n    \"cmnd/still2/resetmax\": [\"POST\", \"http://still2.mianos.com/sensors/reset\"],\n};\nconst r = routes[msg.topic];\nif (!r) { node.warn(\"no still2 route for \" + msg.topic); return null; }\n[msg.method, msg.url] = r;\nmsg.payload = {};\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 590,
+        "y": 1460,
+        "wires": [
+            [
+                "still2req0000001"
+            ]
+        ]
     },
     {
         "id": "5ecf77648bbeeda7",
@@ -738,7 +732,7 @@
         "name": "",
         "label": "Reflux - manual",
         "tooltip": "",
-        "order": 0,
+        "order": 2,
         "width": 0,
         "height": 0,
         "passthru": false,
@@ -750,8 +744,8 @@
         "max": "100",
         "step": 1,
         "className": "",
-        "x": 280,
-        "y": 1080,
+        "x": 360,
+        "y": 1260,
         "wires": [
             [
                 "89f879361dbff6b3"
@@ -766,7 +760,7 @@
         "name": "",
         "label": "Condenser",
         "tooltip": "",
-        "order": 0,
+        "order": 1,
         "width": 0,
         "height": 0,
         "passthru": false,
@@ -778,8 +772,8 @@
         "max": "100",
         "step": 1,
         "className": "",
-        "x": 270,
-        "y": 1140,
+        "x": 350,
+        "y": 1320,
         "wires": [
             [
                 "e3135429fcbd80e2"
@@ -798,8 +792,8 @@
         "initialize": "",
         "finalize": "",
         "libs": [],
-        "x": 500,
-        "y": 1080,
+        "x": 580,
+        "y": 1260,
         "wires": [
             [
                 "ea448e88a5fc66a0"
@@ -829,8 +823,8 @@
                 "valueValue": ""
             }
         ],
-        "x": 750,
-        "y": 1080,
+        "x": 830,
+        "y": 1260,
         "wires": [
             []
         ]
@@ -847,8 +841,8 @@
         "initialize": "",
         "finalize": "",
         "libs": [],
-        "x": 480,
-        "y": 1140,
+        "x": 560,
+        "y": 1320,
         "wires": [
             [
                 "71f5c06c010ecd8b"
@@ -878,29 +872,31 @@
                 "valueValue": ""
             }
         ],
-        "x": 720,
-        "y": 1140,
+        "x": 800,
+        "y": 1320,
         "wires": [
             []
         ]
     },
     {
         "id": "b83213f4f7c09366",
-        "type": "mqtt out",
+        "type": "function",
         "z": "b8f36cbcfc882e5f",
-        "name": "",
-        "topic": "cmnd/still2/pid",
-        "qos": "",
-        "retain": "",
-        "respTopic": "",
-        "contentType": "",
-        "userProps": "",
-        "correl": "",
-        "expiry": "",
-        "broker": "3fe3ac59af05955a",
-        "x": 1400,
-        "y": 660,
-        "wires": []
+        "name": "POST /pid",
+        "func": "msg.method = \"POST\";\nmsg.url = \"http://still2.mianos.com/pid\";\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 1480,
+        "y": 840,
+        "wires": [
+            [
+                "still2req0000001"
+            ]
+        ]
     },
     {
         "id": "920fea5e45c85f59",
@@ -918,11 +914,11 @@
         "delay": 300,
         "passthru": false,
         "sendOnDelay": false,
-        "sendOnBlur": true,
+        "sendOnBlur": false,
         "sendOnEnter": true,
         "className": "",
-        "x": 650,
-        "y": 540,
+        "x": 730,
+        "y": 720,
         "wires": [
             [
                 "c840381ef8344a9d"
@@ -941,8 +937,8 @@
         "initialize": "",
         "finalize": "",
         "libs": [],
-        "x": 870,
-        "y": 540,
+        "x": 950,
+        "y": 720,
         "wires": [
             [
                 "b40b68560dd42720"
@@ -968,8 +964,8 @@
         "from": "",
         "to": "",
         "reg": false,
-        "x": 1090,
-        "y": 540,
+        "x": 1170,
+        "y": 720,
         "wires": [
             [
                 "b83213f4f7c09366"
@@ -992,11 +988,11 @@
         "delay": 300,
         "passthru": false,
         "sendOnDelay": false,
-        "sendOnBlur": true,
+        "sendOnBlur": false,
         "sendOnEnter": true,
         "className": "",
-        "x": 650,
-        "y": 580,
+        "x": 730,
+        "y": 760,
         "wires": [
             [
                 "bc1db054466d0c70"
@@ -1015,8 +1011,8 @@
         "initialize": "",
         "finalize": "",
         "libs": [],
-        "x": 870,
-        "y": 580,
+        "x": 950,
+        "y": 760,
         "wires": [
             [
                 "f5c2ba8285069afe"
@@ -1042,8 +1038,8 @@
         "from": "",
         "to": "",
         "reg": false,
-        "x": 1090,
-        "y": 580,
+        "x": 1170,
+        "y": 760,
         "wires": [
             [
                 "b83213f4f7c09366"
@@ -1066,11 +1062,11 @@
         "delay": 300,
         "passthru": false,
         "sendOnDelay": false,
-        "sendOnBlur": true,
+        "sendOnBlur": false,
         "sendOnEnter": true,
         "className": "",
-        "x": 650,
-        "y": 620,
+        "x": 730,
+        "y": 800,
         "wires": [
             [
                 "cfba15efec8dc396"
@@ -1089,8 +1085,8 @@
         "initialize": "",
         "finalize": "",
         "libs": [],
-        "x": 870,
-        "y": 620,
+        "x": 950,
+        "y": 800,
         "wires": [
             [
                 "6fc53ca13acb784d"
@@ -1116,8 +1112,8 @@
         "from": "",
         "to": "",
         "reg": false,
-        "x": 1090,
-        "y": 620,
+        "x": 1170,
+        "y": 800,
         "wires": [
             [
                 "b83213f4f7c09366"
@@ -1131,7 +1127,7 @@
         "group": "e629bcb7c26cb922",
         "name": "",
         "label": "Output Max",
-        "order": 0,
+        "order": 2,
         "width": 0,
         "height": 0,
         "topic": "topic",
@@ -1140,11 +1136,11 @@
         "delay": 300,
         "passthru": false,
         "sendOnDelay": false,
-        "sendOnBlur": true,
+        "sendOnBlur": false,
         "sendOnEnter": true,
         "className": "",
-        "x": 670,
-        "y": 840,
+        "x": 750,
+        "y": 1020,
         "wires": [
             [
                 "cbacd523a6aa24da"
@@ -1163,8 +1159,8 @@
         "initialize": "",
         "finalize": "",
         "libs": [],
-        "x": 870,
-        "y": 840,
+        "x": 950,
+        "y": 1020,
         "wires": [
             [
                 "54f8ab334c13a54a"
@@ -1190,8 +1186,8 @@
         "from": "",
         "to": "",
         "reg": false,
-        "x": 1090,
-        "y": 840,
+        "x": 1170,
+        "y": 1020,
         "wires": [
             [
                 "b83213f4f7c09366"
@@ -1205,7 +1201,7 @@
         "group": "e629bcb7c26cb922",
         "name": "",
         "label": "Output Min",
-        "order": 0,
+        "order": 1,
         "width": 0,
         "height": 0,
         "topic": "topic",
@@ -1214,11 +1210,11 @@
         "delay": 300,
         "passthru": false,
         "sendOnDelay": false,
-        "sendOnBlur": true,
+        "sendOnBlur": false,
         "sendOnEnter": true,
         "className": "",
-        "x": 670,
-        "y": 800,
+        "x": 750,
+        "y": 980,
         "wires": [
             [
                 "90a18d9306cb1224"
@@ -1237,8 +1233,8 @@
         "initialize": "",
         "finalize": "",
         "libs": [],
-        "x": 870,
-        "y": 800,
+        "x": 950,
+        "y": 980,
         "wires": [
             [
                 "09ebda41c48ca282"
@@ -1264,8 +1260,8 @@
         "from": "",
         "to": "",
         "reg": false,
-        "x": 1090,
-        "y": 800,
+        "x": 1170,
+        "y": 980,
         "wires": [
             [
                 "b83213f4f7c09366"
@@ -1277,15 +1273,15 @@
         "type": "function",
         "z": "b8f36cbcfc882e5f",
         "name": "demux",
-        "func": "/* {\n  \"kp\": 0.3,\n  \"ki\": 0.1,\n  \"kd\": 2,\n  \"set_point\": 60,\n  \"lag_time_constant\": 50,\n  \"sample_time\": 0,\n  \"output_min\": 0,\n  \"output_max\": 100,\n  \"integral_limit\": 50,\n  \"rate_limit\": 10,\n  \"dead_zone_threshold\": 30\n}\n*/\n\nvar kp = msg.payload.kp;\nvar ki = msg.payload.ki;\nvar kd = msg.payload.kd;\nvar set_point = msg.payload.set_point;\nvar lag_time_constant = msg.payload.lag_time_constant;\nvar sample_time = msg.payload.sample_time;\nvar output_min = msg.payload.output_min;\nvar output_max = msg.payload.output_max;\nvar integral_limit = msg.payload.integral_limit;\nvar rate_limit = msg.payload.rate_limit;\nvar dead_zone_threshold = msg.payload.dead_zone_threshold;\n\nnode.send([\n    { payload: kp },\n    { payload: ki },\n    { payload: kd },\n    { payload: set_point },\n    { payload: lag_time_constant },\n    { payload: sample_time },\n    { payload: output_min },\n    { payload: output_max },\n    { payload: integral_limit },\n    { payload: rate_limit },\n    { payload: dead_zone_threshold }\n]);",
-        "outputs": 11,
+        "func": "var kp = msg.payload.kp;\nvar ki = msg.payload.ki;\nvar kd = msg.payload.kd;\n\nvar set_point = msg.payload.set_point;\n\nvar sample_time = msg.payload.sample_time;\n\nvar output_min = msg.payload.output_min;\nvar output_max = msg.payload.output_max;\n\nvar integral_limit = msg.payload.integral_limit;\n\n// Fixed variable name to match the output array\nvar wind_down_threshold = msg.payload.wind_down_threshold; \nvar integral_unwind_factor = msg.payload.integral_unwind_factor; \n\nnode.send([\n    { payload: kp },\n    { payload: ki },\n    { payload: kd },\n    \n    { payload: set_point },\n    \n    { payload: sample_time },\n    \n    { payload: output_min },\n    { payload: output_max },\n    \n    { payload: integral_limit },\n\n    { payload: wind_down_threshold }, // Now correctly referenced\n    { payload: integral_unwind_factor } \n]);",
+        "outputs": 10,
         "timeout": 0,
         "noerr": 0,
         "initialize": "",
         "finalize": "",
         "libs": [],
-        "x": 450,
-        "y": 640,
+        "x": 530,
+        "y": 820,
         "wires": [
             [
                 "920fea5e45c85f59"
@@ -1300,9 +1296,6 @@
                 "10695f8b3cb1be92"
             ],
             [
-                "92f085188dd97241"
-            ],
-            [
                 "e57a81e8e2dae9c9"
             ],
             [
@@ -1315,84 +1308,10 @@
                 "ee53acb2a4d6bb0c"
             ],
             [
-                "3f5059f155d95958"
+                "1e2f133d43b51272"
             ],
             [
-                "1e2f133d43b51272"
-            ]
-        ]
-    },
-    {
-        "id": "92f085188dd97241",
-        "type": "ui-text-input",
-        "z": "b8f36cbcfc882e5f",
-        "group": "2052b505fc6e7465",
-        "name": "",
-        "label": "Lag TIme",
-        "order": 4,
-        "width": 0,
-        "height": 0,
-        "topic": "topic",
-        "topicType": "msg",
-        "mode": "number",
-        "delay": 300,
-        "passthru": false,
-        "sendOnDelay": false,
-        "sendOnBlur": true,
-        "sendOnEnter": true,
-        "className": "",
-        "x": 660,
-        "y": 700,
-        "wires": [
-            [
-                "bc4cfc147ce428e1"
-            ]
-        ]
-    },
-    {
-        "id": "bc4cfc147ce428e1",
-        "type": "function",
-        "z": "b8f36cbcfc882e5f",
-        "name": "parse string to float",
-        "func": "var numberValue = parseFloat(msg.payload);\nif (!isNaN(numberValue)) {\n    msg.payload = numberValue;\n    return msg;\n} else {\n    node.error('Invalid number received from input field: ' + msg.payload);\n    return null;\n}",
-        "outputs": 1,
-        "timeout": 0,
-        "noerr": 0,
-        "initialize": "",
-        "finalize": "",
-        "libs": [],
-        "x": 870,
-        "y": 700,
-        "wires": [
-            [
-                "d16cf2e22a799b6a"
-            ]
-        ]
-    },
-    {
-        "id": "d16cf2e22a799b6a",
-        "type": "change",
-        "z": "b8f36cbcfc882e5f",
-        "name": "",
-        "rules": [
-            {
-                "t": "move",
-                "p": "payload",
-                "pt": "msg",
-                "to": "payload.lag_time_constant",
-                "tot": "msg"
-            }
-        ],
-        "action": "",
-        "property": "",
-        "from": "",
-        "to": "",
-        "reg": false,
-        "x": 1090,
-        "y": 700,
-        "wires": [
-            [
-                "b83213f4f7c09366"
+                "3f5059f155d95958"
             ]
         ]
     },
@@ -1402,21 +1321,27 @@
         "z": "b8f36cbcfc882e5f",
         "group": "2052b505fc6e7465",
         "name": "",
-        "label": "Rate Limit",
-        "order": 0,
+        "label": "Unwind Factor",
+        "order": 6,
         "width": 0,
         "height": 0,
         "topic": "topic",
         "topicType": "msg",
         "mode": "number",
+        "tooltip": "",
         "delay": 300,
         "passthru": false,
         "sendOnDelay": false,
-        "sendOnBlur": true,
+        "sendOnBlur": false,
         "sendOnEnter": true,
         "className": "",
-        "x": 640,
-        "y": 980,
+        "clearable": false,
+        "sendOnClear": false,
+        "icon": "",
+        "iconPosition": "left",
+        "iconInnerPosition": "inside",
+        "x": 760,
+        "y": 1200,
         "wires": [
             [
                 "f1d095c9377542d5"
@@ -1435,8 +1360,8 @@
         "initialize": "",
         "finalize": "",
         "libs": [],
-        "x": 850,
-        "y": 980,
+        "x": 970,
+        "y": 1200,
         "wires": [
             [
                 "0d4fdfa92e7fb8eb"
@@ -1453,7 +1378,7 @@
                 "t": "move",
                 "p": "payload",
                 "pt": "msg",
-                "to": "payload.rate_limit",
+                "to": "payload.integral_unwind_factor",
                 "tot": "msg"
             }
         ],
@@ -1462,8 +1387,8 @@
         "from": "",
         "to": "",
         "reg": false,
-        "x": 1070,
-        "y": 980,
+        "x": 1170,
+        "y": 1200,
         "wires": [
             [
                 "b83213f4f7c09366"
@@ -1477,7 +1402,7 @@
         "group": "e459568c74dfd8b2",
         "name": "",
         "label": "Set Point",
-        "order": 0,
+        "order": 1,
         "width": 0,
         "height": 0,
         "topic": "topic",
@@ -1486,11 +1411,11 @@
         "delay": 300,
         "passthru": false,
         "sendOnDelay": false,
-        "sendOnBlur": true,
+        "sendOnBlur": false,
         "sendOnEnter": true,
         "className": "",
-        "x": 660,
-        "y": 659,
+        "x": 740,
+        "y": 839,
         "wires": [
             [
                 "c6fc5e1ecc35fcd7"
@@ -1509,8 +1434,8 @@
         "initialize": "",
         "finalize": "",
         "libs": [],
-        "x": 870,
-        "y": 660,
+        "x": 950,
+        "y": 840,
         "wires": [
             [
                 "e4dcb7a115a575c8"
@@ -1536,8 +1461,8 @@
         "from": "",
         "to": "",
         "reg": false,
-        "x": 1090,
-        "y": 660,
+        "x": 1170,
+        "y": 840,
         "wires": [
             [
                 "b83213f4f7c09366"
@@ -1550,21 +1475,27 @@
         "z": "b8f36cbcfc882e5f",
         "group": "1a6dfd4456b79d04",
         "name": "",
-        "label": "Windup Limit",
-        "order": 0,
+        "label": "Integral Limit",
+        "order": 1,
         "width": 0,
         "height": 0,
         "topic": "topic",
         "topicType": "msg",
         "mode": "number",
+        "tooltip": "",
         "delay": 300,
         "passthru": false,
         "sendOnDelay": false,
-        "sendOnBlur": true,
+        "sendOnBlur": false,
         "sendOnEnter": true,
         "className": "",
-        "x": 670,
-        "y": 900,
+        "clearable": false,
+        "sendOnClear": false,
+        "icon": "",
+        "iconPosition": "left",
+        "iconInnerPosition": "inside",
+        "x": 750,
+        "y": 1080,
         "wires": [
             [
                 "803b830038b0d882"
@@ -1583,8 +1514,8 @@
         "initialize": "",
         "finalize": "",
         "libs": [],
-        "x": 870,
-        "y": 900,
+        "x": 950,
+        "y": 1080,
         "wires": [
             [
                 "75f5366a6441fbc0"
@@ -1610,8 +1541,8 @@
         "from": "",
         "to": "",
         "reg": false,
-        "x": 1090,
-        "y": 900,
+        "x": 1170,
+        "y": 1080,
         "wires": [
             [
                 "b83213f4f7c09366"
@@ -1625,7 +1556,7 @@
         "group": "2052b505fc6e7465",
         "name": "",
         "label": "Sample Time",
-        "order": 0,
+        "order": 5,
         "width": 0,
         "height": 0,
         "topic": "topic",
@@ -1634,11 +1565,11 @@
         "delay": 300,
         "passthru": false,
         "sendOnDelay": false,
-        "sendOnBlur": true,
+        "sendOnBlur": false,
         "sendOnEnter": true,
         "className": "",
-        "x": 690,
-        "y": 740,
+        "x": 770,
+        "y": 920,
         "wires": [
             [
                 "d7844a40deb74100"
@@ -1657,8 +1588,8 @@
         "initialize": "",
         "finalize": "",
         "libs": [],
-        "x": 890,
-        "y": 740,
+        "x": 970,
+        "y": 920,
         "wires": [
             [
                 "9140d2ab9d070b19"
@@ -1684,11 +1615,11 @@
         "from": "",
         "to": "",
         "reg": false,
-        "x": 1110,
-        "y": 740,
+        "x": 1190,
+        "y": 920,
         "wires": [
             [
-                "b83213f4f7c09366"
+                "adece1794b5b00d0"
             ]
         ]
     },
@@ -1699,7 +1630,7 @@
         "group": "afe3e22da0747d54",
         "name": "",
         "label": "Input Error",
-        "order": 4,
+        "order": 2,
         "chartType": "line",
         "category": "topic",
         "categoryType": "msg",
@@ -1730,8 +1661,8 @@
         "width": "0",
         "height": "0",
         "className": "",
-        "x": 810,
-        "y": 360,
+        "x": 1130,
+        "y": 260,
         "wires": [
             []
         ]
@@ -1742,21 +1673,27 @@
         "z": "b8f36cbcfc882e5f",
         "group": "2052b505fc6e7465",
         "name": "",
-        "label": "Dead Zone Threshhold",
-        "order": 0,
+        "label": "Wind Down Threshold",
+        "order": 4,
         "width": 0,
         "height": 0,
         "topic": "topic",
         "topicType": "msg",
         "mode": "number",
+        "tooltip": "",
         "delay": 300,
         "passthru": false,
         "sendOnDelay": false,
-        "sendOnBlur": true,
+        "sendOnBlur": false,
         "sendOnEnter": true,
         "className": "",
-        "x": 660,
-        "y": 1020,
+        "clearable": false,
+        "sendOnClear": false,
+        "icon": "",
+        "iconPosition": "left",
+        "iconInnerPosition": "inside",
+        "x": 780,
+        "y": 1140,
         "wires": [
             [
                 "a08e2388d1e2e205"
@@ -1775,8 +1712,8 @@
         "initialize": "",
         "finalize": "",
         "libs": [],
-        "x": 910,
-        "y": 1020,
+        "x": 1030,
+        "y": 1140,
         "wires": [
             [
                 "7d5371130af11590"
@@ -1793,7 +1730,7 @@
                 "t": "move",
                 "p": "payload",
                 "pt": "msg",
-                "to": "payload.dead_zone_threshold",
+                "to": "payload.wind_down_threshold",
                 "tot": "msg"
             }
         ],
@@ -1802,8 +1739,8 @@
         "from": "",
         "to": "",
         "reg": false,
-        "x": 1130,
-        "y": 1020,
+        "x": 1250,
+        "y": 1140,
         "wires": [
             [
                 "b83213f4f7c09366"
@@ -1815,15 +1752,15 @@
         "type": "function",
         "z": "b8f36cbcfc882e5f",
         "name": "Extract Variables",
-        "func": "msg.payload = [\n    { series: \"error\", value: msg.payload.error },\n    { series: \"output/10\", value: msg.payload.output },\n    { series: \"previous_error\", value: msg.payload.previous_error },\n    { series: \"proportional\", value: msg.payload.proportional },\n    { series: \"integral\", value: msg.payload.integral },\n    { series: \"derivative\", value: msg.payload.derivative }\n];\nreturn msg;\n",
+        "func": "msg.payload = [\n    { series: \"current_temp/10\", value: msg.payload.current_temp / 10.0 },\n    { series: \"raw_error\", value: msg.payload.raw_error },\n    { series: \"modified_error\", value: msg.payload.modified_error },\n    { series: \"P\", value: msg.payload.P },\n    { series: \"I\", value: msg.payload.I },\n    { series: \"D\", value: msg.payload.D }\n];\nreturn msg;",
         "outputs": 1,
         "timeout": "",
         "noerr": 0,
         "initialize": "",
         "finalize": "",
         "libs": [],
-        "x": 550,
-        "y": 1580,
+        "x": 490,
+        "y": 360,
         "wires": [
             [
                 "5c0c2aaaf24abf56"
@@ -1843,36 +1780,11 @@
         "rap": true,
         "rh": 0,
         "inputs": 0,
-        "x": 290,
-        "y": 1500,
+        "x": 170,
+        "y": 360,
         "wires": [
             [
                 "d1e1f1a1.123456"
-            ]
-        ]
-    },
-    {
-        "id": "401a564794d1c7a3",
-        "type": "inject",
-        "z": "b8f36cbcfc882e5f",
-        "name": "Clear Chart",
-        "props": [
-            {
-                "p": "payload"
-            }
-        ],
-        "repeat": "",
-        "crontab": "",
-        "once": false,
-        "onceDelay": 0.1,
-        "topic": "",
-        "payload": "[]",
-        "payloadType": "json",
-        "x": 430,
-        "y": 1380,
-        "wires": [
-            [
-                "5c0c2aaaf24abf56"
             ]
         ]
     },
@@ -1883,7 +1795,7 @@
         "group": "afe3e22da0747d54",
         "name": "",
         "label": "chart",
-        "order": 9007199254740991,
+        "order": 3,
         "chartType": "line",
         "category": "series",
         "categoryType": "property",
@@ -1932,8 +1844,354 @@
         "height": 8,
         "className": "",
         "interpolation": "linear",
+        "x": 1110,
+        "y": 340,
+        "wires": [
+            []
+        ]
+    },
+    {
+        "id": "578b14189c4d55d7",
+        "type": "ui-button",
+        "z": "b8f36cbcfc882e5f",
+        "group": "877facfa381dab12",
+        "name": "",
+        "label": "Reset PID",
+        "order": 1,
+        "width": 0,
+        "height": 0,
+        "emulateClick": false,
+        "tooltip": "",
+        "color": "",
+        "bgcolor": "",
+        "className": "",
+        "icon": "",
+        "iconPosition": "left",
+        "payload": "{\"all\": true}",
+        "payloadType": "json",
+        "topic": "cmnd/still2/pidreset",
+        "topicType": "str",
+        "buttonColor": "",
+        "textColor": "",
+        "iconColor": "",
+        "enableClick": true,
+        "enablePointerdown": false,
+        "pointerdownPayload": "",
+        "pointerdownPayloadType": "str",
+        "enablePointerup": false,
+        "pointerupPayload": "",
+        "pointerupPayloadType": "str",
+        "x": 240,
+        "y": 1580,
+        "wires": [
+            [
+                "849c8a8ff7dce888"
+            ]
+        ]
+    },
+    {
+        "id": "mqtt_pump_status",
+        "type": "mqtt in",
+        "z": "b8f36cbcfc882e5f",
+        "name": "Pump Status",
+        "topic": "tele/still2/pumps",
+        "qos": "2",
+        "datatype": "json",
+        "broker": "3fe3ac59af05955a",
+        "nl": false,
+        "rap": true,
+        "rh": 0,
+        "inputs": 0,
+        "x": 430,
+        "y": 2040,
+        "wires": [
+            [
+                "change_reflux_fmt",
+                "change_cond_fmt"
+            ]
+        ]
+    },
+    {
+        "id": "change_reflux_fmt",
+        "type": "change",
+        "z": "b8f36cbcfc882e5f",
+        "name": "Format Reflux",
+        "rules": [
+            {
+                "t": "set",
+                "p": "payload",
+                "pt": "msg",
+                "to": "$boolean(payload.reflux_ok) ? \"🟢 Online\" : \"🔴 OFFLINE\"",
+                "tot": "jsonata"
+            }
+        ],
+        "action": "",
+        "property": "",
+        "from": "",
+        "to": "",
+        "reg": false,
+        "x": 660,
+        "y": 2020,
+        "wires": [
+            [
+                "ui_stat_reflux"
+            ]
+        ]
+    },
+    {
+        "id": "change_cond_fmt",
+        "type": "change",
+        "z": "b8f36cbcfc882e5f",
+        "name": "Format Condenser",
+        "rules": [
+            {
+                "t": "set",
+                "p": "payload",
+                "pt": "msg",
+                "to": "$boolean(payload.condenser_ok) ? \"🟢 Online\" : \"🔴 OFFLINE\"",
+                "tot": "jsonata"
+            }
+        ],
+        "action": "",
+        "property": "",
+        "from": "",
+        "to": "",
+        "reg": false,
+        "x": 670,
+        "y": 2060,
+        "wires": [
+            [
+                "ui_stat_cond"
+            ]
+        ]
+    },
+    {
+        "id": "ui_stat_reflux",
+        "type": "ui-text",
+        "z": "b8f36cbcfc882e5f",
+        "group": "grp_pump_health",
+        "order": 1,
+        "width": 0,
+        "height": 0,
+        "name": "",
+        "label": "Reflux",
+        "format": "{{msg.payload}}",
+        "layout": "row-right",
+        "style": false,
+        "font": "",
+        "fontSize": 16,
+        "color": "#7a7a7a",
+        "className": "",
+        "x": 870,
+        "y": 2020,
+        "wires": []
+    },
+    {
+        "id": "ui_stat_cond",
+        "type": "ui-text",
+        "z": "b8f36cbcfc882e5f",
+        "group": "grp_pump_health",
+        "order": 2,
+        "width": 0,
+        "height": 0,
+        "name": "",
+        "label": "Condenser",
+        "format": "{{msg.payload}}",
+        "layout": "row-right",
+        "style": false,
+        "font": "",
+        "fontSize": 16,
+        "color": "#7a7a7a",
+        "className": "",
         "x": 890,
-        "y": 1520,
+        "y": 2060,
+        "wires": []
+    },
+    {
+        "id": "still2dispreflux",
+        "type": "function",
+        "z": "b8f36cbcfc882e5f",
+        "name": "middle display / fault",
+        "func": "// Output 1: chart (valid numbers only). Output 2: text widget.\n// A null/non-finite value or fault:true means the probe failed. Silence for\n// longer than TIMEOUT_MS means still2 has stopped publishing, so the last\n// number on screen is no longer current.\nconst TIMEOUT_MS = 60000;\n\nconst prev = context.get(\"timer\");\nif (prev) clearTimeout(prev);\n\nconst v = msg.payload;\nconst faulted = msg.fault === true || typeof v !== \"number\" || !isFinite(v);\nconst seen = msg.timestamp\n    ? String(msg.timestamp).substring(11, 19)\n    : new Date().toTimeString().substring(0, 8);\n\ncontext.set(\"timer\", setTimeout(() => {\n    context.set(\"timer\", null);\n    node.status({ fill: \"red\", shape: \"ring\", text: \"no data since \" + seen });\n    node.send([null, { payload: \"⚠ NO DATA since \" + seen }]);\n}, TIMEOUT_MS));\n\nif (faulted) {\n    node.status({ fill: \"red\", shape: \"dot\", text: \"FAULT \" + seen });\n    return [null, { payload: \"⚠ FAULT (probe)\" }];\n}\nnode.status({ fill: \"green\", shape: \"dot\", text: v.toFixed(2) + \" @ \" + seen });\nreturn [msg, msg];\n",
+        "outputs": 2,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "// Arm the silence timer at start, so a device that is already offline\n// (or a Node-RED restart) still replaces the cached value.\ncontext.set('timer', setTimeout(() => {\n    context.set('timer', null);\n    node.status({ fill: 'red', shape: 'ring', text: 'no data since start' });\n    node.send([null, { payload: '⚠ NO DATA since Node-RED start' }]);\n}, 60000));\n",
+        "finalize": "const t = context.get('timer'); if (t) clearTimeout(t);",
+        "libs": [],
+        "x": 780,
+        "y": 100,
+        "wires": [
+            [
+                "9c157de7a8c8a93f",
+                "still2colseries"
+            ],
+            [
+                "15811c80180f4d0f"
+            ]
+        ]
+    },
+    {
+        "id": "still2dispboiler",
+        "type": "function",
+        "z": "b8f36cbcfc882e5f",
+        "name": "head display / fault",
+        "func": "// Output 1: chart (valid numbers only). Output 2: text widget.\n// A null/non-finite value or fault:true means the probe failed. Silence for\n// longer than TIMEOUT_MS means still2 has stopped publishing, so the last\n// number on screen is no longer current.\nconst TIMEOUT_MS = 60000;\n\nconst prev = context.get(\"timer\");\nif (prev) clearTimeout(prev);\n\nconst v = msg.payload;\nconst faulted = msg.fault === true || typeof v !== \"number\" || !isFinite(v);\nconst seen = msg.timestamp\n    ? String(msg.timestamp).substring(11, 19)\n    : new Date().toTimeString().substring(0, 8);\n\ncontext.set(\"timer\", setTimeout(() => {\n    context.set(\"timer\", null);\n    node.status({ fill: \"red\", shape: \"ring\", text: \"no data since \" + seen });\n    node.send([null, { payload: \"⚠ NO DATA since \" + seen }]);\n}, TIMEOUT_MS));\n\nif (faulted) {\n    node.status({ fill: \"red\", shape: \"dot\", text: \"FAULT \" + seen });\n    return [null, { payload: \"⚠ FAULT (probe)\" }];\n}\nnode.status({ fill: \"green\", shape: \"dot\", text: v.toFixed(2) + \" @ \" + seen });\nreturn [msg, msg];\n",
+        "outputs": 2,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "// Arm the silence timer at start, so a device that is already offline\n// (or a Node-RED restart) still replaces the cached value.\ncontext.set('timer', setTimeout(() => {\n    context.set('timer', null);\n    node.status({ fill: 'red', shape: 'ring', text: 'no data since start' });\n    node.send([null, { payload: '⚠ NO DATA since Node-RED start' }]);\n}, 60000));\n",
+        "finalize": "const t = context.get('timer'); if (t) clearTimeout(t);",
+        "libs": [],
+        "x": 780,
+        "y": 220,
+        "wires": [
+            [
+                "aac1b1fa69090b09",
+                "still2colseries"
+            ],
+            [
+                "aa25d9e2770d5196"
+            ]
+        ]
+    },
+    {
+        "id": "still2req0000001",
+        "type": "http request",
+        "z": "b8f36cbcfc882e5f",
+        "name": "still2",
+        "method": "use",
+        "ret": "obj",
+        "paytoqs": "ignore",
+        "url": "",
+        "tls": "",
+        "persist": false,
+        "proxy": "",
+        "insecureHTTPParser": false,
+        "authType": "",
+        "senderr": false,
+        "headers": [],
+        "x": 1700,
+        "y": 840,
+        "wires": [
+            [
+                "still2route00001"
+            ]
+        ]
+    },
+    {
+        "id": "still2route00001",
+        "type": "function",
+        "z": "b8f36cbcfc882e5f",
+        "name": "still2 reply",
+        "outputs": 2,
+        "func": "const ok = msg.statusCode >= 200 && msg.statusCode < 300;\nconst path = String(msg.url || \"\").replace(/^https?:\\/\\/[^/]+/, \"\");\nif (!ok) {\n    const err = (msg.payload && msg.payload.error) ? msg.payload.error : String(msg.payload);\n    return [null, { payload: \"still2 \" + path + \": \" + err }];\n}\nif (/^\\/pid(\\/run|\\/reset)?$/.test(path)) return [{ payload: msg.payload }, null];\nreturn [null, null];",
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 1880,
+        "y": 840,
+        "wires": [
+            [
+                "c208941d1f665164",
+                "e73ca6befbbec83d"
+            ],
+            [
+                "still2note000001"
+            ]
+        ]
+    },
+    {
+        "id": "still2note000001",
+        "type": "ui-notification",
+        "z": "b8f36cbcfc882e5f",
+        "ui": "c776e0d19c314f0d",
+        "name": "still2 errors",
+        "position": "top right",
+        "colorDefault": true,
+        "color": "#000000",
+        "displayTime": "6",
+        "showCountdown": true,
+        "outputs": 1,
+        "allowDismiss": true,
+        "dismissText": "Close",
+        "raw": false,
+        "className": "",
+        "x": 2080,
+        "y": 880,
+        "wires": [
+            []
+        ]
+    },
+    {
+        "id": "still2colseries",
+        "type": "change",
+        "z": "b8f36cbcfc882e5f",
+        "name": "series name",
+        "rules": [
+            {
+                "t": "set",
+                "p": "topic",
+                "pt": "msg",
+                "to": "$substringAfter(topic, 'tele/still2/temp/')",
+                "tot": "jsonata"
+            }
+        ],
+        "action": "",
+        "property": "",
+        "from": "",
+        "to": "",
+        "reg": false,
+        "x": 1130,
+        "y": 280,
+        "wires": [
+            [
+                "still2colchart1"
+            ]
+        ]
+    },
+    {
+        "id": "still2colchart1",
+        "type": "ui-chart",
+        "z": "b8f36cbcfc882e5f",
+        "group": "still2grpcolumn",
+        "name": "head vs middle",
+        "label": "",
+        "order": 1,
+        "chartType": "line",
+        "category": "topic",
+        "categoryType": "msg",
+        "xAxisProperty": "",
+        "xAxisPropertyType": "msg",
+        "xAxisType": "time",
+        "yAxisProperty": "",
+        "ymin": "",
+        "ymax": "",
+        "action": "append",
+        "pointShape": "false",
+        "pointRadius": 4,
+        "showLegend": true,
+        "removeOlder": 1,
+        "removeOlderUnit": "3600",
+        "removeOlderPoints": "",
+        "colors": [
+            "#1f77b4",
+            "#aec7e8",
+            "#ff7f0e",
+            "#2ca02c",
+            "#98df8a",
+            "#d62728",
+            "#ff9896",
+            "#9467bd",
+            "#c5b0d5"
+        ],
+        "width": "6",
+        "height": "6",
+        "className": "",
+        "x": 1340,
+        "y": 280,
         "wires": [
             []
         ]
@@ -1965,9 +2223,74 @@
         "sessionExpiry": ""
     },
     {
+        "id": "c776e0d19c314f0d",
+        "type": "ui-base",
+        "name": "Stillerate 2",
+        "path": "/dashboard",
+        "includeClientData": true,
+        "acceptsClientConfig": [
+            "ui-notification",
+            "ui-control"
+        ],
+        "showPathInSidebar": false,
+        "navigationStyle": "default"
+    },
+    {
+        "id": "1a6dfd4456b79d04",
+        "type": "ui-group",
+        "name": "integral - windup limits",
+        "page": "32d822f9400e65fd",
+        "width": "6",
+        "height": "1",
+        "order": 2,
+        "showTitle": true,
+        "className": "",
+        "visible": "true",
+        "disabled": "false"
+    },
+    {
+        "id": "2052b505fc6e7465",
+        "type": "ui-group",
+        "name": "basic params",
+        "page": "32d822f9400e65fd",
+        "width": "6",
+        "height": "1",
+        "order": 1,
+        "showTitle": true,
+        "className": "",
+        "visible": "true",
+        "disabled": "false"
+    },
+    {
+        "id": "3a79b1215aa13ae5",
+        "type": "ui-group",
+        "name": "Control",
+        "page": "8344da34cf05e4fd",
+        "width": "6",
+        "height": "1",
+        "order": 1,
+        "showTitle": true,
+        "className": "",
+        "visible": "true",
+        "disabled": "false"
+    },
+    {
+        "id": "5835c6daabcd58ef",
+        "type": "ui-group",
+        "name": "Head",
+        "page": "98530696ee8cd926",
+        "width": "6",
+        "height": "6",
+        "order": 4,
+        "showTitle": true,
+        "className": "",
+        "visible": "true",
+        "disabled": "false"
+    },
+    {
         "id": "5ee9dce5463cd662",
         "type": "ui-group",
-        "name": "Reflux",
+        "name": "Middle",
         "page": "98530696ee8cd926",
         "width": "6",
         "height": "6",
@@ -1978,10 +2301,23 @@
         "disabled": "false"
     },
     {
-        "id": "5835c6daabcd58ef",
+        "id": "6d55354a3ff5fc47",
         "type": "ui-group",
-        "name": "Boiler",
-        "page": "98530696ee8cd926",
+        "name": "Emulation",
+        "page": "32d822f9400e65fd",
+        "width": "6",
+        "height": "1",
+        "order": 3,
+        "showTitle": true,
+        "className": "",
+        "visible": "true",
+        "disabled": "false"
+    },
+    {
+        "id": "877facfa381dab12",
+        "type": "ui-group",
+        "name": "Report",
+        "page": "32d822f9400e65fd",
         "width": "6",
         "height": "1",
         "order": 4,
@@ -2017,58 +2353,6 @@
         "disabled": "false"
     },
     {
-        "id": "6d55354a3ff5fc47",
-        "type": "ui-group",
-        "name": "Emulation",
-        "page": "32d822f9400e65fd",
-        "width": "6",
-        "height": "1",
-        "order": 3,
-        "showTitle": true,
-        "className": "",
-        "visible": "true",
-        "disabled": "false"
-    },
-    {
-        "id": "877facfa381dab12",
-        "type": "ui-group",
-        "name": "Report",
-        "page": "32d822f9400e65fd",
-        "width": "6",
-        "height": "1",
-        "order": 4,
-        "showTitle": true,
-        "className": "",
-        "visible": "true",
-        "disabled": "false"
-    },
-    {
-        "id": "3a79b1215aa13ae5",
-        "type": "ui-group",
-        "name": "Control",
-        "page": "8344da34cf05e4fd",
-        "width": "6",
-        "height": "1",
-        "order": -1,
-        "showTitle": true,
-        "className": "",
-        "visible": "true",
-        "disabled": "false"
-    },
-    {
-        "id": "2052b505fc6e7465",
-        "type": "ui-group",
-        "name": "basic params",
-        "page": "32d822f9400e65fd",
-        "width": "6",
-        "height": "1",
-        "order": 1,
-        "showTitle": true,
-        "className": "",
-        "visible": "true",
-        "disabled": "false"
-    },
-    {
         "id": "e629bcb7c26cb922",
         "type": "ui-group",
         "name": "output limits",
@@ -2082,30 +2366,29 @@
         "disabled": "false"
     },
     {
-        "id": "1a6dfd4456b79d04",
+        "id": "grp_pump_health",
         "type": "ui-group",
-        "name": "integral - windup limits",
-        "page": "32d822f9400e65fd",
+        "name": "Pump Health",
+        "page": "98530696ee8cd926",
         "width": "6",
         "height": "1",
-        "order": 2,
+        "order": 5,
         "showTitle": true,
         "className": "",
         "visible": "true",
         "disabled": "false"
     },
     {
-        "id": "98530696ee8cd926",
-        "type": "ui-page",
-        "name": "Monitoring",
-        "ui": "c776e0d19c314f0d",
-        "path": "/monitor",
-        "icon": "home",
-        "layout": "grid",
-        "theme": "ff6476dcafc85310",
-        "order": -1,
+        "id": "still2grpcolumn",
+        "type": "ui-group",
+        "name": "Head vs middle",
+        "page": "98530696ee8cd926",
+        "width": "6",
+        "height": "6",
+        "order": 6,
+        "showTitle": true,
         "className": "",
-        "visible": true,
+        "visible": "true",
         "disabled": "false"
     },
     {
@@ -2117,7 +2400,7 @@
         "icon": "home",
         "layout": "notebook",
         "theme": "ff6476dcafc85310",
-        "order": -1,
+        "order": 1,
         "className": "",
         "visible": "true",
         "disabled": "false"
@@ -2131,23 +2414,24 @@
         "icon": "home",
         "layout": "grid",
         "theme": "ff6476dcafc85310",
-        "order": -1,
+        "order": 2,
         "className": "",
         "visible": "true",
         "disabled": "false"
     },
     {
-        "id": "c776e0d19c314f0d",
-        "type": "ui-base",
-        "name": "Stillerate 2",
-        "path": "/dashboard",
-        "includeClientData": true,
-        "acceptsClientConfig": [
-            "ui-notification",
-            "ui-control"
-        ],
-        "showPathInSidebar": false,
-        "navigationStyle": "default"
+        "id": "98530696ee8cd926",
+        "type": "ui-page",
+        "name": "Monitoring",
+        "ui": "c776e0d19c314f0d",
+        "path": "/monitor",
+        "icon": "home",
+        "layout": "grid",
+        "theme": "ff6476dcafc85310",
+        "order": 3,
+        "className": "",
+        "visible": true,
+        "disabled": "false"
     },
     {
         "id": "ff6476dcafc85310",

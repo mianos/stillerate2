@@ -101,6 +101,19 @@ static void test_integral_hard_clamp() {
     CHECK_NEAR(p.integral(), 5.0, 1e-9);                 // clamped, not 1000
 }
 
+// A negative integral_limit is nonsense (the JSON layer rejects it). The core
+// must still stay safe: no inverted std::clamp bounds, integral pinned at zero.
+static void test_negative_integral_limit_is_safe() {
+    PidCore p = make(0.0, 1.0, 0.0);
+    p.integral_limit = -5.0;
+    for (int i = 0; i < 10; ++i) {
+        PidResult r = p.compute(60.0, 1.0);          // error +10 every step
+        CHECK(std::isfinite(r.output));
+    }
+    CHECK_NEAR(p.integral(), 0.0, 1e-9);            // floored at zero authority
+    CHECK_NEAR(p.compute(60.0, 1.0).output, 0.0, 1e-9);
+}
+
 // --- Anti-windup: the headline fix -------------------------------------------
 // While the output is pinned at the rail, the integrator must NOT keep growing;
 // and on error reversal the output must leave the rail within one step (no lag).
@@ -224,6 +237,7 @@ int main() {
     run("integral accumulates over time", test_integral_accumulates_over_time);
     run("integral sample-rate independent", test_integral_sample_rate_independent);
     run("integral hard clamp", test_integral_hard_clamp);
+    run("negative integral_limit is safe", test_negative_integral_limit_is_safe);
     run("anti-windup: no growth while saturated", test_antiwindup_no_integrator_growth_while_saturated);
     run("anti-windup: allows unwind at rail", test_antiwindup_allows_unwind_at_rail);
     run("derivative responds to measurement rate", test_derivative_responds_to_measurement_rate);

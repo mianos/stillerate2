@@ -9,6 +9,7 @@ class NvsStorageManager {
 public:
     bool store(const std::string& key, const std::string& value) {
         store_[key] = value;
+        ++stores;   // test hook: how many writes reached "flash"
         return true;
     }
     bool retrieve(const std::string& key, std::string& value) const {
@@ -20,6 +21,9 @@ public:
     bool clear(const std::string& key) { return store_.erase(key) > 0; }
     bool clearAll() { store_.clear(); return true; }
 
+    int stores{0};   // test hook (not part of the real class)
+
 private:
     std::map<std::string, std::string> store_;
 };
+

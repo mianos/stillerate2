@@ -164,6 +164,90 @@ static void test_output_limits_validated() {
     CHECK_NEAR(out, 60.0);
 }
 
+// A negative integral_limit would invert PidCore's std::clamp bounds, so it is
+// rejected and the previous value kept. Zero is legal (no integral authority).
+static void test_negative_integral_limit_rejected() {
+    NvsStorageManager nvs;
+    PIDController pid(nvs);
+    pid.setParametersFromJsonWrapper(oneField("integral_limit", 50.0));
+    std::printf("  (expect one E-log below: integral_limit -5 rejected)\n");
+    CHECK(!pid.setParametersFromJsonWrapper(oneField("integral_limit", -5.0)));
+    CHECK_NEAR(pid.integral_limit, 50.0);
+    CHECK(pid.setParametersFromJsonWrapper(oneField("integral_limit", 0.0)));
+    CHECK_NEAR(pid.integral_limit, 0.0);
+}
+
+// Non-finite numbers arrive through overflow: cJSON parses 1e400 with strtod,
+// which returns inf. An inf set_point would drive the loop to 0 % coolant with
+// the column hot (and be persisted to NVS), so it must be rejected.
+static void test_non_finite_rejected() {
+    NvsStorageManager nvs;
+    PIDController pid(nvs);
+    pid.setParametersFromJsonWrapper(oneField("kp", 2.0));
+    pid.setParametersFromJsonWrapper(oneField("set_point", 78.0));
+    std::printf("  (expect three E-logs below: inf set_point, kp, ki)\n");
+
+    JsonWrapper inf_sp = JsonWrapper::Parse("{\"set_point\": 1e400}");
+    CHECK(!pid.setParametersFromJsonWrapper(inf_sp));
+    CHECK_NEAR(pid.set_point, 78.0);
+
+    double out = 0.0;                       // still commands coolant when hot
+    pid.compute(85.0, 5.0, out);
+    CHECK(std::isfinite(out));
+    CHECK(out > 0.0);
+
+    JsonWrapper inf_kp = JsonWrapper::Parse("{\"kp\": 1e400}");
+    CHECK(!pid.setParametersFromJsonWrapper(inf_kp));
+    CHECK_NEAR(pid.kp, 2.0);
+
+    // A bad field does not veto the good ones in the same message.
+    JsonWrapper mixed = JsonWrapper::Parse("{\"kp\": 3, \"ki\": 1e400}");
+    CHECK(pid.setParametersFromJsonWrapper(mixed));
+    CHECK_NEAR(pid.kp, 3.0);
+    CHECK_NEAR(pid.ki, 0.0);
+}
+
+// The leak window and the derivative filter are range-checked like the unwind
+// factor, so the reported value is always the one actually in force.
+static void test_range_validated_fields() {
+    NvsStorageManager nvs;
+    PIDController pid(nvs);
+    std::printf("  (expect three E-logs below: derivative_filter 1 and -0.5, "
+                "wind_down_threshold -1)\n");
+
+    CHECK(pid.setParametersFromJsonWrapper(oneField("derivative_filter", 0.6)));
+    CHECK_NEAR(pid.derivative_filter, 0.6);
+    CHECK(!pid.setParametersFromJsonWrapper(oneField("derivative_filter", 1.0)));
+    CHECK(!pid.setParametersFromJsonWrapper(oneField("derivative_filter", -0.5)));
+    CHECK_NEAR(pid.derivative_filter, 0.6);
+
+    CHECK(pid.setParametersFromJsonWrapper(oneField("wind_down_threshold", 0.0)));
+    CHECK_NEAR(pid.wind_down_threshold, 0.0);
+    CHECK(!pid.setParametersFromJsonWrapper(oneField("wind_down_threshold", -1.0)));
+    CHECK_NEAR(pid.wind_down_threshold, 0.0);
+}
+
+// Loading at boot must not write the parameters back (needless flash wear); a
+// corrupt blob leaves the defaults in place instead of crashing.
+static void test_load_does_not_rewrite_nvs() {
+    NvsStorageManager nvs;
+    {
+        PIDController pid(nvs);
+        pid.setParametersFromJsonWrapper(oneField("kp", 2.0));
+    }
+    const int writes_after_save = nvs.stores;
+    CHECK(writes_after_save > 0);
+    {
+        PIDController reloaded(nvs);        // constructor loads
+        CHECK_NEAR(reloaded.kp, 2.0);
+    }
+    CHECK(nvs.stores == writes_after_save);
+
+    nvs.store("pid_params", "not json");
+    PIDController broken(nvs);
+    CHECK_NEAR(broken.kp, 0.0);
+}
+
 int main() {
     run("output limits validated as a pair", test_output_limits_validated);
     run("reverse-acting gains via JSON/MQTT path", test_reverse_gains_via_json);
@@ -171,6 +255,10 @@ int main() {
     run("out-of-range unwind factor rejected", test_out_of_range_rejected);
     run("compute stays finite after bad factor", test_compute_stays_finite_after_bad_factor);
     run("params persist across save/load", test_persistence_round_trip);
+    run("negative integral_limit rejected", test_negative_integral_limit_rejected);
+    run("non-finite parameters rejected", test_non_finite_rejected);
+    run("range-validated fields", test_range_validated_fields);
+    run("load does not rewrite NVS", test_load_does_not_rewrite_nvs);
     std::printf("\n%d checks, %d failures\n", g_checks, g_failures);
     return g_failures == 0 ? 0 : 1;
 }

@@ -108,8 +108,12 @@ public:
             candidate = (u_sat - P - D) / ki;
         }
 
-        // Hard safety clamp on the integral state, then commit.
-        candidate = std::clamp(candidate, -integral_limit, integral_limit);
+        // Hard safety clamp on the integral state, then commit. A negative
+        // integral_limit would invert the bounds passed to std::clamp (undefined
+        // behaviour), so it is floored at zero — i.e. no integral authority.
+        // The JSON layer rejects such a value; this is defence in depth.
+        const double limit = std::max(0.0, integral_limit);
+        candidate = std::clamp(candidate, -limit, limit);
         integral_ = candidate;
 
         // --- Final output from the committed integral ---

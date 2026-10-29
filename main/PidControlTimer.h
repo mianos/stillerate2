@@ -10,7 +10,7 @@
 #include "StillContext.h"
 #include "Emulation.h"
 #include "SettingsManager.h"
-#include "PidController.h"
+#include "PIDController.h"
 #include "Max31865Sensor.h"
 #include "RESTMotorController.h"
 #include "esp_timer.h"  // Include esp_timer for time functions

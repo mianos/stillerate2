@@ -1,4 +1,5 @@
 #pragma once
+#include <cmath>
 #include <mutex>
 
 #include "JsonWrapper.h"
@@ -8,8 +9,8 @@
 // PIDController = PidCore (pure math) + JSON telemetry + NVS persistence +
 // thread-safety. The gains live here as the canonical, JSON-mapped values and
 // are copied into the core on each compute(). All public methods are guarded by
-// a recursive mutex because parameters are mutated from the MQTT task while
-// compute() runs in the control-loop/timer task.
+// a recursive mutex because parameters are mutated from the REST/HTTP task
+// while compute() runs in the control-loop task.
 class PIDController {
 public:
     double kp{0.0}, ki{0.0}, kd{0.0};
@@ -56,60 +57,23 @@ public:
 
     bool setParametersFromJsonWrapper(const JsonWrapper& json) {
         std::lock_guard<std::recursive_mutex> lock(mtx_);
-        bool updated = false;
-        updated |= json.GetField("integral_limit", integral_limit, true);
-        updated |= json.GetField("wind_down_threshold", wind_down_threshold, true);
-        // integral_unwind_factor is applied as pow(1 - factor, dt); a value
-        // outside [0, 1) makes the base <= 0 and yields NaN, poisoning the
-        // integral. Reject an out-of-range value (keep the previous one) and log.
-        {
-            double f;
-            if (json.GetField("integral_unwind_factor", f, true)) {
-                if (f >= 0.0 && f < 1.0) {
-                    integral_unwind_factor = f;
-                    updated = true;
-                } else {
-                    ESP_LOGE("pid", "integral_unwind_factor %.4f out of range [0,1); ignoring", f);
-                }
-            }
+        if (!applyParameters(json)) {
+            return false;
         }
-        updated |= json.GetField("derivative_filter", derivative_filter, true);
-        updated |= json.GetField("kd", kd, true);
-        updated |= json.GetField("ki", ki, true);
-        updated |= json.GetField("kp", kp, true);
-        // Output limits are validated as a pair: the pump accepts 0..100 only
-        // (anything else is silently refused), and std::clamp with min > max is
-        // undefined behaviour. A bad pair is rejected whole, keeping the old one.
-        {
-            double lo = output_min, hi = output_max;
-            const bool got_lo = json.GetField("output_min", lo, true);
-            const bool got_hi = json.GetField("output_max", hi, true);
-            if (got_lo || got_hi) {
-                if (lo >= 0.0 && hi <= 100.0 && lo <= hi) {
-                    output_min = lo;
-                    output_max = hi;
-                    updated = true;
-                } else {
-                    ESP_LOGE("pid", "output limits [%.1f, %.1f] invalid (need 0 <= min <= max <= 100); ignoring", lo, hi);
-                }
-            }
-        }
-        updated |= json.GetField("set_point", set_point, true);
-
-        if (updated) {
-            saveParameters();
-        }
-        return updated;
+        saveParameters();
+        return true;
     }
 
     bool loadParameters() {
         std::lock_guard<std::recursive_mutex> lock(mtx_);
         std::string jsonParams;
-        if (nvs.retrieve(nvsKey, jsonParams)) {
-            JsonWrapper json = JsonWrapper::Parse(jsonParams);
-            return setParametersFromJsonWrapper(json);
+        if (!nvs.retrieve(nvsKey, jsonParams)) {
+            return false;
         }
-        return false;
+        // Apply without saving: what was read is already what NVS holds, so
+        // re-storing it on every boot would only wear the flash.
+        applyParameters(JsonWrapper::Parse(jsonParams));
+        return true;
     }
 
     void saveParameters() {
@@ -142,6 +106,112 @@ public:
 private:
     mutable std::recursive_mutex mtx_;
     PidCore core_;
+
+    // Reads a numeric field, rejecting non-finite values. JSON can smuggle them
+    // in through overflow — cJSON parses 1e400 with strtod, which yields inf —
+    // and an inf/nan gain or setpoint would poison every later step and then be
+    // persisted to NVS. Returns false (leaving `value` untouched) for a field
+    // that is absent, of the wrong type, or not finite.
+    static bool getFinite(const JsonWrapper& json, const std::string& key, double& value) {
+        double v;
+        if (!json.GetField(key, v, true)) {
+            return false;
+        }
+        if (!std::isfinite(v)) {
+            ESP_LOGE("pid", "%s = %g is not finite; ignoring", key.c_str(), v);
+            return false;
+        }
+        value = v;
+        return true;
+    }
+
+    // Applies every valid field of `json`, leaving invalid or absent ones at
+    // their previous value. Returns true if at least one parameter was applied.
+    // Caller must hold mtx_.
+    bool applyParameters(const JsonWrapper& json) {
+        bool updated = false;
+
+        // integral_limit bounds the integral state as +/-limit, i.e. it is used
+        // as a std::clamp bound: a negative value would invert the bounds
+        // (undefined behaviour), so it must be >= 0.
+        {
+            double v = integral_limit;
+            if (getFinite(json, "integral_limit", v)) {
+                if (v >= 0.0) {
+                    integral_limit = v;
+                    updated = true;
+                } else {
+                    ESP_LOGE("pid", "integral_limit %.4f < 0; ignoring", v);
+                }
+            }
+        }
+        // wind_down_threshold is compared against |error|; a negative value
+        // would silently disable the integral leak.
+        {
+            double v = wind_down_threshold;
+            if (getFinite(json, "wind_down_threshold", v)) {
+                if (v >= 0.0) {
+                    wind_down_threshold = v;
+                    updated = true;
+                } else {
+                    ESP_LOGE("pid", "wind_down_threshold %.4f < 0; ignoring", v);
+                }
+            }
+        }
+        // integral_unwind_factor is applied as pow(1 - factor, dt); a value
+        // outside [0, 1) makes the base <= 0 and yields NaN, poisoning the
+        // integral. Reject an out-of-range value (keep the previous one) and log.
+        {
+            double f;
+            if (getFinite(json, "integral_unwind_factor", f)) {
+                if (f >= 0.0 && f < 1.0) {
+                    integral_unwind_factor = f;
+                    updated = true;
+                } else {
+                    ESP_LOGE("pid", "integral_unwind_factor %.4f out of range [0,1); ignoring", f);
+                }
+            }
+        }
+        // derivative_filter is an EMA coefficient with the same half-open range
+        // (0 = unfiltered). Reject anything else instead of letting the core
+        // silently ignore it, so the reported value is the one in force.
+        {
+            double f;
+            if (getFinite(json, "derivative_filter", f)) {
+                if (f >= 0.0 && f < 1.0) {
+                    derivative_filter = f;
+                    updated = true;
+                } else {
+                    ESP_LOGE("pid", "derivative_filter %.4f out of range [0,1); ignoring", f);
+                }
+            }
+        }
+        // Gains may be negative (reverse-acting loops are legitimate), but never
+        // non-finite.
+        updated |= getFinite(json, "kd", kd);
+        updated |= getFinite(json, "ki", ki);
+        updated |= getFinite(json, "kp", kp);
+        // Output limits are validated as a pair: the pump accepts 0..100 only
+        // (anything else is silently refused), and std::clamp with min > max is
+        // undefined behaviour. A bad pair is rejected whole, keeping the old one.
+        {
+            double lo = output_min, hi = output_max;
+            const bool got_lo = getFinite(json, "output_min", lo);
+            const bool got_hi = getFinite(json, "output_max", hi);
+            if (got_lo || got_hi) {
+                if (lo >= 0.0 && hi <= 100.0 && lo <= hi) {
+                    output_min = lo;
+                    output_max = hi;
+                    updated = true;
+                } else {
+                    ESP_LOGE("pid", "output limits [%.1f, %.1f] invalid (need 0 <= min <= max <= 100); ignoring", lo, hi);
+                }
+            }
+        }
+        updated |= getFinite(json, "set_point", set_point);
+
+        return updated;
+    }
 
     void syncGainsToCore() {
         core_.kp = kp;

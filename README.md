@@ -25,7 +25,10 @@ curl -X POST http://still2.mianos.com/pid/reset                         # clear 
 `POST /pid` accepts any subset of `kp ki kd set_point output_min output_max
 integral_limit wind_down_threshold integral_unwind_factor derivative_filter`.
 Invalid values are rejected and the reply shows the parameters in force. A bad
-request returns 400 with an error message.
+request returns 400 with an error message. Ranges: output limits are 0..100 with
+`min <= max`, `integral_limit` and `wind_down_threshold` must be >= 0, the two
+filter coefficients lie in [0, 1), and every value must be finite — nothing is
+persisted to NVS unless it is valid.
 
 ## Emulation
 

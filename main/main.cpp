@@ -21,7 +21,7 @@
 #include "WifiManager.h"
 #include "SettingsManager.h"
 #include "Button.h"
-#include "PidController.h"
+#include "PIDController.h"
 #include "Max31865Sensor.h"
 
 #include "StillContext.h"

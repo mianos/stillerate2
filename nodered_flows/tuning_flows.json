@@ -1,0 +1,636 @@
+[
+    {
+        "id": "tuner_tab000001",
+        "type": "tab",
+        "label": "PID tuning",
+        "disabled": false,
+        "env": [],
+        "info": "Advisory PID tuner.\n\nMQTT telemetry -> digest (GET /pid + sample ring) -> LLM proposal -> deterministic validator (envelope, step caps, rate limit) -> human Apply/Reject -> POST /pid.\n\ncfg.dryRun = true in the CONFIG node means nothing is ever written to the device; every action is logged instead. Flip it to false only once you trust the proposals."
+    },
+    {
+        "id": "tuner_page00001",
+        "type": "ui-page",
+        "name": "tuning",
+        "ui": "c776e0d19c314f0d",
+        "path": "/tuning",
+        "icon": "tune",
+        "layout": "grid",
+        "theme": "ff6476dcafc85310",
+        "order": 4,
+        "className": "",
+        "visible": "true",
+        "disabled": "false"
+    },
+    {
+        "id": "tuner_grp_digest",
+        "type": "ui-group",
+        "name": "1 digest",
+        "page": "tuner_page00001",
+        "width": "6",
+        "height": "3",
+        "order": 1,
+        "showTitle": true,
+        "className": "",
+        "visible": "true",
+        "disabled": "false"
+    },
+    {
+        "id": "tuner_grp_prop",
+        "type": "ui-group",
+        "name": "2 proposal",
+        "page": "tuner_page00001",
+        "width": "6",
+        "height": "4",
+        "order": 2,
+        "showTitle": true,
+        "className": "",
+        "visible": "true",
+        "disabled": "false"
+    },
+    {
+        "id": "tuner_grp_apply",
+        "type": "ui-group",
+        "name": "3 apply",
+        "page": "tuner_page00001",
+        "width": "6",
+        "height": "3",
+        "order": 3,
+        "showTitle": true,
+        "className": "",
+        "visible": "true",
+        "disabled": "false"
+    },
+    {
+        "id": "tuner_grp_watch",
+        "type": "ui-group",
+        "name": "4 watchdog",
+        "page": "tuner_page00001",
+        "width": "6",
+        "height": "2",
+        "order": 4,
+        "showTitle": true,
+        "className": "",
+        "visible": "true",
+        "disabled": "false"
+    },
+    {
+        "id": "tuner_txt_state0",
+        "type": "ui-text",
+        "z": "tuner_tab000001",
+        "group": "tuner_grp_digest",
+        "order": 1,
+        "width": 0,
+        "height": 0,
+        "name": "",
+        "label": "state",
+        "format": "{{msg.payload}}",
+        "layout": "row-left",
+        "style": false,
+        "font": "",
+        "fontSize": 16,
+        "color": "",
+        "className": "",
+        "x": 1520,
+        "y": 80,
+        "wires": []
+    },
+    {
+        "id": "tuner_btn_digest",
+        "type": "ui-button",
+        "z": "tuner_tab000001",
+        "group": "tuner_grp_digest",
+        "name": "",
+        "label": "Build digest",
+        "order": 2,
+        "width": 0,
+        "height": 0,
+        "emulateClick": false,
+        "tooltip": "Fetch GET /pid, digest the last 10 min, ask the model",
+        "color": "",
+        "bgcolor": "",
+        "className": "",
+        "icon": "",
+        "iconPosition": "left",
+        "payload": "",
+        "payloadType": "date",
+        "topic": "topic",
+        "topicType": "msg",
+        "x": 1520,
+        "y": 140,
+        "wires": [
+            [
+                "tuner_http_get_dg"
+            ]
+        ]
+    },
+    {
+        "id": "tuner_tbl_prop00",
+        "type": "ui-table",
+        "z": "tuner_tab000001",
+        "group": "tuner_grp_prop",
+        "name": "proposal",
+        "label": "text",
+        "order": 1,
+        "width": 0,
+        "height": 0,
+        "maxrows": "0",
+        "passthru": false,
+        "autocols": true,
+        "showSearch": false,
+        "selectionType": "none",
+        "columns": [],
+        "mobileBreakpoint": "sm",
+        "mobileBreakpointType": "defaults",
+        "action": "replace",
+        "x": 1520,
+        "y": 220,
+        "wires": [
+            []
+        ]
+    },
+    {
+        "id": "tuner_txt_diag00",
+        "type": "ui-text",
+        "z": "tuner_tab000001",
+        "group": "tuner_grp_prop",
+        "order": 2,
+        "width": 0,
+        "height": 0,
+        "name": "",
+        "label": "diagnosis",
+        "format": "{{msg.diagnosis}}",
+        "layout": "row-left",
+        "style": false,
+        "font": "",
+        "fontSize": 16,
+        "color": "",
+        "className": "",
+        "x": 1520,
+        "y": 320,
+        "wires": []
+    },
+    {
+        "id": "tuner_btn_apply0",
+        "type": "ui-button",
+        "z": "tuner_tab000001",
+        "group": "tuner_grp_apply",
+        "name": "",
+        "label": "Apply proposal",
+        "order": 1,
+        "width": 0,
+        "height": 0,
+        "emulateClick": false,
+        "tooltip": "Re-read GET /pid, then POST the validated subset (no-op while dryRun)",
+        "color": "",
+        "bgcolor": "",
+        "className": "",
+        "icon": "",
+        "iconPosition": "left",
+        "payload": "",
+        "payloadType": "date",
+        "topic": "topic",
+        "topicType": "msg",
+        "x": 1520,
+        "y": 400,
+        "wires": [
+            [
+                "tuner_http_get_ap"
+            ]
+        ]
+    },
+    {
+        "id": "tuner_btn_revert",
+        "type": "ui-button",
+        "z": "tuner_tab000001",
+        "group": "tuner_grp_apply",
+        "name": "",
+        "label": "Revert to last good",
+        "order": 2,
+        "width": 0,
+        "height": 0,
+        "emulateClick": false,
+        "tooltip": "POST the parameters captured just before the last apply",
+        "color": "",
+        "bgcolor": "",
+        "className": "",
+        "icon": "",
+        "iconPosition": "left",
+        "payload": "",
+        "payloadType": "date",
+        "topic": "topic",
+        "topicType": "msg",
+        "x": 1520,
+        "y": 460,
+        "wires": [
+            [
+                "tuner_f_revert00"
+            ]
+        ]
+    },
+    {
+        "id": "tuner_txt_last00",
+        "type": "ui-text",
+        "z": "tuner_tab000001",
+        "group": "tuner_grp_apply",
+        "order": 3,
+        "width": 0,
+        "height": 0,
+        "name": "",
+        "label": "last action",
+        "format": "{{msg.payload}}",
+        "layout": "row-left",
+        "style": false,
+        "font": "",
+        "fontSize": 16,
+        "color": "",
+        "className": "",
+        "x": 1520,
+        "y": 520,
+        "wires": []
+    },
+    {
+        "id": "tuner_txt_wd0000",
+        "type": "ui-text",
+        "z": "tuner_tab000001",
+        "group": "tuner_grp_watch",
+        "order": 1,
+        "width": 0,
+        "height": 0,
+        "name": "",
+        "label": "watchdog",
+        "format": "{{msg.payload}}",
+        "layout": "row-left",
+        "style": false,
+        "font": "",
+        "fontSize": 16,
+        "color": "",
+        "className": "",
+        "x": 1520,
+        "y": 580,
+        "wires": []
+    },
+    {
+        "id": "tuner_note000000",
+        "type": "ui-notification",
+        "z": "tuner_tab000001",
+        "ui": "c776e0d19c314f0d",
+        "name": "tuner alerts",
+        "position": "top right",
+        "colorDefault": true,
+        "color": "#000000",
+        "displayTime": "10",
+        "showCountdown": true,
+        "outputs": 1,
+        "allowDismiss": true,
+        "dismissText": "Close",
+        "raw": false,
+        "className": "",
+        "x": 1520,
+        "y": 650,
+        "wires": [
+            []
+        ]
+    },
+    {
+        "id": "tuner_f_cfg00000",
+        "type": "function",
+        "z": "tuner_tab000001",
+        "name": "CONFIG (edit me)",
+        "func": "return null;",
+        "outputs": 0,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "// Advisory PID tuner configuration. Runs on deploy (and on every restart) before\n// any message arrives, so every other node can assume it exists.\nflow.set('cfg', {\n    // --- endpoints ---------------------------------------------------------\n    stillBase: 'http://still2.mianos.com',\n    llmUrl: 'http://docker-host.mianos.com:8082/v1/chat/completions',\n    llmModel: 'LiquidAI/LFM2.5-24B-A2B-GGUF',\n\n    // --- safety ------------------------------------------------------------\n    dryRun: true,             // true = never POST /pid, only log what it would do\n    maxDeltaPct: 30,          // max % change per gain, per proposal\n    minProposalGapMin: 5,     // minimum spacing between LLM calls\n    revertAfterMin: 15,       // watchdog horizon after an apply\n    maxSetPointStep: 0.5,     // degC per proposal\n    llmTimeoutMs: 90000,\n\n    // --- digest ------------------------------------------------------------\n    windowMin: 10,            // analysis window\n    csvRows: 50,              // downsampled telemetry rows sent to the model\n    maxSampleAgeSec: 30,      // refuse stale telemetry (e.g. a retained message)\n    maxTokens: 500,\n\n    // --- watchdog ----------------------------------------------------------\n    watchdogWorsePct: 25,     // revert if mae worsens by this much\n    watchdogBiasMargin: 0.3,  // degC of extra bias tolerated\n    watchdogSatPct: 40,       // revert if this share of samples is saturated\n\n    // --- hard envelope: mirror of PIDController + README. The LLM may never\n    // leave it, whatever it argues; the validator drops the whole proposal.\n    limits: {\n        kp: [0, 8], ki: [0, 1], kd: [0, 60],\n        set_point: [70, 85], output_min: [0, 50], output_max: [20, 100],\n        integral_limit: [0, 10000], wind_down_threshold: [0, 10],\n        integral_unwind_factor: [0, 0.9], derivative_filter: [0, 0.9]\n    }\n});\nif (!Array.isArray(flow.get('buf'))) flow.set('buf', []);",
+        "finalize": "",
+        "libs": [],
+        "x": 140,
+        "y": 80,
+        "wires": []
+    },
+    {
+        "id": "tuner_mqtt_in000",
+        "type": "mqtt in",
+        "z": "tuner_tab000001",
+        "name": "PID telemetry",
+        "topic": "tele/still2/pid",
+        "qos": "2",
+        "datatype": "auto-detect",
+        "broker": "3fe3ac59af05955a",
+        "nl": false,
+        "rap": true,
+        "rh": 0,
+        "inputs": 0,
+        "x": 140,
+        "y": 240,
+        "wires": [
+            [
+                "tuner_f_buf00000"
+            ]
+        ]
+    },
+    {
+        "id": "tuner_f_buf00000",
+        "type": "function",
+        "z": "tuner_tab000001",
+        "name": "buffer samples",
+        "func": "// Keep a bounded ring of PID telemetry for the digest. `received` is our own\n// clock: a retained tele message from a previous session can be days old, and\n// the digest must reject it rather than describe it as current.\nconst buf = flow.get('buf') || [];\nconst p = msg.payload || {};\nconst rec = { received: Date.now() };\n\nif (p.fault === true) {\n    rec.fault = true;\n    rec.fail_safe = p.fail_safe === true;\n    rec.held_output = p.held_output;\n} else if (typeof p.current_temp === 'number' && isFinite(p.current_temp)) {\n    rec.temp = p.current_temp;\n    rec.sp = typeof p.set_point === 'number' ? p.set_point : null;\n    rec.out = typeof p.output === 'number' ? p.output : null;\n    rec.P = p.P; rec.I = p.I; rec.D = p.D;\n    rec.integral = typeof p.integral === 'number' ? p.integral : null;\n    rec.saturated = p.saturated === true;\n    rec.emulation = p.emulation === true;\n    rec.pump_ok = p.pump_ok !== false;\n    rec.pump_stalled = p.pump_stalled === true;\n} else {\n    return null;   // unrecognised frame\n}\n\nbuf.push(rec);\nwhile (buf.length > 2000) buf.shift();\nflow.set('buf', buf);\nreturn null;",
+        "outputs": 0,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 360,
+        "y": 240,
+        "wires": []
+    },
+    {
+        "id": "tuner_http_get_dg",
+        "type": "http request",
+        "z": "tuner_tab000001",
+        "name": "GET /pid (digest)",
+        "method": "GET",
+        "ret": "obj",
+        "paytoqs": "ignore",
+        "url": "http://still2.mianos.com/pid",
+        "tls": "",
+        "persist": false,
+        "proxy": "",
+        "insecureHTTPParser": false,
+        "authType": "",
+        "senderr": false,
+        "headers": [],
+        "x": 340,
+        "y": 340,
+        "wires": [
+            [
+                "tuner_f_prompt00"
+            ]
+        ]
+    },
+    {
+        "id": "tuner_f_prompt00",
+        "type": "function",
+        "z": "tuner_tab000001",
+        "name": "build prompt",
+        "func": "// Build the digest and the LLM request. Authoritative state comes from GET /pid;\n// the time series comes from the local buffer. Anything ambiguous (stale,\n// emulated, faulted, stopped, rate-limited) is refused here rather than\n// described to the model as if it were a tuning problem.\nconst cfg = flow.get('cfg');\nconst say = t => ({ payload: 'digest refused: ' + t });\nif (!cfg) return [null, say('CONFIG has not run: redeploy the flow')];\n\nconst snap = msg.payload || {};\nif (typeof snap.kp !== 'number') return [null, say('GET /pid returned no parameters - device down?')];\nconst gapMin = cfg.minProposalGapMin;\nif (Date.now() - (flow.get('lastAskAt') || 0) < gapMin * 60000)\n    return [null, say('rate limit: one proposal per ' + gapMin + ' min')];\nif (!snap.running) return [null, say('PID loop is stopped (POST /pid/run first) - nothing to tune')];\nif (snap.emulation) return [null, say('emulation is on: current_temp is synthetic, not tunable')];\n\nconst now = Date.now();\nconst all = (flow.get('buf') || []).filter(s => s.received >= now - cfg.windowMin * 60000);\nif (all.some(s => s.fault)) return [null, say('sensor fault inside the window - fix the sensor first')];\nconst buf = all.filter(s => typeof s.temp === 'number');\nif (buf.length < 5)\n    return [null, say('only ' + buf.length + ' samples in the last ' + cfg.windowMin + ' min (need 5)')];\nconst newest = buf[buf.length - 1];\nconst ageS = (now - newest.received) / 1000;\nif (ageS > cfg.maxSampleAgeSec)\n    return [null, say('newest sample is ' + ageS.toFixed(0) + ' s old (limit ' + cfg.maxSampleAgeSec + ' s)')];\nif (buf.some(s => s.emulation)) return [null, say('emulation appeared inside the window')];\nif (buf.some(s => s.pump_stalled))\n    return [null, say('pump stall inside the window - fix the pump before tuning')];\n\nconst mean = a => a.reduce((x, y) => x + y, 0) / a.length;\nconst sp = typeof snap.set_point === 'number' ? snap.set_point : newest.sp;\nconst errs = buf.map(s => s.temp - (typeof s.sp === 'number' ? s.sp : sp));\nconst outs = buf.map(s => (typeof s.out === 'number' ? s.out : 0));\nconst bias = mean(errs);\nlet reversals = 0;\nfor (let i = 2; i < buf.length; i++) {\n    const a1 = buf[i - 1].temp - buf[i - 2].temp;\n    const a2 = buf[i].temp - buf[i - 1].temp;\n    if (a1 * a2 < 0) reversals++;\n}\nconst m = {\n    n: buf.length,\n    window_min: cfg.windowMin,\n    sample_time_s: snap.sample_time,\n    set_point: sp,\n    temp_mean: +mean(buf.map(s => s.temp)).toFixed(3),\n    bias: +bias.toFixed(3),                 // mean(temp - sp): + means running hot\n    mae: +mean(errs.map(e => Math.abs(e))).toFixed(3),\n    stddev: +Math.sqrt(mean(errs.map(e => (e - bias) * (e - bias)))).toFixed(3),\n    temp_reversals_per_min: +(reversals / cfg.windowMin).toFixed(1),\n    duty_mean: +mean(outs).toFixed(1),\n    duty_max: +Math.max.apply(null, outs).toFixed(1),\n    saturation_pct: +(100 * buf.filter(s => s.saturated).length / buf.length).toFixed(1),\n    integral_peak: +Math.max.apply(null, buf.map(s => Math.abs(s.integral || 0))).toFixed(1)\n};\n\nconst step = Math.max(1, Math.floor(buf.length / cfg.csvRows));\nconst rows = [];\nfor (let i = 0; i < buf.length; i += step) {\n    const s = buf[i];\n    rows.push([\n        ((s.received - now) / 60000).toFixed(1),\n        s.temp.toFixed(2),\n        (typeof s.out === 'number' ? s.out : 0).toFixed(1),\n        (s.P || 0).toFixed(2),\n        (s.I || 0).toFixed(2),\n        (s.D || 0).toFixed(2),\n        s.saturated ? 1 : 0\n    ].join(','));\n}\n\n// Stable prefix: identical bytes on every call is what makes the wrapper's\n// prefix cache hit (cold ~20-40 s, warm ~2-3 s). Keep it free of run data.\nconst SYSTEM = [\n'You are a control engineer assisting with a reflux distillation still. You never',\n'touch hardware: you return a tuning proposal that a human reviews and that a',\n'deterministic validator checks against a hard envelope.',\n'',\n'PLANT',\n'- A PID runs every `sample_time` seconds on `current_temp`: vapour temperature in',\n'  the middle of the column, degC.',\n'- Output is reflux pump duty, percent 0..100 = coolant flow to the dephlegmator.',\n'  More coolant means a cooler column.',\n'- Direct acting on a cooling actuator: error = measurement - set_point, so output',\n'  rises when the column is hotter than the setpoint.',\n'- Setpoint is about 78.4 degC, the ethanol/water azeotrope vapour temperature.',\n'  Hotter pushes water and heads through (product quality loss); colder floods the',\n'  column and stops take-off. A setpoint change needs a process reason, not tuning.',\n'- Expect large dead time: the pump responds in about 1 s, the column lags by tens',\n'  of seconds to minutes.',\n'',\n'PARAMETERS (duty-percent units)',\n'- kp  proportional gain, duty per degC of error.',\n'- ki  integral gain per second; the integral state is bounded to +-integral_limit.',\n'- kd  derivative gain per (degC/s) on the MEASUREMENT (no setpoint kick),',\n'  EMA-filtered by derivative_filter (0 = off, 0.3..0.6 damps a noisy signal).',\n'- integral_limit  hard bound on |I|.',\n'- wind_down_threshold  below this |error| the integral leaks at',\n'  integral_unwind_factor per second (0 disables the leak).',\n'- output_min/output_max  duty clamp; output_min > 0 keeps the pump turning.',\n'- Anti-windup is back-calculation against the output rail. Known artefact: while',\n'  the output is pinned at output_min the integrator is preloaded towards',\n'  (u_sat - P - D)/ki, so a small residual bias just after a cold start is',\n'  expected and is not evidence of windup.',\n'',\n'HOW TO REASON',\n'- Running hot and not saturated: raise kp (or ki) modestly.',\n'- Slow return to setpoint after a disturbance: ki too low.',\n'- Oscillation or jittery duty: kd too high for the sensor noise, or',\n'  derivative_filter too low. Check temp_reversals_per_min first.',\n'- Pinned at a rail for much of the window: the loop is authority-limited, not',\n'  gain-limited. Say so instead of raising gains.',\n'- integral_peak near integral_limit: windup risk; consider lowering the limit.',\n'- Under about 10 minutes of data, or a fault/emulation/stall flag: the evidence is',\n'  insufficient. Set confidence \"low\" and change nothing else.',\n'- bias is mean(temp - sp) (positive = running hot), mae is mean |error|,',\n'  saturation_pct is the share of samples pinned at a rail.',\n'',\n'RULES',\n'- Change as few parameters as possible: one change per proposal, the smallest',\n'  step the evidence supports.',\n'- Never propose anything outside the hard envelope; the validator drops the whole',\n'  proposal and the human sees nothing.',\n'- Numbers must be finite JSON numbers, never strings.',\n'',\n'OUTPUT: one JSON object, no prose, no markdown fence:',\n'{\"diagnosis\":\"1-2 sentences on what the data shows\",',\n' \"proposal\":{\"kp\":2.0},',\n' \"expected_effect\":\"what should measurably change, and by when\",',\n' \"confidence\":\"low|medium|high\",',\n' \"watch_for\":\"the symptom that would mean this was wrong\",',\n' \"revert_after_min\":15}'\n].join('\\n');\n\nconst params = {\n    kp: snap.kp, ki: snap.ki, kd: snap.kd, set_point: snap.set_point,\n    output_min: snap.output_min, output_max: snap.output_max,\n    integral_limit: snap.integral_limit,\n    wind_down_threshold: snap.wind_down_threshold,\n    integral_unwind_factor: snap.integral_unwind_factor,\n    derivative_filter: snap.derivative_filter\n};\nconst env = Object.keys(cfg.limits).map(function (k) {\n    const b = cfg.limits[k];\n    return k + ' ' + b[0] + '..' + b[1];\n}).join(', ');\n\nconst req = {\n    model: cfg.llmModel,\n    temperature: 0,\n    seed: 42,\n    max_tokens: cfg.maxTokens,\n    messages: [\n        { role: 'system', content: SYSTEM },\n        { role: 'user', content:\n            'HARD ENVELOPE (the validator rejects anything outside it): ' + env +\n            '\\n\\nCURRENT PARAMETERS\\n' + JSON.stringify(params, null, 1) +\n            '\\n\\nMETRICS, LAST ' + m.window_min + ' MIN\\n' + JSON.stringify(m, null, 1) +\n            '\\n\\nTELEMETRY, one row every ' + step + ' loop ticks, newest row last\\n' +\n            't_min,temp_c,duty_pct,P,I,D,sat\\n' + rows.join('\\n') +\n            '\\n\\nReply with the JSON object only.' }\n    ]\n};\n\nflow.set('snapshot', snap);\nflow.set('digest', { metrics: m, params: params, at: now });\nflow.set('lastAskAt', now);\nflow.set('lastRequest', req);\nflow.set('retried', false);\n\nmsg.payload = req;\nmsg.headers = { 'Content-Type': 'application/json' };\nmsg.requestTimeout = cfg.llmTimeoutMs;\nreturn [msg, null];",
+        "outputs": 2,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 560,
+        "y": 340,
+        "wires": [
+            [
+                "tuner_http_llm00"
+            ],
+            [
+                "tuner_txt_state0",
+                "tuner_note000000"
+            ]
+        ]
+    },
+    {
+        "id": "tuner_http_llm00",
+        "type": "http request",
+        "z": "tuner_tab000001",
+        "name": "LLM chat completions",
+        "method": "POST",
+        "ret": "obj",
+        "paytoqs": "ignore",
+        "url": "http://docker-host.mianos.com:8082/v1/chat/completions",
+        "tls": "",
+        "persist": false,
+        "proxy": "",
+        "insecureHTTPParser": false,
+        "authType": "",
+        "senderr": false,
+        "headers": [],
+        "x": 780,
+        "y": 340,
+        "wires": [
+            [
+                "tuner_f_parse000"
+            ]
+        ]
+    },
+    {
+        "id": "tuner_f_parse000",
+        "type": "function",
+        "z": "tuner_tab000001",
+        "name": "validate proposal",
+        "func": "// Validate the model's reply. This is the trust boundary: the LLM proposes, this\n// code disposes. Outputs: 1 = accepted, 2 = rejected, 3 = retry the LLM call.\nconst cfg = flow.get('cfg');\nconst snap = flow.get('snapshot') || {};\nconst out2 = t => ({ payload: 'proposal rejected: ' + t });\nconst reject = why => {\n    flow.set('proposal', { accepted: false, why: why, at: Date.now() });\n    return [null, out2(why), null];\n};\nif (!cfg) return reject('CONFIG has not run: redeploy the flow');\n\nconst choice = (msg.payload && msg.payload.choices && msg.payload.choices[0]) || {};\nconst text = (choice.message && choice.message.content) || '';\nconst retryOrReject = why => {\n    if (flow.get('retried')) return reject('after one retry: ' + why);\n    const req = JSON.parse(JSON.stringify(flow.get('lastRequest') || {}));\n    req.messages = (req.messages || []).concat([{ role: 'user', content:\n        'That reply could not be used (' + why + '). Reply with the JSON object only, nothing else.' }]);\n    flow.set('retried', true);\n    msg.payload = req;\n    msg.headers = { 'Content-Type': 'application/json' };\n    msg.requestTimeout = cfg.llmTimeoutMs;\n    return [null, null, msg];\n};\n\nif (!text) return retryOrReject('empty reply');\nif (choice.finish_reason === 'length') return reject('model hit max_tokens before finishing');\nif (choice.finish_reason === 'tool_calls') return retryOrReject('reply was a tool call, not a proposal');\n\nconst body = String(text).trim().replace(/^```[a-zA-Z]*\\n?/, '').replace(/```$/, '').trim();\nconst a = body.indexOf('{');\nconst b = body.lastIndexOf('}');\nif (a < 0 || b <= a) return retryOrReject('no JSON object in the reply');\nlet parsed;\ntry {\n    parsed = JSON.parse(body.slice(a, b + 1));\n} catch (e) {\n    return retryOrReject('invalid JSON: ' + e.message);\n}\n\nconst raw = (parsed && typeof parsed.proposal === 'object' && parsed.proposal !== null)\n    ? parsed.proposal : parsed;\nconst fields = Object.keys(cfg.limits);\nconst problems = [];\nconst clean = {};\nfor (let i = 0; i < fields.length; i++) {\n    const f = fields[i];\n    if (raw[f] === undefined || raw[f] === null) continue;\n    const v = Number(raw[f]);\n    if (!isFinite(v)) { problems.push(f + ' is not a finite number'); continue; }\n    const lo = cfg.limits[f][0];\n    const hi = cfg.limits[f][1];\n    if (v < lo || v > hi) {\n        problems.push(f + '=' + v + ' outside the envelope ' + lo + '..' + hi);\n        continue;\n    }\n    clean[f] = v;\n}\nif (!Object.keys(clean).length) problems.push('no usable parameter in the proposal');\nif (clean.output_min !== undefined && clean.output_max !== undefined && clean.output_min > clean.output_max)\n    problems.push('output_min > output_max');\nfor (let i = 0; i < 3; i++) {\n    const f = ['kp', 'ki', 'kd'][i];\n    if (clean[f] === undefined) continue;\n    const old = Number(snap[f]);\n    if (!isFinite(old)) continue;\n    const pct = Math.abs(clean[f] - old) / Math.max(Math.abs(old), 0.01) * 100;\n    if (pct > cfg.maxDeltaPct)\n        problems.push(f + ' would move ' + pct.toFixed(0) + '% (cap ' + cfg.maxDeltaPct + '%)');\n}\nif (clean.set_point !== undefined) {\n    const d = Math.abs(clean.set_point - Number(snap.set_point));\n    if (!(d <= cfg.maxSetPointStep))\n        problems.push('set_point would move ' + d.toFixed(2) + ' degC (cap ' + cfg.maxSetPointStep + ')');\n}\nif (problems.length) return reject(problems.join('; '));\n\nconst proposal = {\n    accepted: true, at: Date.now(), clean: clean,\n    diagnosis: String(parsed.diagnosis || ''),\n    confidence: String(parsed.confidence || 'low'),\n    expected_effect: String(parsed.expected_effect || ''),\n    watch_for: String(parsed.watch_for || ''),\n    revert_after_min: Number(parsed.revert_after_min) > 0 ? Number(parsed.revert_after_min) : cfg.revertAfterMin,\n    before: snap, model: cfg.llmModel,\n    metrics: (flow.get('digest') || {}).metrics || null\n};\nflow.set('proposal', proposal);\n\nconst rows = Object.keys(clean).map(function (f) {\n    const cur = Number(snap[f]);\n    const pct = isFinite(cur) && cur !== 0 ? +(100 * (clean[f] - cur) / Math.abs(cur)).toFixed(1) : null;\n    return { field: f, current: isFinite(cur) ? cur : snap[f], proposed: clean[f], change_pct: pct };\n});\nmsg.payload = rows;\nmsg.diagnosis = proposal.diagnosis +\n    '\\n\\nconfidence: ' + proposal.confidence +\n    (proposal.expected_effect ? '\\nexpected: ' + proposal.expected_effect : '') +\n    (proposal.watch_for ? '\\nwatch for: ' + proposal.watch_for : '');\nreturn [msg, null, null];",
+        "outputs": 3,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 980,
+        "y": 340,
+        "wires": [
+            [
+                "tuner_tbl_prop00",
+                "tuner_txt_diag00"
+            ],
+            [
+                "tuner_txt_state0",
+                "tuner_note000000"
+            ],
+            [
+                "tuner_http_llm00"
+            ]
+        ]
+    },
+    {
+        "id": "tuner_http_get_ap",
+        "type": "http request",
+        "z": "tuner_tab000001",
+        "name": "GET /pid (before apply)",
+        "method": "GET",
+        "ret": "obj",
+        "paytoqs": "ignore",
+        "url": "http://still2.mianos.com/pid",
+        "tls": "",
+        "persist": false,
+        "proxy": "",
+        "insecureHTTPParser": false,
+        "authType": "",
+        "senderr": false,
+        "headers": [],
+        "x": 340,
+        "y": 460,
+        "wires": [
+            [
+                "tuner_f_stash000"
+            ]
+        ]
+    },
+    {
+        "id": "tuner_f_stash000",
+        "type": "function",
+        "z": "tuner_tab000001",
+        "name": "stash + build POST",
+        "func": "// Apply: GET /pid gave us the authoritative pre-apply state, stash it as the\n// revert target, then hand the validated subset to POST /pid.\nconst cfg = flow.get('cfg');\nconst note = t => ({ payload: 'apply: ' + t });\nif (!cfg) return [null, note('CONFIG has not run: redeploy the flow')];\n\nconst prop = flow.get('proposal') || {};\nif (!prop.accepted) return [null, note('no accepted proposal to apply')];\nif (typeof msg.payload !== 'object' || msg.payload === null || typeof msg.payload.kp !== 'number')\n    return [null, note('GET /pid before apply returned no parameters')];\n// One proposal, one apply: a second click must not re-post stale values.\nif (flow.get('appliedProposalAt') === prop.at) return [null, note('this proposal was already applied')];\n\nflow.set('lastgood', msg.payload);\nif (cfg.dryRun) {\n    flow.set('appliedProposalAt', prop.at);\n    return [null, { payload: 'DRY RUN: would POST ' + JSON.stringify(prop.clean) }];\n}\n\nflow.set('appliedProposalAt', prop.at);\nmsg.payload = prop.clean;\nmsg.headers = { 'Content-Type': 'application/json' };\nmsg.action = 'apply';\nreturn [msg, null];",
+        "outputs": 2,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 560,
+        "y": 460,
+        "wires": [
+            [
+                "tuner_http_post00"
+            ],
+            [
+                "tuner_txt_state0",
+                "tuner_note000000"
+            ]
+        ]
+    },
+    {
+        "id": "tuner_http_post00",
+        "type": "http request",
+        "z": "tuner_tab000001",
+        "name": "POST /pid",
+        "method": "POST",
+        "ret": "obj",
+        "paytoqs": "ignore",
+        "url": "http://still2.mianos.com/pid",
+        "tls": "",
+        "persist": false,
+        "proxy": "",
+        "insecureHTTPParser": false,
+        "authType": "",
+        "senderr": false,
+        "headers": [],
+        "x": 780,
+        "y": 460,
+        "wires": [
+            [
+                "tuner_f_audit000"
+            ]
+        ]
+    },
+    {
+        "id": "tuner_f_audit000",
+        "type": "function",
+        "z": "tuner_tab000001",
+        "name": "audit",
+        "func": "// Post-POST bookkeeping for both apply and revert: confirm the device took the\n// values, arm (or clear) the watchdog, and emit an audit record.\nconst cfg = flow.get('cfg');\nconst say = t => ({ payload: 'apply: ' + t });\nif (!cfg) return [null, say('CONFIG has not run: redeploy the flow')];\n\nconst now = Date.now();\nconst isRevert = msg.action === 'revert';\nconst before = flow.get('lastgood') || {};\nconst after = msg.payload || {};\nif (after.error) return [null, say('POST /pid failed: ' + after.error)];\n\nconst fields = ['kp', 'ki', 'kd', 'set_point', 'integral_limit', 'wind_down_threshold',\n                'integral_unwind_factor', 'derivative_filter', 'output_min', 'output_max'];\nconst changed = [];\nfor (let i = 0; i < fields.length; i++) {\n    const f = fields[i];\n    if (typeof after[f] === 'number' && typeof before[f] === 'number' && after[f] !== before[f])\n        changed.push(f + ' ' + before[f] + ' -> ' + after[f]);\n}\n\nconst prop = flow.get('proposal') || {};\nconst refused = Object.keys(prop.clean || {}).filter(function (f) { return after[f] !== prop.clean[f]; });\n\nconst sp = typeof before.set_point === 'number' ? before.set_point : 0;\nconst win = (flow.get('buf') || []).filter(function (s) {\n    return !s.fault && typeof s.temp === 'number' && s.received > now - cfg.windowMin * 60000;\n});\nlet baseline = null;\nif (win.length) {\n    const e = win.map(function (s) { return s.temp - (typeof s.sp === 'number' ? s.sp : sp); });\n    const bias = e.reduce(function (x, y) { return x + y; }, 0) / e.length;\n    baseline = {\n        n: win.length,\n        bias: +bias.toFixed(2),\n        mae: +(e.reduce(function (x, y) { return x + Math.abs(y); }, 0) / e.length).toFixed(2),\n        satPct: +(100 * win.filter(function (s) { return s.saturated; }).length / win.length).toFixed(1)\n    };\n}\n\nif (isRevert) {\n    flow.set('applied', null);\n} else {\n    flow.set('applied', {\n        ts: now,\n        revertAfterMin: prop.revert_after_min > 0 ? prop.revert_after_min : cfg.revertAfterMin,\n        before: before,\n        baseline: baseline,\n        clean: prop.clean || null\n    });\n}\n\nconst audit = {\n    event: isRevert ? 'revert' : 'apply',\n    at: new Date(now).toISOString(),\n    reason: msg.reason || null,\n    before: before, after: after,\n    diagnosis: prop.diagnosis || null,\n    confidence: prop.confidence || null,\n    metrics: prop.metrics || null,\n    model: cfg.llmModel\n};\nconst log = flow.get('auditLog') || [];\nlog.push(audit);\nflow.set('auditLog', log.slice(-50));\n\nlet text = (isRevert ? 'REVERTED' : 'APPLIED') + ': ' + (changed.length ? changed.join(', ') : 'no change');\nif (!isRevert && refused.length) text += ' | device kept its old value for: ' + refused.join(', ');\nif (!isRevert && baseline) text += ' | baseline mae ' + baseline.mae + ', bias ' + baseline.bias +\n    ', sat ' + baseline.satPct + '% over ' + baseline.n + ' samples';\n\nreturn [{ payload: audit, topic: 'tele/still2/tune' },\n        { payload: text }];",
+        "outputs": 2,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 980,
+        "y": 460,
+        "wires": [
+            [
+                "tuner_mqtt_out000"
+            ],
+            [
+                "tuner_txt_last00",
+                "tuner_note000000"
+            ]
+        ]
+    },
+    {
+        "id": "tuner_f_revert00",
+        "type": "function",
+        "z": "tuner_tab000001",
+        "name": "revert now",
+        "func": "// Manual revert to the snapshot captured just before the last apply.\nconst cfg = flow.get('cfg');\nconst note = t => ({ payload: 'revert: ' + t });\nif (!cfg) return [null, note('CONFIG has not run: redeploy the flow')];\n\nconst lastgood = flow.get('lastgood');\nif (!lastgood || typeof lastgood.kp !== 'number') return [null, note('nothing to revert to')];\n\nconst body = {};\n['kp', 'ki', 'kd', 'set_point', 'output_min', 'output_max', 'integral_limit',\n 'wind_down_threshold', 'integral_unwind_factor', 'derivative_filter'].forEach(function (f) {\n    if (typeof lastgood[f] === 'number') body[f] = lastgood[f];\n});\n\nif (cfg.dryRun) return [null, note('DRY RUN - would POST ' + JSON.stringify(body))];\n\nmsg.payload = body;\nmsg.headers = { 'Content-Type': 'application/json' };\nmsg.action = 'revert';\nmsg.reason = 'manual';\nreturn [msg, null];",
+        "outputs": 2,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 340,
+        "y": 580,
+        "wires": [
+            [
+                "tuner_http_post00"
+            ],
+            [
+                "tuner_txt_state0",
+                "tuner_note000000"
+            ]
+        ]
+    },
+    {
+        "id": "tuner_inj_wd00000",
+        "type": "inject",
+        "z": "tuner_tab000001",
+        "name": "every 60 s",
+        "props": [
+            {
+                "p": "payload"
+            }
+        ],
+        "repeat": "60",
+        "crontab": "",
+        "once": true,
+        "onceDelay": "20",
+        "topic": "",
+        "payload": "",
+        "payloadType": "date",
+        "x": 140,
+        "y": 680,
+        "wires": [
+            [
+                "tuner_f_watchdog"
+            ]
+        ]
+    },
+    {
+        "id": "tuner_f_watchdog",
+        "type": "function",
+        "z": "tuner_tab000001",
+        "name": "watchdog",
+        "func": "// Watchdog: after `revertAfterMin` of running with the new gains, compare the\n// window against the pre-apply baseline and revert if it got worse.\n// Outputs: 1 = POST /pid, 2 = alert, 3 = dashboard status line.\nconst cfg = flow.get('cfg');\nconst note = t => ({ payload: t });\nif (!cfg) return [null, null, null];\n\nconst applied = flow.get('applied');\nif (!applied) return [null, null, note('idle - nothing applied')];\n\nconst now = Date.now();\nconst elapsedMin = (now - applied.ts) / 60000;\nconst base = applied.baseline || {};\nconst show = v => (typeof v === 'number' ? v.toFixed(2) : '-');\nconst head = 'armed ' + elapsedMin.toFixed(0) + '/' + applied.revertAfterMin + ' min';\n\nconst buf = (flow.get('buf') || []).filter(function (s) {\n    return !s.fault && typeof s.temp === 'number' && s.received >= applied.ts;\n});\nif (buf.length < 5) return [null, null, note(head + ' - waiting for samples')];\n\nconst e = buf.map(function (s) { return s.temp - (typeof s.sp === 'number' ? s.sp : 0); });\nconst bias = e.reduce(function (x, y) { return x + y; }, 0) / e.length;\nconst mae = e.reduce(function (x, y) { return x + Math.abs(y); }, 0) / e.length;\nconst satPct = 100 * buf.filter(function (s) { return s.saturated; }).length / buf.length;\nconst status = head + ', mae ' + show(mae) + ' vs ' + show(base.mae) +\n               ', bias ' + show(bias) + ' vs ' + show(base.bias);\nif (elapsedMin < applied.revertAfterMin) return [null, null, note(status)];\n\nconst reasons = [];\nif (base.mae > 0 && mae > base.mae * (1 + cfg.watchdogWorsePct / 100))\n    reasons.push('mae ' + base.mae + ' -> ' + mae.toFixed(2));\nif (Math.abs(bias) > Math.abs(base.bias || 0) + cfg.watchdogBiasMargin)\n    reasons.push('bias ' + base.bias + ' -> ' + bias.toFixed(2));\nif (satPct > cfg.watchdogSatPct) reasons.push('saturation ' + satPct.toFixed(0) + '%');\nif (buf.some(function (s) { return s.pump_stalled; })) reasons.push('pump stall');\n\nif (!reasons.length) {\n    // Healthy for several horizons: stop watching this apply.\n    if (elapsedMin > applied.revertAfterMin * 4) flow.set('applied', null);\n    return [null, null, note('ok at the horizon: ' + status)];\n}\n\nflow.set('applied', null);\nconst text = 'watchdog revert after ' + elapsedMin.toFixed(0) + ' min: ' + reasons.join(', ');\nif (cfg.dryRun) return [null, note('DRY RUN: ' + text), note(text)];\n\nmsg.payload = applied.before;\nmsg.headers = { 'Content-Type': 'application/json' };\nmsg.action = 'revert';\nmsg.reason = text;\nreturn [msg, null, note(text)];",
+        "outputs": 3,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 340,
+        "y": 680,
+        "wires": [
+            [
+                "tuner_http_post00"
+            ],
+            [
+                "tuner_note000000"
+            ],
+            [
+                "tuner_txt_wd0000"
+            ]
+        ]
+    },
+    {
+        "id": "tuner_mqtt_out000",
+        "type": "mqtt out",
+        "z": "tuner_tab000001",
+        "name": "audit trail",
+        "topic": "",
+        "qos": "",
+        "retain": "",
+        "respTopic": "",
+        "contentType": "",
+        "userProps": "",
+        "correl": "",
+        "expiry": "",
+        "broker": "3fe3ac59af05955a",
+        "x": 1220,
+        "y": 460,
+        "wires": []
+    }
+]

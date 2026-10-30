@@ -34,9 +34,9 @@ private:
     PIDController& pid;
     MqttClient& mqtt_client;
     SettingsManager& settings;
-    Max31865Sensor& middle_temp_sensor;
+    Max31865Sensor& middle_temp_sensor;   // mid-column RTD; still calibrated/reset, but not the control PV
     RESTMotorController& reflux_cooling_motor;
-    Max31865Sensor& head_temp_sensor;
+    Max31865Sensor& head_temp_sensor;     // control PV: vapour temperature at the head (top)
     Emulation& emu;
 
     // Set by start() (MQTT task), consumed by the PID task: the next sample uses
@@ -153,15 +153,15 @@ private:
     }
 
     esp_err_t runPIDControl() {
-        float middle_temp;
+        float head_temp;
         bool valid = true;
 
         if (emu.enabled) {
-            middle_temp = emu.temp;
+            head_temp = emu.temp;
         } else {
-            middle_temp = middle_temp_sensor.measure();
-            valid = std::isfinite(middle_temp) &&
-                    middle_temp > kMinValidTemp && middle_temp < kMaxValidTemp;
+            head_temp = head_temp_sensor.measure();
+            valid = std::isfinite(head_temp) &&
+                    head_temp > kMinValidTemp && head_temp < kMaxValidTemp;
         }
 
         // On a sensor fault, do NOT run the PID (a garbage reading would corrupt
@@ -171,8 +171,8 @@ private:
             const bool fail_safe = !have_output_ || consecutive_faults_ > kFaultHoldSamples;
             const double fault_output = fail_safe ? pid.failSafeOutput() : last_output_;
             ESP_LOGW("PIDControlTimer",
-                     "Invalid middle temperature (%.2f); %s output %.1f%% (fault #%d)",
-                     middle_temp, fail_safe ? "fail-safe" : "holding", fault_output, consecutive_faults_);
+                     "Invalid head temperature (%.2f); %s output %.1f%% (fault #%d)",
+                     head_temp, fail_safe ? "fail-safe" : "holding", fault_output, consecutive_faults_);
             commandPump(fault_output);
             JsonWrapper fjs;
             fjs.AddItem("fault", true);
@@ -195,7 +195,7 @@ private:
         lastTime = current_time;
 
         double output;
-        auto rjs = pid.compute(middle_temp, dt, output);
+        auto rjs = pid.compute(head_temp, dt, output);
         commandPump(output);
         last_output_ = output;
         have_output_ = true;

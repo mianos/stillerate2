@@ -1,8 +1,8 @@
 # Reflux Still Control
 
 ESP32-C6 controller for the still: reads RTDs mid-column (above the plates,
-below the packing) and at the head, and runs a PID loop on the middle probe
-that drives the reflux (dephlegmator) coolant pump.
+below the packing) and at the head, and runs a PID loop on the head (top)
+probe that drives the reflux (dephlegmator) coolant pump.
 
 Commands are REST on `http://still2.mianos.com`. MQTT carries telemetry only:
 `tele/still2/{init,temp,pid,pumps}` and a retained `Online`/`Offline` on
@@ -37,7 +37,7 @@ curl -X POST -d '{"enabled": true, "temp": 72}' http://still2.mianos.com/emulati
 curl -X POST -d '{"enabled": false}' http://still2.mianos.com/emulation
 ```
 
-Feeds the loop a fixed middle temperature; the real probes keep publishing.
+Feeds the loop a fixed head (top) temperature; the real probes keep publishing.
 
 ## Sensors
 

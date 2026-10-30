@@ -1,0 +1,2 @@
+# sim.py runs the flow's function-node code in a QuickJS interpreter
+quickjs

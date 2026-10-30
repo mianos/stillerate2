@@ -68,6 +68,13 @@ Node-RED editor (Menu → Import → select a file); it reuses the existing
 `ui-base`, theme and MQTT broker, and does not touch the existing nodes. The
 model proposes, deterministic code disposes, and a human presses Apply.
 
+The flow is generated, not hand-edited: `nodered_flows/tuner/gen.py` builds
+`tuning_flows.json` from the function code in `nodered_flows/tuner/js/`. Check
+it with `nodered_flows/test/check_flow.py`, exercise the logic with
+`nodered_flows/test/sim.py` (`pip install -r nodered_flows/test/requirements.txt`),
+deploy with `nodered_flows/test/deploy.py`, and roll back with
+`nodered_flows/test/rollback.py`.
+
 ```
 tele/still2/pid ──► buffer ───┐
                               ├──► prompt ──► LLM ──► validate ──► table
@@ -118,6 +125,12 @@ line, and the Build digest / Apply / Revert buttons.
 curl -X POST --data-binary @build/stillerate2.bin http://still2.mianos.com/firmware
 curl http://still2.mianos.com/firmware
 ```
+
+The build tree does not track header dependencies, so a header-only change
+(e.g. to `main/PidControlTimer.h` or the PID wrapper) will not trigger a
+recompile. Touch the including sources first (`touch main/main.cpp
+main/StillWebServer.cpp`) or run `idf.py fullclean` once to regenerate a build
+tree that tracks them.
 
 An update boots pending verification and rolls back unless it reaches Wi-Fi
 within 120 s.

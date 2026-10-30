@@ -5,3 +5,21 @@ components/stepper_driver/tags
 dependencies.lock
 tags
 server/venv/
+
+# OS / editor / tooling
+.DS_Store
+.clangd
+.devcontainer/
+.vscode/
+
+# local scratch
+checks.json
+
+# tuner tooling (regenerated from nodered_flows/tuner/)
+nodered_flows/test/backup/
+__pycache__/
+*.pyc
+
+# host test binaries
+components/pidwrapper/test/host/pid_sim
+components/pidwrapper/test/host/test_pidcontroller

@@ -59,6 +59,9 @@ public:
 
         JsonWrapper payload;
         payload.AddItem("duty", percentage);
+        // The pump motor only turns when explicitly enabled; without this field the
+        // loop commands a duty but the pump sits at rpm 0 (no coolant authority).
+        payload.AddItem("enabled", percentage > 0.5f);
 
         if (!motorName.empty()) {
             payload.AddItem("name", motorName);

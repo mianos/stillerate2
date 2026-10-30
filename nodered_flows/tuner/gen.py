@@ -22,8 +22,8 @@ n.append({
     "id": TAB, "type": "tab", "label": "PID tuning", "disabled": False, "env": [],
     "info": "Advisory PID tuner.\n\nMQTT telemetry -> digest (GET /pid + sample ring) -> LLM proposal -> "
             "deterministic validator (envelope, step caps, rate limit) -> human Apply/Reject -> POST /pid.\n\n"
-            "cfg.dryRun = true in the CONFIG node means nothing is ever written to the device; every action is "
-            "logged instead. Flip it to false only once you trust the proposals."
+            "cfg.dryRun = false in the CONFIG node means Apply really POSTs to the still, and the watchdog "
+            "reverts if it gets worse. Set it to true to rehearse dry runs."
 })
 
 n.append({
@@ -67,7 +67,7 @@ n.append({
 })
 n.append(utext('tuner_txt_diag00', 'tuner_grp_prop', 2, 'diagnosis', '{{msg.payload}}'))
 n.append(ubutton('tuner_btn_apply0', 'tuner_grp_apply', 1, 'Apply proposal',
-                 'Re-read GET /pid, then POST the validated subset (no-op while dryRun)'))
+                 'Re-read GET /pid, then POST the validated subset (dry run while dryRun=true)'))
 n.append(ubutton('tuner_btn_revert', 'tuner_grp_apply', 2, 'Revert to last good',
                  'POST the parameters captured just before the last apply'))
 n.append(utext('tuner_txt_last00', 'tuner_grp_apply', 3, 'last action', '{{msg.payload}}'))

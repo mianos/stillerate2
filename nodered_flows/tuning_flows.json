@@ -5,7 +5,7 @@
         "label": "PID tuning",
         "disabled": false,
         "env": [],
-        "info": "Advisory PID tuner.\n\nMQTT telemetry -> digest (GET /pid + sample ring) -> LLM proposal -> deterministic validator (envelope, step caps, rate limit) -> human Apply/Reject -> POST /pid.\n\ncfg.dryRun = true in the CONFIG node means nothing is ever written to the device; every action is logged instead. Flip it to false only once you trust the proposals."
+        "info": "Advisory PID tuner.\n\nMQTT telemetry -> digest (GET /pid + sample ring) -> LLM proposal -> deterministic validator (envelope, step caps, rate limit) -> human Apply/Reject -> POST /pid.\n\ncfg.dryRun = false in the CONFIG node means Apply really POSTs to the still, and the watchdog reverts if it gets worse. Set it to true to rehearse dry runs."
     },
     {
         "id": "tuner_page00001",
@@ -180,7 +180,7 @@
         "width": 0,
         "height": 0,
         "emulateClick": false,
-        "tooltip": "Re-read GET /pid, then POST the validated subset (no-op while dryRun)",
+        "tooltip": "Re-read GET /pid, then POST the validated subset (dry run while dryRun=true)",
         "color": "",
         "bgcolor": "",
         "className": "",
@@ -300,7 +300,7 @@
         "outputs": 0,
         "timeout": 0,
         "noerr": 0,
-        "initialize": "// Advisory PID tuner configuration. Runs on deploy (and on every restart) before\n// any message arrives, so every other node can assume it exists.\nflow.set('cfg', {\n    // --- endpoints ---------------------------------------------------------\n    stillBase: 'http://still2.mianos.com',\n    llmUrl: 'http://docker-host.mianos.com:8082/v1/chat/completions',\n    llmModel: 'LiquidAI/LFM2.5-24B-A2B-GGUF',\n\n    // --- safety ------------------------------------------------------------\n    dryRun: true,             // true = never POST /pid, only log what it would do\n    maxDeltaPct: 30,          // max % change per gain, per proposal\n    minProposalGapMin: 5,     // minimum spacing between LLM calls\n    revertAfterMin: 15,       // watchdog horizon after an apply\n    maxSetPointStep: 0.5,     // degC per proposal\n    llmTimeoutMs: 90000,\n\n    // --- digest ------------------------------------------------------------\n    windowMin: 10,            // analysis window\n    csvRows: 50,              // downsampled telemetry rows sent to the model\n    maxSampleAgeSec: 30,      // refuse stale telemetry (e.g. a retained message)\n    maxTokens: 500,\n\n    // --- watchdog ----------------------------------------------------------\n    watchdogWorsePct: 25,     // revert if mae worsens by this much\n    watchdogBiasMargin: 0.3,  // degC of extra bias tolerated\n    watchdogSatPct: 40,       // revert if this share of samples is saturated\n\n    // --- hard envelope: mirror of PIDController + README. The LLM may never\n    // leave it, whatever it argues; the validator drops the whole proposal.\n    limits: {\n        kp: [0, 8], ki: [0, 1], kd: [0, 60],\n        set_point: [70, 85], output_min: [0, 50], output_max: [20, 100],\n        integral_limit: [0, 10000], wind_down_threshold: [0, 10],\n        integral_unwind_factor: [0, 0.9], derivative_filter: [0, 0.9]\n    }\n});\nif (!Array.isArray(flow.get('buf'))) flow.set('buf', []);",
+        "initialize": "// Advisory PID tuner configuration. Runs on deploy (and on every restart) before\n// any message arrives, so every other node can assume it exists.\nflow.set('cfg', {\n    // --- endpoints ---------------------------------------------------------\n    stillBase: 'http://still2.mianos.com',\n    llmUrl: 'http://docker-host.mianos.com:8082/v1/chat/completions',\n    llmModel: 'LiquidAI/LFM2.5-24B-A2B-GGUF',\n\n    // --- safety ------------------------------------------------------------\n    dryRun: false,            // false = Apply really POSTs; set true to rehearse dry runs\n    maxDeltaPct: 30,          // max % change per gain, per proposal\n    minProposalGapMin: 5,     // minimum spacing between LLM calls\n    revertAfterMin: 15,       // watchdog horizon after an apply\n    maxSetPointStep: 0.5,     // degC per proposal\n    llmTimeoutMs: 90000,\n\n    // --- digest ------------------------------------------------------------\n    windowMin: 10,            // analysis window\n    csvRows: 50,              // downsampled telemetry rows sent to the model\n    maxSampleAgeSec: 30,      // refuse stale telemetry (e.g. a retained message)\n    maxTokens: 500,\n\n    // --- watchdog ----------------------------------------------------------\n    watchdogWorsePct: 25,     // revert if mae worsens by this much\n    watchdogBiasMargin: 0.3,  // degC of extra bias tolerated\n    watchdogSatPct: 40,       // revert if this share of samples is saturated\n\n    // --- hard envelope: mirror of PIDController + README. The LLM may never\n    // leave it, whatever it argues; the validator drops the whole proposal.\n    limits: {\n        kp: [0, 8], ki: [0, 1], kd: [0, 60],\n        set_point: [70, 85], output_min: [0, 50], output_max: [20, 100],\n        integral_limit: [0, 10000], wind_down_threshold: [0, 10],\n        integral_unwind_factor: [0, 0.9], derivative_filter: [0, 0.9]\n    }\n});\nif (!Array.isArray(flow.get('buf'))) flow.set('buf', []);",
         "finalize": "",
         "libs": [],
         "x": 140,

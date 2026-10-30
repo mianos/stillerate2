@@ -59,7 +59,7 @@ def ok(cond, what):
 # ---------------------------------------------------------------- config ----
 init('CONFIG (edit me)')
 cfg = ctxget('cfg')
-ok(cfg['dryRun'] is True, 'CONFIG defaults to dryRun=true (nothing can be written)')
+ok(cfg['dryRun'] is False, 'CONFIG now defaults to dryRun=false (Apply really posts)')
 ok(cfg['limits']['kp'] == [0, 8] and cfg['limits']['set_point'] == [70, 85],
    'CONFIG carries the hard envelope')
 
@@ -158,6 +158,10 @@ ok(out[0] and out[0]['payload'][0]['proposed'] == 0.024, 'numeric strings are co
 
 
 # ----------------------------------------------------------------- apply ----
+# Default is now dryRun=false; prove the dry-run path explicitly first.
+cfg = ctxget('cfg')
+cfg['dryRun'] = True
+ctxset('cfg', cfg)
 call('validate proposal', {"payload": llm(json.dumps(GOOD))})
 out = call('stash + build POST', {"payload": SNAP})
 ok(out[0] is None and out[1]['payload'].startswith('DRY RUN: would POST'),

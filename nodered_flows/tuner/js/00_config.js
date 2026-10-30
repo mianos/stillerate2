@@ -7,7 +7,7 @@ flow.set('cfg', {
     llmModel: 'LiquidAI/LFM2.5-24B-A2B-GGUF',
 
     // --- safety ------------------------------------------------------------
-    dryRun: true,             // true = never POST /pid, only log what it would do
+    dryRun: false,            // false = Apply really POSTs; set true to rehearse dry runs
     maxDeltaPct: 30,          // max % change per gain, per proposal
     minProposalGapMin: 5,     // minimum spacing between LLM calls
     revertAfterMin: 15,       // watchdog horizon after an apply

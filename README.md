@@ -110,9 +110,10 @@ Rules the code enforces, not the model:
   reverts on `mae` +25%, `|bias|` +0.3 degC, saturation over 40%, or a pump
   stall. It retires the watch after four clean horizons.
 
-`cfg.dryRun` in the `CONFIG (edit me)` node is `true` by default: every button
-works, shows what it would send, and writes nothing to the still. Audit records
-go to `tele/still2/tune` (and the last 50 stay in `flow` context).
+`cfg.dryRun` in the `CONFIG (edit me)` node is `false` by default: Apply really
+POSTs to the still, and the watchdog then watches for 15 minutes, reverting if
+it gets worse. Set `dryRun` to `true` to rehearse dry runs. Audit records go to
+`tele/still2/tune` (and the last 50 stay in `flow` context).
 
 The dashboard page is a thin view: a state line, a proposal table with the
 current/proposed/percent change, the diagnosis, the last action, the watchdog

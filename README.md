@@ -126,11 +126,10 @@ curl -X POST --data-binary @build/stillerate2.bin http://still2.mianos.com/firmw
 curl http://still2.mianos.com/firmware
 ```
 
-The build tree does not track header dependencies, so a header-only change
-(e.g. to `main/PidControlTimer.h` or the PID wrapper) will not trigger a
-recompile. Touch the including sources first (`touch main/main.cpp
-main/StillWebServer.cpp`) or run `idf.py fullclean` once to regenerate a build
-tree that tracks them.
+The build tree does not track header dependencies (this ESP-IDF build generates
+no ninja depfiles), so a header-only change will not trigger a recompile. Touch
+the sources that include the changed header first (e.g. `touch main/main.cpp
+main/StillWebServer.cpp`), or do a full rebuild with `rm -rf build && ./build.sh`.
 
 An update boots pending verification and rolls back unless it reaches Wi-Fi
 within 120 s.

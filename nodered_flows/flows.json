@@ -2097,7 +2097,8 @@
         "wires": [
             [
                 "c208941d1f665164",
-                "e73ca6befbbec83d"
+                "e73ca6befbbec83d",
+                "still2running"
             ],
             [
                 "still2note000001"
@@ -2480,5 +2481,46 @@
                 "849c8a8ff7dce888"
             ]
         ]
+    },
+    {
+        "id": "still2running",
+        "type": "function",
+        "z": "b8f36cbcfc882e5f",
+        "name": "PID running indicator",
+        "func": "const running = !!(msg.payload && msg.payload.running);\nmsg.payload = running ? \"🟢 RUNNING\" : \"🔴 STOPPED\";\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 2100,
+        "y": 880,
+        "wires": [
+            [
+                "still2runind"
+            ]
+        ]
+    },
+    {
+        "id": "still2runind",
+        "type": "ui-text",
+        "z": "b8f36cbcfc882e5f",
+        "group": "3a79b1215aa13ae5",
+        "order": 4,
+        "width": 0,
+        "height": 0,
+        "name": "",
+        "label": "PID",
+        "format": "{{msg.payload}}",
+        "layout": "row-left",
+        "style": false,
+        "font": "",
+        "fontSize": 16,
+        "color": "",
+        "className": "",
+        "x": 2100,
+        "y": 900,
+        "wires": []
     }
 ]

@@ -52,6 +52,7 @@ curl -X POST http://still2.mianos.com/sensors/reset
 curl http://still2.mianos.com/settings
 curl -X POST -d '{"refluxPump": "http://reflux.mianos.com/pump"}' http://still2.mianos.com/settings
 curl -X POST -d '{"middleRref": 401.5, "middleOffset": 0}' http://still2.mianos.com/settings
+curl -X POST -d '{"pidSource": "middle"}' http://still2.mianos.com/settings
 ```
 
 RTD calibration (`middleRref headRref middleOffset headOffset`) applies at

@@ -34,9 +34,9 @@ private:
     PIDController& pid;
     MqttClient& mqtt_client;
     SettingsManager& settings;
-    Max31865Sensor& middle_temp_sensor;   // mid-column RTD; still calibrated/reset, but not the control PV
+    Max31865Sensor& middle_temp_sensor;   // mid-column RTD; becomes the control PV when pidSource == "middle"
     RESTMotorController& reflux_cooling_motor;
-    Max31865Sensor& head_temp_sensor;     // control PV: vapour temperature at the head (top)
+    Max31865Sensor& head_temp_sensor;     // control PV when pidSource == "head": vapour temperature at the head (top)
     Emulation& emu;
 
     // Set by start() (MQTT task), consumed by the PID task: the next sample uses
@@ -159,7 +159,9 @@ private:
         if (emu.enabled) {
             head_temp = emu.temp;
         } else {
-            head_temp = head_temp_sensor.measure();
+            Max31865Sensor& pv_sensor = (settings.pidSource == "middle")
+                ? middle_temp_sensor : head_temp_sensor;
+            head_temp = pv_sensor.measure();
             valid = std::isfinite(head_temp) &&
                     head_temp > kMinValidTemp && head_temp < kMaxValidTemp;
         }
@@ -203,6 +205,7 @@ private:
         if (emu.enabled) {
             rjs.AddItem("emulation", true);
         }
+        rjs.AddItem("pv_source", settings.pidSource);
         addPumpFields(rjs);
         rjs.AddTime();
         mqtt_client.publish(std::string("tele/") + settings.sensorName + "/pid", rjs.ToString());

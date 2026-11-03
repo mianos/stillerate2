@@ -36,6 +36,9 @@ public:
     float middleOffset = 0.0f;
     float headOffset   = 0.0f;
 
+    // Which RTD the PID uses as its process variable. "head" (default) or
+    // "middle" — lets you repoint the PID in software when the probes are moved.
+    std::string pidSource = "head";
 
     std::string convertChangesToJson(const SettingsManager::ChangeList& changes) {
         cJSON *root = cJSON_CreateObject();
@@ -64,6 +67,7 @@ public:
         retrieveFloat("headRref", headRref);
         retrieveFloat("middleOffset", middleOffset);
         retrieveFloat("headOffset", headOffset);
+        nvs.retrieve("pidSource", pidSource);
     }
 
     void toJsonWrapper(JsonWrapper& json, bool maskPassword = false) const {
@@ -79,6 +83,7 @@ public:
         json.AddItem("headRref", headRref);
         json.AddItem("middleOffset", middleOffset);
         json.AddItem("headOffset", headOffset);
+        json.AddItem("pidSource", pidSource);
     }
 
     std::string toJson() const {
@@ -106,6 +111,12 @@ public:
         updateFieldIfChanged(json, "headRref", headRref, changes);
         updateFieldIfChanged(json, "middleOffset", middleOffset, changes);
         updateFieldIfChanged(json, "headOffset", headOffset, changes);
+        updateFieldIfChanged(json, "pidSource", pidSource, changes);
+        if (pidSource != "head" && pidSource != "middle") {
+            ESP_LOGW("Settings", "pidSource '%s' invalid; resetting to 'head'", pidSource.c_str());
+            pidSource = "head";
+            nvs.store("pidSource", pidSource);
+        }
 
         for (const auto& [key, value] : changes) {
             nvs.store(key, value);

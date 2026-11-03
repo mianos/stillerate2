@@ -2450,5 +2450,34 @@
             "groupBorderRadius": "4px",
             "widgetGap": "12px"
         }
+    },
+    {
+        "id": "autorefresh_pid",
+        "type": "inject",
+        "z": "b8f36cbcfc882e5f",
+        "name": "refresh PID params",
+        "props": [
+            {
+                "p": "payload"
+            },
+            {
+                "p": "topic",
+                "vt": "str"
+            }
+        ],
+        "repeat": "15",
+        "crontab": "",
+        "once": true,
+        "onceDelay": "5",
+        "topic": "cmnd/still2/pidparams",
+        "payload": "{\"all\": true}",
+        "payloadType": "json",
+        "x": 200,
+        "y": 1480,
+        "wires": [
+            [
+                "849c8a8ff7dce888"
+            ]
+        ]
     }
 ]

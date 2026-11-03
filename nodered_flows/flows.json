@@ -52,7 +52,7 @@
         ]
     },
     {
-        "id": "9c157de7a8c8a93f",
+        "id": "tmpchartmid0001",
         "type": "ui-chart",
         "z": "b8f36cbcfc882e5f",
         "group": "5ee9dce5463cd662",
@@ -519,7 +519,7 @@
         "y": 40,
         "wires": [
             [
-                "9c157de7a8c8a93f",
+                "tmpchartmid0001",
                 "aac1b1fa69090b09",
                 "b569b443fbd3d7f7",
                 "1b4ddda823d0dc7e",
@@ -2023,7 +2023,7 @@
         "y": 100,
         "wires": [
             [
-                "9c157de7a8c8a93f",
+                "tmpchartmid0001",
                 "still2colseries"
             ],
             [

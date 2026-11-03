@@ -301,11 +301,11 @@
         "name": "",
         "rules": [
             {
-                "t": "move",
+                "t": "set",
                 "p": "payload",
                 "pt": "msg",
-                "to": "payload.sample_time",
-                "tot": "msg"
+                "to": "{\"sample_time\": $number(payload)}",
+                "tot": "jsonata"
             }
         ],
         "action": "",
@@ -395,11 +395,11 @@
         "name": "",
         "rules": [
             {
-                "t": "move",
+                "t": "set",
                 "p": "payload",
                 "pt": "msg",
-                "to": "payload.temp",
-                "tot": "msg"
+                "to": "{\"temp\": $number(payload)}",
+                "tot": "jsonata"
             }
         ],
         "action": "",
@@ -952,11 +952,11 @@
         "name": "",
         "rules": [
             {
-                "t": "move",
+                "t": "set",
                 "p": "payload",
                 "pt": "msg",
-                "to": "payload.kp",
-                "tot": "msg"
+                "to": "{\"kp\": $number(payload)}",
+                "tot": "jsonata"
             }
         ],
         "action": "",
@@ -1026,11 +1026,11 @@
         "name": "",
         "rules": [
             {
-                "t": "move",
+                "t": "set",
                 "p": "payload",
                 "pt": "msg",
-                "to": "payload.ki",
-                "tot": "msg"
+                "to": "{\"ki\": $number(payload)}",
+                "tot": "jsonata"
             }
         ],
         "action": "",
@@ -1100,11 +1100,11 @@
         "name": "",
         "rules": [
             {
-                "t": "move",
+                "t": "set",
                 "p": "payload",
                 "pt": "msg",
-                "to": "payload.kd",
-                "tot": "msg"
+                "to": "{\"kd\": $number(payload)}",
+                "tot": "jsonata"
             }
         ],
         "action": "",
@@ -1174,11 +1174,11 @@
         "name": "",
         "rules": [
             {
-                "t": "move",
+                "t": "set",
                 "p": "payload",
                 "pt": "msg",
-                "to": "payload.output_max",
-                "tot": "msg"
+                "to": "{\"output_max\": $number(payload)}",
+                "tot": "jsonata"
             }
         ],
         "action": "",
@@ -1248,11 +1248,11 @@
         "name": "",
         "rules": [
             {
-                "t": "move",
+                "t": "set",
                 "p": "payload",
                 "pt": "msg",
-                "to": "payload.output_min",
-                "tot": "msg"
+                "to": "{\"output_min\": $number(payload)}",
+                "tot": "jsonata"
             }
         ],
         "action": "",
@@ -1375,11 +1375,11 @@
         "name": "",
         "rules": [
             {
-                "t": "move",
+                "t": "set",
                 "p": "payload",
                 "pt": "msg",
-                "to": "payload.integral_unwind_factor",
-                "tot": "msg"
+                "to": "{\"integral_unwind_factor\": $number(payload)}",
+                "tot": "jsonata"
             }
         ],
         "action": "",
@@ -1449,11 +1449,11 @@
         "name": "",
         "rules": [
             {
-                "t": "move",
+                "t": "set",
                 "p": "payload",
                 "pt": "msg",
-                "to": "payload.set_point",
-                "tot": "msg"
+                "to": "{\"set_point\": $number(payload)}",
+                "tot": "jsonata"
             }
         ],
         "action": "",
@@ -1529,11 +1529,11 @@
         "name": "",
         "rules": [
             {
-                "t": "move",
+                "t": "set",
                 "p": "payload",
                 "pt": "msg",
-                "to": "payload.integral_limit",
-                "tot": "msg"
+                "to": "{\"integral_limit\": $number(payload)}",
+                "tot": "jsonata"
             }
         ],
         "action": "",
@@ -1603,11 +1603,11 @@
         "name": "",
         "rules": [
             {
-                "t": "move",
+                "t": "set",
                 "p": "payload",
                 "pt": "msg",
-                "to": "payload.sample_time",
-                "tot": "msg"
+                "to": "{\"sample_time\": $number(payload)}",
+                "tot": "jsonata"
             }
         ],
         "action": "",
@@ -1727,11 +1727,11 @@
         "name": "",
         "rules": [
             {
-                "t": "move",
+                "t": "set",
                 "p": "payload",
                 "pt": "msg",
-                "to": "payload.wind_down_threshold",
-                "tot": "msg"
+                "to": "{\"wind_down_threshold\": $number(payload)}",
+                "tot": "jsonata"
             }
         ],
         "action": "",
@@ -2011,7 +2011,7 @@
         "id": "still2dispreflux",
         "type": "function",
         "z": "b8f36cbcfc882e5f",
-        "name": "middle display / fault",
+        "name": "reflux display / fault",
         "func": "// Output 1: chart (valid numbers only). Output 2: text widget.\n// A null/non-finite value or fault:true means the probe failed. Silence for\n// longer than TIMEOUT_MS means still2 has stopped publishing, so the last\n// number on screen is no longer current.\nconst TIMEOUT_MS = 60000;\n\nconst prev = context.get(\"timer\");\nif (prev) clearTimeout(prev);\n\nconst v = msg.payload;\nconst faulted = msg.fault === true || typeof v !== \"number\" || !isFinite(v);\nconst seen = msg.timestamp\n    ? String(msg.timestamp).substring(11, 19)\n    : new Date().toTimeString().substring(0, 8);\n\ncontext.set(\"timer\", setTimeout(() => {\n    context.set(\"timer\", null);\n    node.status({ fill: \"red\", shape: \"ring\", text: \"no data since \" + seen });\n    node.send([null, { payload: \"⚠ NO DATA since \" + seen }]);\n}, TIMEOUT_MS));\n\nif (faulted) {\n    node.status({ fill: \"red\", shape: \"dot\", text: \"FAULT \" + seen });\n    return [null, { payload: \"⚠ FAULT (probe)\" }];\n}\nnode.status({ fill: \"green\", shape: \"dot\", text: v.toFixed(2) + \" @ \" + seen });\nreturn [msg, msg];\n",
         "outputs": 2,
         "timeout": 0,
@@ -2035,7 +2035,7 @@
         "id": "still2dispboiler",
         "type": "function",
         "z": "b8f36cbcfc882e5f",
-        "name": "head display / fault",
+        "name": "boiler display / fault",
         "func": "// Output 1: chart (valid numbers only). Output 2: text widget.\n// A null/non-finite value or fault:true means the probe failed. Silence for\n// longer than TIMEOUT_MS means still2 has stopped publishing, so the last\n// number on screen is no longer current.\nconst TIMEOUT_MS = 60000;\n\nconst prev = context.get(\"timer\");\nif (prev) clearTimeout(prev);\n\nconst v = msg.payload;\nconst faulted = msg.fault === true || typeof v !== \"number\" || !isFinite(v);\nconst seen = msg.timestamp\n    ? String(msg.timestamp).substring(11, 19)\n    : new Date().toTimeString().substring(0, 8);\n\ncontext.set(\"timer\", setTimeout(() => {\n    context.set(\"timer\", null);\n    node.status({ fill: \"red\", shape: \"ring\", text: \"no data since \" + seen });\n    node.send([null, { payload: \"⚠ NO DATA since \" + seen }]);\n}, TIMEOUT_MS));\n\nif (faulted) {\n    node.status({ fill: \"red\", shape: \"dot\", text: \"FAULT \" + seen });\n    return [null, { payload: \"⚠ FAULT (probe)\" }];\n}\nnode.status({ fill: \"green\", shape: \"dot\", text: v.toFixed(2) + \" @ \" + seen });\nreturn [msg, msg];\n",
         "outputs": 2,
         "timeout": 0,
@@ -2135,7 +2135,7 @@
                 "t": "set",
                 "p": "topic",
                 "pt": "msg",
-                "to": "$substringAfter(topic, 'tele/still2/temp/')",
+                "to": "$substringAfter(topic, 'tele/still2/temp/') = \"head\" ? \"Boiler\" : \"Reflux\"",
                 "tot": "jsonata"
             }
         ],
@@ -2157,7 +2157,7 @@
         "type": "ui-chart",
         "z": "b8f36cbcfc882e5f",
         "group": "still2grpcolumn",
-        "name": "head vs middle",
+        "name": "Boiler vs Reflux",
         "label": "",
         "order": 1,
         "chartType": "line",
@@ -2277,7 +2277,7 @@
     {
         "id": "5835c6daabcd58ef",
         "type": "ui-group",
-        "name": "Head",
+        "name": "Boiler",
         "page": "98530696ee8cd926",
         "width": "6",
         "height": "6",
@@ -2290,7 +2290,7 @@
     {
         "id": "5ee9dce5463cd662",
         "type": "ui-group",
-        "name": "Middle",
+        "name": "Reflux",
         "page": "98530696ee8cd926",
         "width": "6",
         "height": "6",
@@ -2381,7 +2381,7 @@
     {
         "id": "still2grpcolumn",
         "type": "ui-group",
-        "name": "Head vs middle",
+        "name": "Boiler vs Reflux",
         "page": "98530696ee8cd926",
         "width": "6",
         "height": "6",

@@ -2876,7 +2876,7 @@
         "type": "function",
         "z": "b8f36cbcfc882e5f",
         "name": "condenser speed",
-        "func": "// Condenser pump reports duty (and PWM frequency) but no rpm.\nif (msg.error) return { source: \"speed\", online: false, payload: \"no reading\" };\nif (msg.statusCode && msg.statusCode >= 400) return { source: \"speed\", online: false, payload: \"HTTP \" + msg.statusCode };\nlet j = msg.payload;\nif (typeof j === \"string\") { try { j = JSON.parse(j); } catch (e) { return { source: \"speed\", online: false, payload: \"bad JSON\" }; } }\nif (!j || j.duty === undefined) return { source: \"speed\", online: false, payload: \"no duty\" };\nreturn { source: \"speed\", online: true, payload: j.duty + \"%\" };\n",
+        "func": "// Condenser pump reports duty (and PWM frequency) but no rpm.\nif (msg.error) return { source: \"speed\", online: false, duty: null, payload: \"no reading\" };\nif (msg.statusCode && msg.statusCode >= 400) return { source: \"speed\", online: false, duty: null, payload: \"HTTP \" + msg.statusCode };\nlet j = msg.payload;\nif (typeof j === \"string\") { try { j = JSON.parse(j); } catch (e) { return { source: \"speed\", online: false, duty: null, payload: \"bad JSON\" }; } }\nif (!j || j.duty === undefined) return { source: \"speed\", online: false, duty: null, payload: \"no duty\" };\nreturn { source: \"speed\", online: true, duty: j.duty, payload: j.duty + \"%\" };\n",
         "outputs": 1,
         "timeout": "",
         "noerr": 0,
@@ -2887,7 +2887,8 @@
         "y": 2200,
         "wires": [
             [
-                "pmpjoincondns"
+                "pmpjoincondns",
+                "stripcondfb"
             ]
         ]
     },
@@ -3331,7 +3332,7 @@
         "type": "function",
         "z": "b8f36cbcfc882e5f",
         "name": "ABV estimate",
-        "func": "const T = Number(msg.payload);\nif (typeof T !== \"number\" || !isFinite(T)) return null;\nconst table = [\n  [78.2, 95.6], [80, 91], [82, 86], [84, 80], [86, 73],\n  [88, 65], [90, 56], [92, 45], [94, 33], [96, 20], [98, 8], [100, 0]\n];\nlet abv = table[0][1];\nif (T <= table[0][0]) {\n  abv = table[0][1];\n} else if (T >= table[table.length - 1][0]) {\n  abv = table[table.length - 1][1];\n} else {\n  for (let i = 0; i < table.length - 1; i++) {\n    const t0 = table[i][0], a0 = table[i][1];\n    const t1 = table[i + 1][0], a1 = table[i + 1][1];\n    if (T >= t0 && T <= t1) {\n      abv = a0 + (a1 - a0) * (T - t0) / (t1 - t0);\n      break;\n    }\n  }\n}\nconst pct = Math.round(abv * 10) / 10;\nreturn [\n  { payload: pct, topic: \"ABV %\", timestamp: msg.timestamp },\n  { payload: \"\u2248 \" + pct + \" % ABV\" }\n];",
+        "func": "const T = Number(msg.payload);\nif (typeof T !== \"number\" || !isFinite(T)) return null;\n// Ethanol/water vapour temp -> distillate ABV (v/v), approximate.\nconst table = [\n  [78.2, 96], [80, 90], [82, 85], [84, 82], [86, 78],\n  [88, 73], [90, 66], [92, 57], [94, 46], [96, 33], [98, 16], [100, 0]\n];\nlet abv;\nif (T <= table[0][0]) abv = table[0][1];\nelse if (T >= table[table.length - 1][0]) abv = table[table.length - 1][1];\nelse {\n  abv = table[0][1];\n  for (let i = 0; i < table.length - 1; i++) {\n    const t0 = table[i][0], a0 = table[i][1];\n    const t1 = table[i + 1][0], a1 = table[i + 1][1];\n    if (T >= t0 && T <= t1) { abv = a0 + (a1 - a0) * (T - t0) / (t1 - t0); break; }\n  }\n}\nconst pct = Math.round(abv * 10) / 10;\nreturn [\n  { payload: pct, topic: \"ABV %\", timestamp: msg.timestamp },\n  { payload: \"\u2248 \" + pct + \" % ABV\" }\n];\n",
         "outputs": 2,
         "timeout": 0,
         "noerr": 0,
@@ -3358,7 +3359,7 @@
         "width": 0,
         "height": 0,
         "name": "",
-        "label": "Est. vapour ABV",
+        "label": "Est. distillate ABV",
         "format": "{{msg.payload}}",
         "layout": "row-center",
         "style": true,
@@ -3419,7 +3420,7 @@
         "type": "function",
         "z": "b8f36cbcfc882e5f",
         "name": "strip done watch",
-        "func": "const T = Number(msg.payload);\nif (typeof T !== \"number\" || !isFinite(T)) return null;\nconst done = flow.get(\"strip_done\") === true;\nif (T >= 98.5 && !done) {\n  flow.set(\"strip_done\", true);\n  return { payload: \"Strip nearly done - vapour \" + T.toFixed(1) + \" \u00b0C (ABV <10%)\" };\n}\nif (T < 96 && done) flow.set(\"strip_done\", false);\nreturn null;",
+        "func": "const T = Number(msg.payload);\nif (typeof T !== \"number\" || !isFinite(T)) return null;\nconst done = flow.get(\"strip_done\") === true;\nif (T >= 98.5 && !done) {\n  flow.set(\"strip_done\", true);\n  return { payload: \"Strip nearly done - vapour \" + T.toFixed(1) + \" \u00b0C (ABV <15%)\" };\n}\nif (T < 96 && done) flow.set(\"strip_done\", false);\nreturn null;\n",
         "outputs": 1,
         "timeout": 0,
         "noerr": 0,
@@ -3504,6 +3505,27 @@
         "x": 2420,
         "y": 280,
         "wires": []
+    },
+    {
+        "id": "stripcondfb",
+        "type": "function",
+        "z": "b8f36cbcfc882e5f",
+        "name": "condenser duty -> slider",
+        "func": "const d = msg.duty;\nif (d === null || d === undefined) return null;\nconst n = Number(d);\nif (!isFinite(n)) return null;\nreturn { payload: n };",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 700,
+        "y": 2220,
+        "wires": [
+            [
+                "stripcondslider",
+                "bde06e267b92f170"
+            ]
+        ]
     },
     {
         "id": "3fe3ac59af05955a",

@@ -5,7 +5,13 @@
         "label": "Still control panel",
         "disabled": false,
         "info": "",
-        "env": []
+        "env": [
+            {
+                "name": "STILL2_NO_DATA_MS",
+                "value": "300000",
+                "type": "num"
+            }
+        ]
     },
     {
         "id": "385758e29b926fb4",
@@ -44,55 +50,15 @@
         "y": 160,
         "wires": [
             [
-                "still2dispreflux"
+                "still2dispreflux",
+                "stripboilerfmt"
             ],
             [
-                "still2dispboiler"
+                "still2dispboiler",
+                "stripvapourfmt",
+                "stripabvfn",
+                "stripstopfn"
             ]
-        ]
-    },
-    {
-        "id": "tmpchartmid0001",
-        "type": "ui-chart",
-        "z": "b8f36cbcfc882e5f",
-        "group": "5ee9dce5463cd662",
-        "name": "",
-        "label": "",
-        "order": 2,
-        "chartType": "line",
-        "category": "topic",
-        "categoryType": "msg",
-        "xAxisProperty": "",
-        "xAxisPropertyType": "msg",
-        "xAxisType": "time",
-        "yAxisProperty": "",
-        "ymin": "",
-        "ymax": "",
-        "action": "append",
-        "pointShape": "false",
-        "pointRadius": 4,
-        "showLegend": false,
-        "removeOlder": 1,
-        "removeOlderUnit": "3600",
-        "removeOlderPoints": "",
-        "colors": [
-            "#1f77b4",
-            "#aec7e8",
-            "#ff7f0e",
-            "#2ca02c",
-            "#98df8a",
-            "#d62728",
-            "#ff9896",
-            "#9467bd",
-            "#c5b0d5"
-        ],
-        "width": "6",
-        "height": "6",
-        "className": "",
-        "x": 1140,
-        "y": 140,
-        "wires": [
-            []
         ]
     },
     {
@@ -1922,8 +1888,15 @@
                 "t": "set",
                 "p": "payload",
                 "pt": "msg",
-                "to": "$boolean(payload.reflux_ok) ? \"🟢 Online\" : \"🔴 OFFLINE\"",
+                "to": "$boolean(payload.reflux_ok) ? \"\ud83d\udfe2 Online\" : \"\ud83d\udd34 OFFLINE\"",
                 "tot": "jsonata"
+            },
+            {
+                "t": "set",
+                "p": "source",
+                "pt": "msg",
+                "to": "ok",
+                "tot": "str"
             }
         ],
         "action": "",
@@ -1935,7 +1908,7 @@
         "y": 2020,
         "wires": [
             [
-                "ui_stat_reflux"
+                "pmpjoinreflux"
             ]
         ]
     },
@@ -1949,8 +1922,15 @@
                 "t": "set",
                 "p": "payload",
                 "pt": "msg",
-                "to": "$boolean(payload.condenser_ok) ? \"🟢 Online\" : \"🔴 OFFLINE\"",
+                "to": "$boolean(payload.condenser_ok) ? \"\ud83d\udfe2 Online\" : \"\ud83d\udd34 OFFLINE\"",
                 "tot": "jsonata"
+            },
+            {
+                "t": "set",
+                "p": "source",
+                "pt": "msg",
+                "to": "ok",
+                "tot": "str"
             }
         ],
         "action": "",
@@ -1962,62 +1942,20 @@
         "y": 2060,
         "wires": [
             [
-                "ui_stat_cond"
+                "pmpjoincondns"
             ]
         ]
-    },
-    {
-        "id": "ui_stat_reflux",
-        "type": "ui-text",
-        "z": "b8f36cbcfc882e5f",
-        "group": "grp_pump_health",
-        "order": 1,
-        "width": 0,
-        "height": 0,
-        "name": "",
-        "label": "Reflux",
-        "format": "{{msg.payload}}",
-        "layout": "row-right",
-        "style": false,
-        "font": "",
-        "fontSize": 16,
-        "color": "#7a7a7a",
-        "className": "",
-        "x": 870,
-        "y": 2020,
-        "wires": []
-    },
-    {
-        "id": "ui_stat_cond",
-        "type": "ui-text",
-        "z": "b8f36cbcfc882e5f",
-        "group": "grp_pump_health",
-        "order": 2,
-        "width": 0,
-        "height": 0,
-        "name": "",
-        "label": "Condenser",
-        "format": "{{msg.payload}}",
-        "layout": "row-right",
-        "style": false,
-        "font": "",
-        "fontSize": 16,
-        "color": "#7a7a7a",
-        "className": "",
-        "x": 890,
-        "y": 2060,
-        "wires": []
     },
     {
         "id": "still2dispreflux",
         "type": "function",
         "z": "b8f36cbcfc882e5f",
         "name": "reflux display / fault",
-        "func": "// Output 1: chart (valid numbers only). Output 2: text widget.\n// A null/non-finite value or fault:true means the probe failed. Silence for\n// longer than TIMEOUT_MS means still2 has stopped publishing, so the last\n// number on screen is no longer current.\nconst TIMEOUT_MS = 60000;\n\nconst prev = context.get(\"timer\");\nif (prev) clearTimeout(prev);\n\nconst v = msg.payload;\nconst faulted = msg.fault === true || typeof v !== \"number\" || !isFinite(v);\nconst seen = msg.timestamp\n    ? String(msg.timestamp).substring(11, 19)\n    : new Date().toTimeString().substring(0, 8);\n\ncontext.set(\"timer\", setTimeout(() => {\n    context.set(\"timer\", null);\n    node.status({ fill: \"red\", shape: \"ring\", text: \"no data since \" + seen });\n    node.send([null, { payload: \"⚠ NO DATA since \" + seen }]);\n}, TIMEOUT_MS));\n\nif (faulted) {\n    node.status({ fill: \"red\", shape: \"dot\", text: \"FAULT \" + seen });\n    return [null, { payload: \"⚠ FAULT (probe)\" }];\n}\nnode.status({ fill: \"green\", shape: \"dot\", text: v.toFixed(2) + \" @ \" + seen });\nreturn [msg, msg];\n",
+        "func": "// Output 1: chart (valid numbers only). Output 2: text widget.\n// A null/non-finite value or fault:true means the probe failed. Silence for\n// longer than TIMEOUT_MS means still2 has stopped publishing, so the last\n// number on screen is no longer current.\nconst TIMEOUT_MS = 60000;\n\nconst prev = context.get(\"timer\");\nif (prev) clearTimeout(prev);\n\nconst v = msg.payload;\nconst faulted = msg.fault === true || typeof v !== \"number\" || !isFinite(v);\nconst seen = msg.timestamp\n    ? String(msg.timestamp).substring(11, 19)\n    : new Date().toTimeString().substring(0, 8);\n\ncontext.set(\"timer\", setTimeout(() => {\n    context.set(\"timer\", null);\n    node.status({ fill: \"red\", shape: \"ring\", text: \"no data since \" + seen });\n    node.send([null, { payload: \"\u26a0 NO DATA since \" + seen }]);\n}, TIMEOUT_MS));\n\nif (faulted) {\n    node.status({ fill: \"red\", shape: \"dot\", text: \"FAULT \" + seen });\n    return [null, { payload: \"\u26a0 FAULT (probe)\" }];\n}\nnode.status({ fill: \"green\", shape: \"dot\", text: v.toFixed(2) + \" @ \" + seen });\nreturn [msg, msg];\n",
         "outputs": 2,
         "timeout": 0,
         "noerr": 0,
-        "initialize": "// Arm the silence timer at start, so a device that is already offline\n// (or a Node-RED restart) still replaces the cached value.\ncontext.set('timer', setTimeout(() => {\n    context.set('timer', null);\n    node.status({ fill: 'red', shape: 'ring', text: 'no data since start' });\n    node.send([null, { payload: '⚠ NO DATA since Node-RED start' }]);\n}, 60000));\n",
+        "initialize": "// Arm the silence timer at start, so a device that is already offline\n// (or a Node-RED restart) still replaces the cached value.\ncontext.set('timer', setTimeout(() => {\n    context.set('timer', null);\n    node.status({ fill: 'red', shape: 'ring', text: 'no data since start' });\n    node.send([null, { payload: '\u26a0 NO DATA since Node-RED start' }]);\n}, 60000));\n",
         "finalize": "const t = context.get('timer'); if (t) clearTimeout(t);",
         "libs": [],
         "x": 780,
@@ -2037,11 +1975,11 @@
         "type": "function",
         "z": "b8f36cbcfc882e5f",
         "name": "boiler display / fault",
-        "func": "// Output 1: chart (valid numbers only). Output 2: text widget.\n// A null/non-finite value or fault:true means the probe failed. Silence for\n// longer than TIMEOUT_MS means still2 has stopped publishing, so the last\n// number on screen is no longer current.\nconst TIMEOUT_MS = 60000;\n\nconst prev = context.get(\"timer\");\nif (prev) clearTimeout(prev);\n\nconst v = msg.payload;\nconst faulted = msg.fault === true || typeof v !== \"number\" || !isFinite(v);\nconst seen = msg.timestamp\n    ? String(msg.timestamp).substring(11, 19)\n    : new Date().toTimeString().substring(0, 8);\n\ncontext.set(\"timer\", setTimeout(() => {\n    context.set(\"timer\", null);\n    node.status({ fill: \"red\", shape: \"ring\", text: \"no data since \" + seen });\n    node.send([null, { payload: \"⚠ NO DATA since \" + seen }]);\n}, TIMEOUT_MS));\n\nif (faulted) {\n    node.status({ fill: \"red\", shape: \"dot\", text: \"FAULT \" + seen });\n    return [null, { payload: \"⚠ FAULT (probe)\" }];\n}\nnode.status({ fill: \"green\", shape: \"dot\", text: v.toFixed(2) + \" @ \" + seen });\nreturn [msg, msg];\n",
+        "func": "// Output 1: chart (valid numbers only). Output 2: text widget.\n// A null/non-finite value or fault:true means the probe failed. Silence for\n// longer than TIMEOUT_MS means still2 has stopped publishing, so the last\n// number on screen is no longer current.\nconst TIMEOUT_MS = 60000;\n\nconst prev = context.get(\"timer\");\nif (prev) clearTimeout(prev);\n\nconst v = msg.payload;\nconst faulted = msg.fault === true || typeof v !== \"number\" || !isFinite(v);\nconst seen = msg.timestamp\n    ? String(msg.timestamp).substring(11, 19)\n    : new Date().toTimeString().substring(0, 8);\n\ncontext.set(\"timer\", setTimeout(() => {\n    context.set(\"timer\", null);\n    node.status({ fill: \"red\", shape: \"ring\", text: \"no data since \" + seen });\n    node.send([null, { payload: \"\u26a0 NO DATA since \" + seen }]);\n}, TIMEOUT_MS));\n\nif (faulted) {\n    node.status({ fill: \"red\", shape: \"dot\", text: \"FAULT \" + seen });\n    return [null, { payload: \"\u26a0 FAULT (probe)\" }];\n}\nnode.status({ fill: \"green\", shape: \"dot\", text: v.toFixed(2) + \" @ \" + seen });\nreturn [msg, msg];\n",
         "outputs": 2,
         "timeout": 0,
         "noerr": 0,
-        "initialize": "// Arm the silence timer at start, so a device that is already offline\n// (or a Node-RED restart) still replaces the cached value.\ncontext.set('timer', setTimeout(() => {\n    context.set('timer', null);\n    node.status({ fill: 'red', shape: 'ring', text: 'no data since start' });\n    node.send([null, { payload: '⚠ NO DATA since Node-RED start' }]);\n}, 60000));\n",
+        "initialize": "// Arm the silence timer at start, so a device that is already offline\n// (or a Node-RED restart) still replaces the cached value.\ncontext.set('timer', setTimeout(() => {\n    context.set('timer', null);\n    node.status({ fill: 'red', shape: 'ring', text: 'no data since start' });\n    node.send([null, { payload: '\u26a0 NO DATA since Node-RED start' }]);\n}, 60000));\n",
         "finalize": "const t = context.get('timer'); if (t) clearTimeout(t);",
         "libs": [],
         "x": 780,
@@ -2199,6 +2137,1325 @@
         ]
     },
     {
+        "id": "pwrtxtreq000001",
+        "type": "ui-text",
+        "z": "b8f36cbcfc882e5f",
+        "group": "pwrgrpstat0001",
+        "order": 1,
+        "width": 0,
+        "height": 0,
+        "name": "",
+        "label": "Requested",
+        "format": "{{msg.payload}}",
+        "layout": "row-right",
+        "style": false,
+        "font": "",
+        "fontSize": 16,
+        "color": "#7a7a7a",
+        "className": "",
+        "x": 880,
+        "y": 400,
+        "wires": []
+    },
+    {
+        "id": "pwrtxtrep000001",
+        "type": "ui-text",
+        "z": "b8f36cbcfc882e5f",
+        "group": "pwrgrpstat0001",
+        "order": 2,
+        "width": 0,
+        "height": 0,
+        "name": "",
+        "label": "Reported",
+        "format": "{{msg.payload}}",
+        "layout": "row-right",
+        "style": false,
+        "font": "",
+        "fontSize": 16,
+        "color": "#7a7a7a",
+        "className": "",
+        "x": 880,
+        "y": 440,
+        "wires": []
+    },
+    {
+        "id": "pwrtxtmode00001",
+        "type": "ui-text",
+        "z": "b8f36cbcfc882e5f",
+        "group": "pwrgrpstat0001",
+        "order": 3,
+        "width": 0,
+        "height": 0,
+        "name": "",
+        "label": "Mode",
+        "format": "{{msg.payload}}",
+        "layout": "row-right",
+        "style": false,
+        "font": "",
+        "fontSize": 16,
+        "color": "#7a7a7a",
+        "className": "",
+        "x": 880,
+        "y": 480,
+        "wires": []
+    },
+    {
+        "id": "pwrtxtmax000001",
+        "type": "ui-text",
+        "z": "b8f36cbcfc882e5f",
+        "group": "pwrgrpstat0001",
+        "order": 4,
+        "width": 0,
+        "height": 0,
+        "name": "",
+        "label": "Max power",
+        "format": "{{msg.payload}}",
+        "layout": "row-right",
+        "style": false,
+        "font": "",
+        "fontSize": 16,
+        "color": "#7a7a7a",
+        "className": "",
+        "x": 880,
+        "y": 520,
+        "wires": []
+    },
+    {
+        "id": "pwrtxttemp00001",
+        "type": "ui-text",
+        "z": "b8f36cbcfc882e5f",
+        "group": "pwrgrpstat0001",
+        "order": 5,
+        "width": 0,
+        "height": 0,
+        "name": "",
+        "label": "Board \u00b0C",
+        "format": "{{msg.payload}}",
+        "layout": "row-right",
+        "style": false,
+        "font": "",
+        "fontSize": 16,
+        "color": "#7a7a7a",
+        "className": "",
+        "x": 880,
+        "y": 560,
+        "wires": []
+    },
+    {
+        "id": "pwrtxtmeter0001",
+        "type": "ui-text",
+        "z": "b8f36cbcfc882e5f",
+        "group": "pwrgrpstat0001",
+        "order": 6,
+        "width": 0,
+        "height": 0,
+        "name": "",
+        "label": "Meter",
+        "format": "{{msg.payload}}",
+        "layout": "row-right",
+        "style": false,
+        "font": "",
+        "fontSize": 16,
+        "color": "#7a7a7a",
+        "className": "",
+        "x": 880,
+        "y": 600,
+        "wires": []
+    },
+    {
+        "id": "pwrtxtgrid00001",
+        "type": "ui-text",
+        "z": "b8f36cbcfc882e5f",
+        "group": "pwrgrpstat0001",
+        "order": 7,
+        "width": 0,
+        "height": 0,
+        "name": "",
+        "label": "Grid W",
+        "format": "{{msg.payload}}",
+        "layout": "row-right",
+        "style": false,
+        "font": "",
+        "fontSize": 16,
+        "color": "#7a7a7a",
+        "className": "",
+        "x": 880,
+        "y": 640,
+        "wires": []
+    },
+    {
+        "id": "pwrtxtupd000001",
+        "type": "ui-text",
+        "z": "b8f36cbcfc882e5f",
+        "group": "pwrgrpstat0001",
+        "order": 8,
+        "width": 0,
+        "height": 0,
+        "name": "",
+        "label": "Updated",
+        "format": "{{msg.payload}}",
+        "layout": "row-right",
+        "style": false,
+        "font": "",
+        "fontSize": 16,
+        "color": "#7a7a7a",
+        "className": "",
+        "x": 880,
+        "y": 680,
+        "wires": []
+    },
+    {
+        "id": "pwrslider000001",
+        "type": "ui-slider",
+        "z": "b8f36cbcfc882e5f",
+        "group": "pwrgrpout00001",
+        "name": "",
+        "label": "Set power (W)",
+        "tooltip": "Commits on release. Clamped to maxPower.",
+        "order": 1,
+        "width": 0,
+        "height": 0,
+        "passthru": false,
+        "outs": "end",
+        "topic": "topic",
+        "topicType": "msg",
+        "thumbLabel": true,
+        "min": 0,
+        "max": 2400,
+        "step": 50,
+        "className": "",
+        "x": 360,
+        "y": 100,
+        "wires": [
+            [
+                "pwrsetpwr000001"
+            ]
+        ]
+    },
+    {
+        "id": "pwrb0",
+        "type": "ui-button",
+        "z": "b8f36cbcfc882e5f",
+        "group": "pwrgrpout00001",
+        "name": "",
+        "label": "Off (0 W)",
+        "order": 2,
+        "width": 0,
+        "height": 0,
+        "emulateClick": false,
+        "tooltip": "",
+        "color": "",
+        "bgcolor": "",
+        "className": "",
+        "icon": "",
+        "iconPosition": "left",
+        "payload": 0,
+        "payloadType": "num",
+        "topic": "topic",
+        "topicType": "msg",
+        "buttonColor": "",
+        "textColor": "",
+        "iconColor": "",
+        "enableClick": true,
+        "enablePointerdown": false,
+        "pointerdownPayload": "",
+        "pointerdownPayloadType": "str",
+        "enablePointerup": false,
+        "pointerupPayload": "",
+        "pointerupPayloadType": "str",
+        "x": 360,
+        "y": 220,
+        "wires": [
+            [
+                "pwrsetpwr000001"
+            ]
+        ]
+    },
+    {
+        "id": "pwrb500",
+        "type": "ui-button",
+        "z": "b8f36cbcfc882e5f",
+        "group": "pwrgrpout00001",
+        "name": "",
+        "label": "500 W",
+        "order": 3,
+        "width": 0,
+        "height": 0,
+        "emulateClick": false,
+        "tooltip": "",
+        "color": "",
+        "bgcolor": "",
+        "className": "",
+        "icon": "",
+        "iconPosition": "left",
+        "payload": 500,
+        "payloadType": "num",
+        "topic": "topic",
+        "topicType": "msg",
+        "buttonColor": "",
+        "textColor": "",
+        "iconColor": "",
+        "enableClick": true,
+        "enablePointerdown": false,
+        "pointerdownPayload": "",
+        "pointerdownPayloadType": "str",
+        "enablePointerup": false,
+        "pointerupPayload": "",
+        "pointerupPayloadType": "str",
+        "x": 360,
+        "y": 280,
+        "wires": [
+            [
+                "pwrsetpwr000001"
+            ]
+        ]
+    },
+    {
+        "id": "pwrb1000",
+        "type": "ui-button",
+        "z": "b8f36cbcfc882e5f",
+        "group": "pwrgrpout00001",
+        "name": "",
+        "label": "1000 W",
+        "order": 4,
+        "width": 0,
+        "height": 0,
+        "emulateClick": false,
+        "tooltip": "",
+        "color": "",
+        "bgcolor": "",
+        "className": "",
+        "icon": "",
+        "iconPosition": "left",
+        "payload": 1000,
+        "payloadType": "num",
+        "topic": "topic",
+        "topicType": "msg",
+        "buttonColor": "",
+        "textColor": "",
+        "iconColor": "",
+        "enableClick": true,
+        "enablePointerdown": false,
+        "pointerdownPayload": "",
+        "pointerdownPayloadType": "str",
+        "enablePointerup": false,
+        "pointerupPayload": "",
+        "pointerupPayloadType": "str",
+        "x": 360,
+        "y": 340,
+        "wires": [
+            [
+                "pwrsetpwr000001"
+            ]
+        ]
+    },
+    {
+        "id": "pwrb1500",
+        "type": "ui-button",
+        "z": "b8f36cbcfc882e5f",
+        "group": "pwrgrpout00001",
+        "name": "",
+        "label": "1500 W",
+        "order": 5,
+        "width": 0,
+        "height": 0,
+        "emulateClick": false,
+        "tooltip": "",
+        "color": "",
+        "bgcolor": "",
+        "className": "",
+        "icon": "",
+        "iconPosition": "left",
+        "payload": 1500,
+        "payloadType": "num",
+        "topic": "topic",
+        "topicType": "msg",
+        "buttonColor": "",
+        "textColor": "",
+        "iconColor": "",
+        "enableClick": true,
+        "enablePointerdown": false,
+        "pointerdownPayload": "",
+        "pointerdownPayloadType": "str",
+        "enablePointerup": false,
+        "pointerupPayload": "",
+        "pointerupPayloadType": "str",
+        "x": 360,
+        "y": 400,
+        "wires": [
+            [
+                "pwrsetpwr000001"
+            ]
+        ]
+    },
+    {
+        "id": "pwrbmax",
+        "type": "ui-button",
+        "z": "b8f36cbcfc882e5f",
+        "group": "pwrgrpout00001",
+        "name": "",
+        "label": "Max (2400 W)",
+        "order": 6,
+        "width": 0,
+        "height": 0,
+        "emulateClick": false,
+        "tooltip": "",
+        "color": "",
+        "bgcolor": "",
+        "className": "",
+        "icon": "",
+        "iconPosition": "left",
+        "payload": 2400,
+        "payloadType": "num",
+        "topic": "topic",
+        "topicType": "msg",
+        "buttonColor": "",
+        "textColor": "",
+        "iconColor": "",
+        "enableClick": true,
+        "enablePointerdown": false,
+        "pointerdownPayload": "",
+        "pointerdownPayloadType": "str",
+        "enablePointerup": false,
+        "pointerupPayload": "",
+        "pointerupPayloadType": "str",
+        "x": 360,
+        "y": 460,
+        "wires": [
+            [
+                "pwrsetpwr000001"
+            ]
+        ]
+    },
+    {
+        "id": "pwrrefresh000001",
+        "type": "ui-button",
+        "z": "b8f36cbcfc882e5f",
+        "group": "pwrgrpout00001",
+        "name": "",
+        "label": "Refresh",
+        "order": 7,
+        "width": 0,
+        "height": 0,
+        "emulateClick": false,
+        "tooltip": "Re-read the controller now",
+        "color": "",
+        "bgcolor": "",
+        "className": "",
+        "icon": "refresh",
+        "iconPosition": "left",
+        "payload": "refresh",
+        "payloadType": "str",
+        "topic": "topic",
+        "topicType": "msg",
+        "buttonColor": "",
+        "textColor": "",
+        "iconColor": "",
+        "enableClick": true,
+        "enablePointerdown": false,
+        "pointerdownPayload": "",
+        "pointerdownPayloadType": "str",
+        "enablePointerup": false,
+        "pointerupPayload": "",
+        "pointerupPayloadType": "str",
+        "x": 360,
+        "y": 520,
+        "wires": [
+            [
+                "pwrgetadv000001"
+            ]
+        ]
+    },
+    {
+        "id": "pwrnote000001",
+        "type": "ui-notification",
+        "z": "b8f36cbcfc882e5f",
+        "ui": "c776e0d19c314f0d",
+        "name": "power errors",
+        "position": "top right",
+        "colorDefault": false,
+        "color": "#c0392b",
+        "displayTime": "8",
+        "showCountdown": true,
+        "outputs": 1,
+        "allowDismiss": true,
+        "dismissText": "Close",
+        "raw": false,
+        "className": "",
+        "x": 1500,
+        "y": 760,
+        "wires": [
+            []
+        ]
+    },
+    {
+        "id": "pwrinject000001",
+        "type": "inject",
+        "z": "b8f36cbcfc882e5f",
+        "name": "poll 20s",
+        "props": [
+            {
+                "p": "payload"
+            }
+        ],
+        "repeat": "20",
+        "crontab": "",
+        "once": true,
+        "topic": "",
+        "payload": "",
+        "payloadType": "date",
+        "x": 200,
+        "y": 200,
+        "wires": [
+            [
+                "pwrgetadv000001"
+            ]
+        ]
+    },
+    {
+        "id": "pwrgetadv000001",
+        "type": "http request",
+        "z": "b8f36cbcfc882e5f",
+        "name": "GET getadv",
+        "method": "GET",
+        "ret": "obj",
+        "paytoqs": "ignore",
+        "url": "http://iampwr.mianos.com/api/getadv",
+        "tls": "",
+        "persist": false,
+        "proxy": "",
+        "insecureHTTPParser": false,
+        "authType": "",
+        "senderr": true,
+        "headers": [
+            {
+                "keyType": "other",
+                "keyValue": "",
+                "valueType": "other",
+                "valueValue": ""
+            }
+        ],
+        "x": 480,
+        "y": 200,
+        "wires": [
+            [
+                "pwrstatus00001"
+            ]
+        ]
+    },
+    {
+        "id": "pwrstatus00001",
+        "type": "function",
+        "z": "b8f36cbcfc882e5f",
+        "name": "parse status",
+        "func": "const out = new Array(9).fill(null);\nconst fail = (why) => {\n    out[8] = { payload: \"Power page: getadv failed (\" + why + \")\" };\n    return out;\n};\nif (msg.error) return fail(msg.error);\nif (msg.statusCode && msg.statusCode >= 400) return fail(\"HTTP \" + msg.statusCode);\nlet j = msg.payload;\nif (typeof j === \"string\") { try { j = JSON.parse(j); } catch (e) { return fail(\"bad JSON\"); } }\nif (!j || typeof j !== \"object\") return fail(\"empty response\");\n\n// out[0] stays null: \"Requested\" is only written by the setpower ack path.\nout[1] = { payload: (j.setPower === undefined ? \"-\" : j.setPower + \" W\") };\nout[2] = { payload: (j.setPowerMode === 1 ? \"AUTO\" : \"MANUAL\") };\nout[3] = { payload: (j.maxPower === undefined ? \"-\" : j.maxPower + \" W\") };\nout[4] = { payload: (j.temperature === undefined ? \"-\" : j.temperature) };\nout[5] = { payload: (j.meterOnline ? \"online\" : \"not detected\") };\nout[6] = { payload: (j.gridPower === undefined ? \"-\" : j.gridPower + \" W\") };\nout[7] = { payload: new Date().toLocaleTimeString() };\nreturn out;\n",
+        "outputs": 9,
+        "timeout": "",
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 760,
+        "y": 200,
+        "wires": [
+            [
+                "pwrtxtreq000001"
+            ],
+            [
+                "pwrtxtrep000001",
+                "stripreptext01",
+                "stripheatfb"
+            ],
+            [
+                "pwrtxtmode00001"
+            ],
+            [
+                "pwrtxtmax000001"
+            ],
+            [
+                "pwrtxttemp00001"
+            ],
+            [
+                "pwrtxtmeter0001"
+            ],
+            [
+                "pwrtxtgrid00001",
+                "stripgridtext1"
+            ],
+            [
+                "pwrtxtupd000001"
+            ],
+            [
+                "pwrnote000001"
+            ]
+        ]
+    },
+    {
+        "id": "pwrsetpwr000001",
+        "type": "function",
+        "z": "b8f36cbcfc882e5f",
+        "name": "build setpower url",
+        "func": "const v = Math.round(Number(msg.payload));\nif (!Number.isFinite(v)) return null;\nconst target = Math.max(0, Math.min(v, 2400));\nmsg.requested = target;\nmsg.url = \"http://iampwr.mianos.com/api/setpower?x=\" + target;\nmsg.method = \"GET\";\nmsg.headers = {};\nreturn msg;\n",
+        "outputs": 1,
+        "timeout": "",
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 620,
+        "y": 320,
+        "wires": [
+            [
+                "pwrreqset000001"
+            ]
+        ]
+    },
+    {
+        "id": "pwrreqset000001",
+        "type": "http request",
+        "z": "b8f36cbcfc882e5f",
+        "name": "GET setpower",
+        "method": "use",
+        "ret": "txt",
+        "paytoqs": "ignore",
+        "url": "",
+        "tls": "",
+        "persist": false,
+        "proxy": "",
+        "insecureHTTPParser": false,
+        "authType": "",
+        "senderr": true,
+        "headers": [
+            {
+                "keyType": "other",
+                "keyValue": "",
+                "valueType": "other",
+                "valueValue": ""
+            }
+        ],
+        "x": 880,
+        "y": 320,
+        "wires": [
+            [
+                "pwrack00000001"
+            ]
+        ]
+    },
+    {
+        "id": "pwrack00000001",
+        "type": "function",
+        "z": "b8f36cbcfc882e5f",
+        "name": "setpower ack",
+        "func": "const out = [null, null];\nif (msg.error || (msg.statusCode && msg.statusCode >= 400)) {\n    out[0] = { payload: \"send failed\" };\n    out[1] = { payload: \"Set power to \" + msg.requested + \" W failed: \" + (msg.error || (\"HTTP \" + msg.statusCode)) };\n    return out;\n}\nout[0] = { payload: (msg.requested === undefined ? \"-\" : msg.requested + \" W\") };\nout[1] = { payload: \"Requested \" + msg.requested + \" W\" };\nreturn out;\n",
+        "outputs": 2,
+        "timeout": "",
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 1140,
+        "y": 320,
+        "wires": [
+            [
+                "pwrtxtreq000001"
+            ],
+            [
+                "pwrnote000001"
+            ]
+        ]
+    },
+    {
+        "id": "pmpspeedinj0001",
+        "type": "inject",
+        "z": "b8f36cbcfc882e5f",
+        "name": "poll pumps 10s",
+        "props": [
+            {
+                "p": "payload"
+            }
+        ],
+        "repeat": "10",
+        "crontab": "",
+        "once": true,
+        "topic": "",
+        "payload": "",
+        "payloadType": "date",
+        "x": 150,
+        "y": 2160,
+        "wires": [
+            [
+                "pmpspeedreqref",
+                "pmpspeedreqcnd"
+            ]
+        ]
+    },
+    {
+        "id": "pmpspeedreqref",
+        "type": "http request",
+        "z": "b8f36cbcfc882e5f",
+        "name": "GET reflux",
+        "method": "GET",
+        "ret": "obj",
+        "paytoqs": "ignore",
+        "url": "http://reflux.mianos.com/pump",
+        "tls": "",
+        "persist": false,
+        "proxy": "",
+        "insecureHTTPParser": false,
+        "authType": "",
+        "senderr": true,
+        "headers": [
+            {
+                "keyType": "other",
+                "keyValue": "",
+                "valueType": "other",
+                "valueValue": ""
+            }
+        ],
+        "x": 390,
+        "y": 2130,
+        "wires": [
+            [
+                "pmpspeedfmtref"
+            ]
+        ]
+    },
+    {
+        "id": "pmpspeedreqcnd",
+        "type": "http request",
+        "z": "b8f36cbcfc882e5f",
+        "name": "GET condenser",
+        "method": "GET",
+        "ret": "obj",
+        "paytoqs": "ignore",
+        "url": "http://condenser.mianos.com/pump",
+        "tls": "",
+        "persist": false,
+        "proxy": "",
+        "insecureHTTPParser": false,
+        "authType": "",
+        "senderr": true,
+        "headers": [
+            {
+                "keyType": "other",
+                "keyValue": "",
+                "valueType": "other",
+                "valueValue": ""
+            }
+        ],
+        "x": 390,
+        "y": 2200,
+        "wires": [
+            [
+                "pmpspeedfmtcnd"
+            ]
+        ]
+    },
+    {
+        "id": "pmpspeedfmtref",
+        "type": "function",
+        "z": "b8f36cbcfc882e5f",
+        "name": "reflux speed",
+        "func": "// Reflux pump reports duty + mechanical rpm; enabled=false means commanded off.\nif (msg.error) return { source: \"speed\", online: false, payload: \"no reading\" };\nif (msg.statusCode && msg.statusCode >= 400) return { source: \"speed\", online: false, payload: \"HTTP \" + msg.statusCode };\nlet j = msg.payload;\nif (typeof j === \"string\") { try { j = JSON.parse(j); } catch (e) { return { source: \"speed\", online: false, payload: \"bad JSON\" }; } }\nif (!j || j.duty === undefined) return { source: \"speed\", online: false, payload: \"no duty\" };\nconst bits = [j.duty + \"%\"];\nif (typeof j.rpm_mech === \"number\" && j.rpm_mech > 0) bits.push(j.rpm_mech + \" rpm\");\nif (j.enabled === false) bits.push(\"disabled\");\nif (j.telem_fresh === false) bits.push(\"stale telem\");\nreturn { source: \"speed\", online: (j.enabled !== false && j.telem_fresh !== false), payload: bits.join(\" \u00b7 \") };\n",
+        "outputs": 1,
+        "timeout": "",
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 630,
+        "y": 2130,
+        "wires": [
+            [
+                "pmpjoinreflux"
+            ]
+        ]
+    },
+    {
+        "id": "pmpspeedfmtcnd",
+        "type": "function",
+        "z": "b8f36cbcfc882e5f",
+        "name": "condenser speed",
+        "func": "// Condenser pump reports duty (and PWM frequency) but no rpm.\nif (msg.error) return { source: \"speed\", online: false, payload: \"no reading\" };\nif (msg.statusCode && msg.statusCode >= 400) return { source: \"speed\", online: false, payload: \"HTTP \" + msg.statusCode };\nlet j = msg.payload;\nif (typeof j === \"string\") { try { j = JSON.parse(j); } catch (e) { return { source: \"speed\", online: false, payload: \"bad JSON\" }; } }\nif (!j || j.duty === undefined) return { source: \"speed\", online: false, payload: \"no duty\" };\nreturn { source: \"speed\", online: true, payload: j.duty + \"%\" };\n",
+        "outputs": 1,
+        "timeout": "",
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 630,
+        "y": 2200,
+        "wires": [
+            [
+                "pmpjoincondns"
+            ]
+        ]
+    },
+    {
+        "id": "pmpjoinreflux",
+        "type": "function",
+        "z": "b8f36cbcfc882e5f",
+        "name": "reflux row",
+        "func": "// One row per pump. Two sources feed this node:\n//   source=\"ok\"    -> the still2 health flag (reflux_ok / condenser_ok)\n//   source=\"speed\" -> the pump's own GET /pump reading, incl. msg.online\n// Each call stores its half in flow context and re-renders the whole row, so\n// the badge and the speed never drift into separate widgets.\nconst KEY_OK = \"pump_ok_reflux\";\nconst KEY_SPD = \"pump_spd_reflux\";\nconst KEY_LINK = \"pump_link_reflux\";\n\nif (msg.source === \"ok\") {\n    flow.set(KEY_OK, String(msg.payload).indexOf(\"Online\") !== -1);\n} else if (msg.source === \"speed\") {\n    flow.set(KEY_SPD, String(msg.payload));\n    flow.set(KEY_LINK, msg.online);\n} else {\n    return null;\n}\n\nconst ok = flow.get(KEY_OK);\nconst spd = flow.get(KEY_SPD);\nconst link = flow.get(KEY_LINK);\nconst state = (ok === undefined || ok === null) ? link : ok;\nconst badge = (state === undefined || state === null) ? \"\u26aa\" : (state ? \"\ud83d\udfe2\" : \"\ud83d\udd34\");\nconst text = (spd === undefined || spd === null || spd === \"\") ? \"\u2026\" : spd;\nreturn { payload: badge + \" \" + text, topic: \"pump/reflux\" };\n",
+        "outputs": 1,
+        "timeout": "",
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 1150,
+        "y": 2130,
+        "wires": [
+            [
+                "pmptxtreflux"
+            ]
+        ]
+    },
+    {
+        "id": "pmptxtreflux",
+        "type": "ui-text",
+        "z": "b8f36cbcfc882e5f",
+        "group": "grp_pump_health",
+        "order": 1,
+        "width": 0,
+        "height": 0,
+        "name": "",
+        "label": "Reflux",
+        "format": "{{msg.payload}}",
+        "layout": "row-right",
+        "style": false,
+        "font": "",
+        "fontSize": 16,
+        "color": "#7a7a7a",
+        "className": "",
+        "x": 1400,
+        "y": 2130,
+        "wires": []
+    },
+    {
+        "id": "pmpjoincondns",
+        "type": "function",
+        "z": "b8f36cbcfc882e5f",
+        "name": "condenser row",
+        "func": "// One row per pump. Two sources feed this node:\n//   source=\"ok\"    -> the still2 health flag (reflux_ok / condenser_ok)\n//   source=\"speed\" -> the pump's own GET /pump reading, incl. msg.online\n// Each call stores its half in flow context and re-renders the whole row, so\n// the badge and the speed never drift into separate widgets.\nconst KEY_OK = \"pump_ok_condenser\";\nconst KEY_SPD = \"pump_spd_condenser\";\nconst KEY_LINK = \"pump_link_condenser\";\n\nif (msg.source === \"ok\") {\n    flow.set(KEY_OK, String(msg.payload).indexOf(\"Online\") !== -1);\n} else if (msg.source === \"speed\") {\n    flow.set(KEY_SPD, String(msg.payload));\n    flow.set(KEY_LINK, msg.online);\n} else {\n    return null;\n}\n\nconst ok = flow.get(KEY_OK);\nconst spd = flow.get(KEY_SPD);\nconst link = flow.get(KEY_LINK);\nconst state = (ok === undefined || ok === null) ? link : ok;\nconst badge = (state === undefined || state === null) ? \"\u26aa\" : (state ? \"\ud83d\udfe2\" : \"\ud83d\udd34\");\nconst text = (spd === undefined || spd === null || spd === \"\") ? \"\u2026\" : spd;\nreturn { payload: badge + \" \" + text, topic: \"pump/condenser\" };\n",
+        "outputs": 1,
+        "timeout": "",
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 1150,
+        "y": 2200,
+        "wires": [
+            [
+                "pmptxtcondns"
+            ]
+        ]
+    },
+    {
+        "id": "pmptxtcondns",
+        "type": "ui-text",
+        "z": "b8f36cbcfc882e5f",
+        "group": "grp_pump_health",
+        "order": 2,
+        "width": 0,
+        "height": 0,
+        "name": "",
+        "label": "Condenser",
+        "format": "{{msg.payload}}",
+        "layout": "row-right",
+        "style": false,
+        "font": "",
+        "fontSize": 16,
+        "color": "#7a7a7a",
+        "className": "",
+        "x": 1400,
+        "y": 2200,
+        "wires": []
+    },
+    {
+        "id": "tmpchartmid0001",
+        "type": "ui-chart",
+        "z": "b8f36cbcfc882e5f",
+        "group": "5ee9dce5463cd662",
+        "name": "",
+        "label": "",
+        "order": 2,
+        "chartType": "line",
+        "category": "topic",
+        "categoryType": "msg",
+        "xAxisProperty": "",
+        "xAxisPropertyType": "msg",
+        "xAxisType": "time",
+        "yAxisProperty": "",
+        "ymin": "",
+        "ymax": "",
+        "action": "append",
+        "pointShape": "false",
+        "pointRadius": 4,
+        "showLegend": false,
+        "removeOlder": 6,
+        "removeOlderUnit": "3600",
+        "removeOlderPoints": "",
+        "colors": [
+            "#1f77b4",
+            "#aec7e8",
+            "#ff7f0e",
+            "#2ca02c",
+            "#98df8a",
+            "#d62728",
+            "#ff9896",
+            "#9467bd",
+            "#c5b0d5"
+        ],
+        "width": "6",
+        "height": "6",
+        "className": "",
+        "x": 1400,
+        "y": 140,
+        "wires": [
+            []
+        ]
+    },
+    {
+        "id": "staleinj000001",
+        "type": "inject",
+        "z": "b8f36cbcfc882e5f",
+        "name": "stale check 10s",
+        "props": [
+            {
+                "p": "payload"
+            }
+        ],
+        "repeat": "10",
+        "crontab": "",
+        "once": true,
+        "topic": "",
+        "payload": "",
+        "payloadType": "date",
+        "x": 150,
+        "y": 2320,
+        "wires": [
+            [
+                "stalecheck00001"
+            ]
+        ]
+    },
+    {
+        "id": "stalecheck00001",
+        "type": "function",
+        "z": "b8f36cbcfc882e5f",
+        "name": "stale check",
+        "func": "// Watches both temperature feeds. Runs on a 10s tick; keeps no timers, only\n// numbers and strings in flow context, so nothing here can fail to persist.\n// Warns once per stale episode and re-arms when data returns.\nconst TIMEOUT_MS = Number(env.get(\"STILL2_NO_DATA_MS\")) || 300000;\nconst now = Date.now();\nif (!flow.get(\"check_started\")) flow.set(\"check_started\", now);\n\nfunction check(ch) {\n    const at = flow.get(\"seen_at_\" + ch);\n    const warnKey = \"warned_\" + ch;\n    const last = (at === undefined || at === null) ? flow.get(\"check_started\") : at;\n    const stale = (now - last) > TIMEOUT_MS;\n\n    if (!stale) {\n        if (flow.get(warnKey)) flow.set(warnKey, false);\n        return null;\n    }\n    if (flow.get(warnKey)) return null;   // already warned for this episode\n    flow.set(warnKey, true);\n    const stamp = flow.get(\"seen_txt_\" + ch) || new Date(last).toTimeString().substring(0, 8);\n    return { payload: \"\u26a0 NO DATA since \" + stamp, topic: \"temp/\" + ch };\n}\n\nreturn [check(\"middle\"), check(\"head\")];\n",
+        "outputs": 2,
+        "timeout": "",
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 380,
+        "y": 2320,
+        "wires": [
+            [
+                "15811c80180f4d0f"
+            ],
+            [
+                "aa25d9e2770d5196"
+            ]
+        ]
+    },
+    {
+        "id": "autorefresh_pid",
+        "type": "inject",
+        "z": "b8f36cbcfc882e5f",
+        "name": "refresh PID params",
+        "props": [
+            {
+                "p": "payload"
+            },
+            {
+                "p": "topic",
+                "vt": "str"
+            }
+        ],
+        "repeat": "15",
+        "crontab": "",
+        "once": true,
+        "onceDelay": "5",
+        "topic": "cmnd/still2/pidparams",
+        "payload": "{\"all\": true}",
+        "payloadType": "json",
+        "x": 200,
+        "y": 1480,
+        "wires": [
+            [
+                "849c8a8ff7dce888"
+            ]
+        ]
+    },
+    {
+        "id": "still2running",
+        "type": "function",
+        "z": "b8f36cbcfc882e5f",
+        "name": "PID running indicator",
+        "func": "const running = !!(msg.payload && msg.payload.running);\nmsg.payload = running ? \"\ud83d\udfe2 RUNNING\" : \"\ud83d\udd34 STOPPED\";\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 2100,
+        "y": 880,
+        "wires": [
+            [
+                "still2runind"
+            ]
+        ]
+    },
+    {
+        "id": "still2runind",
+        "type": "ui-text",
+        "z": "b8f36cbcfc882e5f",
+        "group": "afe3e22da0747d54",
+        "order": 0,
+        "width": 0,
+        "height": 0,
+        "name": "",
+        "label": "PID",
+        "format": "{{msg.payload}}",
+        "layout": "row-left",
+        "style": false,
+        "font": "",
+        "fontSize": 16,
+        "color": "",
+        "className": "",
+        "x": 2100,
+        "y": 900,
+        "wires": []
+    },
+    {
+        "id": "stripheat00001",
+        "type": "ui-switch",
+        "z": "b8f36cbcfc882e5f",
+        "name": "",
+        "label": "Stripping heat",
+        "group": "stripgrpctrl01",
+        "order": 1,
+        "width": 0,
+        "height": 0,
+        "passthru": false,
+        "topic": "topic",
+        "topicType": "msg",
+        "style": "",
+        "className": "",
+        "onvalue": "2400",
+        "onvalueType": "num",
+        "onicon": "",
+        "oncolor": "",
+        "offvalue": "0",
+        "offvalueType": "num",
+        "officon": "",
+        "offcolor": "",
+        "x": 2420,
+        "y": 60,
+        "wires": [
+            [
+                "pwrsetpwr000001"
+            ]
+        ]
+    },
+    {
+        "id": "stripheatfb",
+        "type": "function",
+        "z": "b8f36cbcfc882e5f",
+        "name": "heat switch feedback",
+        "func": "const s = String(msg.payload || \"\");\nconst m = s.match(/(\\d+)/);\nif (!m) return null;\nconst w = parseInt(m[1], 10);\nreturn { payload: w > 0 ? 2400 : 0 };",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 2100,
+        "y": 60,
+        "wires": [
+            [
+                "stripheat00001"
+            ]
+        ]
+    },
+    {
+        "id": "stripgridtext1",
+        "type": "ui-text",
+        "z": "b8f36cbcfc882e5f",
+        "group": "stripgrpctrl01",
+        "order": 2,
+        "width": 0,
+        "height": 0,
+        "name": "",
+        "label": "Grid power",
+        "format": "{{msg.payload}}",
+        "layout": "row-right",
+        "style": false,
+        "font": "",
+        "fontSize": 16,
+        "color": "#7a7a7a",
+        "className": "",
+        "x": 2420,
+        "y": 140,
+        "wires": []
+    },
+    {
+        "id": "stripreptext01",
+        "type": "ui-text",
+        "z": "b8f36cbcfc882e5f",
+        "group": "stripgrpctrl01",
+        "order": 3,
+        "width": 0,
+        "height": 0,
+        "name": "",
+        "label": "Reported",
+        "format": "{{msg.payload}}",
+        "layout": "row-right",
+        "style": false,
+        "font": "",
+        "fontSize": 16,
+        "color": "#7a7a7a",
+        "className": "",
+        "x": 2420,
+        "y": 180,
+        "wires": []
+    },
+    {
+        "id": "striptempsc001",
+        "type": "ui-chart",
+        "z": "b8f36cbcfc882e5f",
+        "group": "stripgrptemps1",
+        "name": "Temps",
+        "label": "",
+        "order": 1,
+        "chartType": "line",
+        "category": "topic",
+        "categoryType": "msg",
+        "xAxisProperty": "",
+        "xAxisPropertyType": "msg",
+        "xAxisType": "time",
+        "yAxisProperty": "",
+        "ymin": "",
+        "ymax": "",
+        "action": "append",
+        "pointShape": "false",
+        "pointRadius": 4,
+        "showLegend": true,
+        "removeOlder": 12,
+        "removeOlderUnit": "3600",
+        "removeOlderPoints": "",
+        "colors": [
+            "#1f77b4",
+            "#aec7e8",
+            "#ff7f0e",
+            "#2ca02c",
+            "#98df8a",
+            "#d62728",
+            "#ff9896",
+            "#9467bd",
+            "#c5b0d5"
+        ],
+        "width": "6",
+        "height": "8",
+        "className": "",
+        "x": 2420,
+        "y": 340,
+        "wires": [
+            []
+        ]
+    },
+    {
+        "id": "stripboilerfmt",
+        "type": "change",
+        "z": "b8f36cbcfc882e5f",
+        "name": "Boiler label",
+        "rules": [
+            {
+                "t": "set",
+                "p": "topic",
+                "pt": "msg",
+                "to": "Boiler",
+                "tot": "str"
+            }
+        ],
+        "action": "",
+        "property": "",
+        "from": "",
+        "to": "",
+        "reg": false,
+        "x": 660,
+        "y": 360,
+        "wires": [
+            [
+                "striptempsc001"
+            ]
+        ]
+    },
+    {
+        "id": "stripvapourfmt",
+        "type": "change",
+        "z": "b8f36cbcfc882e5f",
+        "name": "Vapour label",
+        "rules": [
+            {
+                "t": "set",
+                "p": "topic",
+                "pt": "msg",
+                "to": "Vapour",
+                "tot": "str"
+            }
+        ],
+        "action": "",
+        "property": "",
+        "from": "",
+        "to": "",
+        "reg": false,
+        "x": 660,
+        "y": 400,
+        "wires": [
+            [
+                "striptempsc001"
+            ]
+        ]
+    },
+    {
+        "id": "stripabvfn",
+        "type": "function",
+        "z": "b8f36cbcfc882e5f",
+        "name": "ABV estimate",
+        "func": "const T = Number(msg.payload);\nif (typeof T !== \"number\" || !isFinite(T)) return null;\nconst table = [\n  [78.2, 95.6], [80, 91], [82, 86], [84, 80], [86, 73],\n  [88, 65], [90, 56], [92, 45], [94, 33], [96, 20], [98, 8], [100, 0]\n];\nlet abv = table[0][1];\nif (T <= table[0][0]) {\n  abv = table[0][1];\n} else if (T >= table[table.length - 1][0]) {\n  abv = table[table.length - 1][1];\n} else {\n  for (let i = 0; i < table.length - 1; i++) {\n    const t0 = table[i][0], a0 = table[i][1];\n    const t1 = table[i + 1][0], a1 = table[i + 1][1];\n    if (T >= t0 && T <= t1) {\n      abv = a0 + (a1 - a0) * (T - t0) / (t1 - t0);\n      break;\n    }\n  }\n}\nconst pct = Math.round(abv * 10) / 10;\nreturn [\n  { payload: pct, topic: \"ABV %\", timestamp: msg.timestamp },\n  { payload: \"\u2248 \" + pct + \" % ABV\" }\n];",
+        "outputs": 2,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 900,
+        "y": 440,
+        "wires": [
+            [
+                "stripabvchart01"
+            ],
+            [
+                "stripabvtext01"
+            ]
+        ]
+    },
+    {
+        "id": "stripabvtext01",
+        "type": "ui-text",
+        "z": "b8f36cbcfc882e5f",
+        "group": "stripgrpabv0001",
+        "order": 1,
+        "width": 0,
+        "height": 0,
+        "name": "",
+        "label": "Est. vapour ABV",
+        "format": "{{msg.payload}}",
+        "layout": "row-center",
+        "style": true,
+        "font": "",
+        "fontSize": 26,
+        "color": "",
+        "className": "",
+        "x": 2420,
+        "y": 500,
+        "wires": []
+    },
+    {
+        "id": "stripabvchart01",
+        "type": "ui-chart",
+        "z": "b8f36cbcfc882e5f",
+        "group": "stripgrpabv0001",
+        "name": "ABV",
+        "label": "",
+        "order": 2,
+        "chartType": "line",
+        "category": "topic",
+        "categoryType": "msg",
+        "xAxisProperty": "",
+        "xAxisPropertyType": "msg",
+        "xAxisType": "time",
+        "yAxisProperty": "",
+        "ymin": "0",
+        "ymax": "100",
+        "action": "append",
+        "pointShape": "false",
+        "pointRadius": 4,
+        "showLegend": false,
+        "removeOlder": 12,
+        "removeOlderUnit": "3600",
+        "removeOlderPoints": "",
+        "colors": [
+            "#1f77b4",
+            "#aec7e8",
+            "#ff7f0e",
+            "#2ca02c",
+            "#98df8a",
+            "#d62728",
+            "#ff9896",
+            "#9467bd",
+            "#c5b0d5"
+        ],
+        "width": "6",
+        "height": "8",
+        "className": "",
+        "x": 2420,
+        "y": 560,
+        "wires": [
+            []
+        ]
+    },
+    {
+        "id": "stripstopfn",
+        "type": "function",
+        "z": "b8f36cbcfc882e5f",
+        "name": "strip done watch",
+        "func": "const T = Number(msg.payload);\nif (typeof T !== \"number\" || !isFinite(T)) return null;\nconst done = flow.get(\"strip_done\") === true;\nif (T >= 98.5 && !done) {\n  flow.set(\"strip_done\", true);\n  return { payload: \"Strip nearly done - vapour \" + T.toFixed(1) + \" \u00b0C (ABV <10%)\" };\n}\nif (T < 96 && done) flow.set(\"strip_done\", false);\nreturn null;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 900,
+        "y": 500,
+        "wires": [
+            [
+                "stripnote00001"
+            ]
+        ]
+    },
+    {
+        "id": "stripnote00001",
+        "type": "ui-notification",
+        "z": "b8f36cbcfc882e5f",
+        "ui": "c776e0d19c314f0d",
+        "name": "strip done",
+        "position": "top right",
+        "colorDefault": false,
+        "color": "#c0392b",
+        "displayTime": "8",
+        "showCountdown": true,
+        "outputs": 1,
+        "allowDismiss": true,
+        "dismissText": "Close",
+        "raw": false,
+        "className": "",
+        "x": 1140,
+        "y": 500,
+        "wires": [
+            []
+        ]
+    },
+    {
         "id": "3fe3ac59af05955a",
         "type": "mqtt-broker",
         "name": "MQTT2",
@@ -2238,42 +3495,35 @@
         "navigationStyle": "default"
     },
     {
-        "id": "1a6dfd4456b79d04",
-        "type": "ui-group",
-        "name": "integral - windup limits",
-        "page": "32d822f9400e65fd",
-        "width": "6",
-        "height": "1",
-        "order": 2,
-        "showTitle": true,
-        "className": "",
-        "visible": "true",
-        "disabled": "false"
+        "id": "ff6476dcafc85310",
+        "type": "ui-theme",
+        "name": "Default Theme",
+        "colors": {
+            "surface": "#ffffff",
+            "primary": "#0094CE",
+            "bgPage": "#eeeeee",
+            "groupBg": "#ffffff",
+            "groupOutline": "#cccccc"
+        },
+        "sizes": {
+            "pagePadding": "12px",
+            "groupGap": "12px",
+            "groupBorderRadius": "4px",
+            "widgetGap": "12px"
+        }
     },
     {
-        "id": "2052b505fc6e7465",
-        "type": "ui-group",
-        "name": "basic params",
-        "page": "32d822f9400e65fd",
-        "width": "6",
-        "height": "1",
-        "order": 1,
-        "showTitle": true,
+        "id": "98530696ee8cd926",
+        "type": "ui-page",
+        "name": "Monitoring",
+        "ui": "c776e0d19c314f0d",
+        "path": "/monitor",
+        "icon": "home",
+        "layout": "grid",
+        "theme": "ff6476dcafc85310",
+        "order": 3,
         "className": "",
-        "visible": "true",
-        "disabled": "false"
-    },
-    {
-        "id": "3a79b1215aa13ae5",
-        "type": "ui-group",
-        "name": "Control",
-        "page": "8344da34cf05e4fd",
-        "width": "6",
-        "height": "1",
-        "order": 1,
-        "showTitle": true,
-        "className": "",
-        "visible": "true",
+        "visible": true,
         "disabled": "false"
     },
     {
@@ -2283,45 +3533,6 @@
         "page": "98530696ee8cd926",
         "width": "6",
         "height": "6",
-        "order": 4,
-        "showTitle": true,
-        "className": "",
-        "visible": "true",
-        "disabled": "false"
-    },
-    {
-        "id": "5ee9dce5463cd662",
-        "type": "ui-group",
-        "name": "Reflux",
-        "page": "98530696ee8cd926",
-        "width": "6",
-        "height": "6",
-        "order": 1,
-        "showTitle": true,
-        "className": "",
-        "visible": "true",
-        "disabled": "false"
-    },
-    {
-        "id": "6d55354a3ff5fc47",
-        "type": "ui-group",
-        "name": "Emulation",
-        "page": "32d822f9400e65fd",
-        "width": "6",
-        "height": "1",
-        "order": 3,
-        "showTitle": true,
-        "className": "",
-        "visible": "true",
-        "disabled": "false"
-    },
-    {
-        "id": "877facfa381dab12",
-        "type": "ui-group",
-        "name": "Report",
-        "page": "32d822f9400e65fd",
-        "width": "6",
-        "height": "1",
         "order": 4,
         "showTitle": true,
         "className": "",
@@ -2342,6 +3553,33 @@
         "disabled": "false"
     },
     {
+        "id": "8344da34cf05e4fd",
+        "type": "ui-page",
+        "name": "pumps",
+        "ui": "c776e0d19c314f0d",
+        "path": "/pumps",
+        "icon": "home",
+        "layout": "grid",
+        "theme": "ff6476dcafc85310",
+        "order": 2,
+        "className": "",
+        "visible": "true",
+        "disabled": "false"
+    },
+    {
+        "id": "3a79b1215aa13ae5",
+        "type": "ui-group",
+        "name": "Control",
+        "page": "8344da34cf05e4fd",
+        "width": "6",
+        "height": "1",
+        "order": 1,
+        "showTitle": true,
+        "className": "",
+        "visible": "true",
+        "disabled": "false"
+    },
+    {
         "id": "e459568c74dfd8b2",
         "type": "ui-group",
         "name": "PID Control",
@@ -2355,6 +3593,33 @@
         "disabled": "false"
     },
     {
+        "id": "32d822f9400e65fd",
+        "type": "ui-page",
+        "name": "pid",
+        "ui": "c776e0d19c314f0d",
+        "path": "/pid",
+        "icon": "home",
+        "layout": "notebook",
+        "theme": "ff6476dcafc85310",
+        "order": 1,
+        "className": "",
+        "visible": "true",
+        "disabled": "false"
+    },
+    {
+        "id": "2052b505fc6e7465",
+        "type": "ui-group",
+        "name": "basic params",
+        "page": "32d822f9400e65fd",
+        "width": "6",
+        "height": "1",
+        "order": 1,
+        "showTitle": true,
+        "className": "",
+        "visible": "true",
+        "disabled": "false"
+    },
+    {
         "id": "e629bcb7c26cb922",
         "type": "ui-group",
         "name": "output limits",
@@ -2362,6 +3627,58 @@
         "width": "6",
         "height": "1",
         "order": 5,
+        "showTitle": true,
+        "className": "",
+        "visible": "true",
+        "disabled": "false"
+    },
+    {
+        "id": "1a6dfd4456b79d04",
+        "type": "ui-group",
+        "name": "integral - windup limits",
+        "page": "32d822f9400e65fd",
+        "width": "6",
+        "height": "1",
+        "order": 2,
+        "showTitle": true,
+        "className": "",
+        "visible": "true",
+        "disabled": "false"
+    },
+    {
+        "id": "6d55354a3ff5fc47",
+        "type": "ui-group",
+        "name": "Emulation",
+        "page": "32d822f9400e65fd",
+        "width": "6",
+        "height": "1",
+        "order": 3,
+        "showTitle": true,
+        "className": "",
+        "visible": "true",
+        "disabled": "false"
+    },
+    {
+        "id": "5ee9dce5463cd662",
+        "type": "ui-group",
+        "name": "Reflux",
+        "page": "98530696ee8cd926",
+        "width": "6",
+        "height": "6",
+        "order": 1,
+        "showTitle": true,
+        "className": "",
+        "visible": "true",
+        "disabled": "false"
+    },
+    {
+        "id": "877facfa381dab12",
+        "type": "ui-group",
+        "name": "Report",
+        "page": "32d822f9400e65fd",
+        "width": "6",
+        "height": "1",
+        "order": 4,
         "showTitle": true,
         "className": "",
         "visible": "true",
@@ -2394,133 +3711,96 @@
         "disabled": "false"
     },
     {
-        "id": "32d822f9400e65fd",
+        "id": "pwrpage000001",
         "type": "ui-page",
-        "name": "pid",
+        "name": "Power",
         "ui": "c776e0d19c314f0d",
-        "path": "/pid",
-        "icon": "home",
-        "layout": "notebook",
-        "theme": "ff6476dcafc85310",
-        "order": 1,
-        "className": "",
-        "visible": "true",
-        "disabled": "false"
-    },
-    {
-        "id": "8344da34cf05e4fd",
-        "type": "ui-page",
-        "name": "pumps",
-        "ui": "c776e0d19c314f0d",
-        "path": "/pumps",
-        "icon": "home",
+        "path": "/power",
+        "icon": "bolt",
         "layout": "grid",
         "theme": "ff6476dcafc85310",
-        "order": 2,
-        "className": "",
-        "visible": "true",
-        "disabled": "false"
-    },
-    {
-        "id": "98530696ee8cd926",
-        "type": "ui-page",
-        "name": "Monitoring",
-        "ui": "c776e0d19c314f0d",
-        "path": "/monitor",
-        "icon": "home",
-        "layout": "grid",
-        "theme": "ff6476dcafc85310",
-        "order": 3,
+        "order": 5,
         "className": "",
         "visible": true,
         "disabled": "false"
     },
     {
-        "id": "ff6476dcafc85310",
-        "type": "ui-theme",
-        "name": "Default Theme",
-        "colors": {
-            "surface": "#ffffff",
-            "primary": "#0094CE",
-            "bgPage": "#eeeeee",
-            "groupBg": "#ffffff",
-            "groupOutline": "#cccccc"
-        },
-        "sizes": {
-            "pagePadding": "12px",
-            "groupGap": "12px",
-            "groupBorderRadius": "4px",
-            "widgetGap": "12px"
-        }
-    },
-    {
-        "id": "autorefresh_pid",
-        "type": "inject",
-        "z": "b8f36cbcfc882e5f",
-        "name": "refresh PID params",
-        "props": [
-            {
-                "p": "payload"
-            },
-            {
-                "p": "topic",
-                "vt": "str"
-            }
-        ],
-        "repeat": "15",
-        "crontab": "",
-        "once": true,
-        "onceDelay": "5",
-        "topic": "cmnd/still2/pidparams",
-        "payload": "{\"all\": true}",
-        "payloadType": "json",
-        "x": 200,
-        "y": 1480,
-        "wires": [
-            [
-                "849c8a8ff7dce888"
-            ]
-        ]
-    },
-    {
-        "id": "still2running",
-        "type": "function",
-        "z": "b8f36cbcfc882e5f",
-        "name": "PID running indicator",
-        "func": "const running = !!(msg.payload && msg.payload.running);\nmsg.payload = running ? \"🟢 RUNNING\" : \"🔴 STOPPED\";\nreturn msg;",
-        "outputs": 1,
-        "timeout": 0,
-        "noerr": 0,
-        "initialize": "",
-        "finalize": "",
-        "libs": [],
-        "x": 2100,
-        "y": 880,
-        "wires": [
-            [
-                "still2runind"
-            ]
-        ]
-    },
-    {
-        "id": "still2runind",
-        "type": "ui-text",
-        "z": "b8f36cbcfc882e5f",
-        "group": "afe3e22da0747d54",
-        "order": 0,
-        "width": 0,
-        "height": 0,
-        "name": "",
-        "label": "PID",
-        "format": "{{msg.payload}}",
-        "layout": "row-left",
-        "style": false,
-        "font": "",
-        "fontSize": 16,
-        "color": "",
+        "id": "pwrgrpout00001",
+        "type": "ui-group",
+        "name": "Output",
+        "page": "pwrpage000001",
+        "width": "6",
+        "height": "5",
+        "order": 1,
+        "showTitle": true,
         "className": "",
-        "x": 2100,
-        "y": 900,
-        "wires": []
+        "visible": "true",
+        "disabled": "false"
+    },
+    {
+        "id": "pwrgrpstat0001",
+        "type": "ui-group",
+        "name": "Status",
+        "page": "pwrpage000001",
+        "width": "6",
+        "height": "5",
+        "order": 2,
+        "showTitle": true,
+        "className": "",
+        "visible": "true",
+        "disabled": "false"
+    },
+    {
+        "id": "strippage0001",
+        "type": "ui-page",
+        "name": "Stripping",
+        "ui": "c776e0d19c314f0d",
+        "path": "/stripping",
+        "icon": "fire",
+        "layout": "grid",
+        "theme": "ff6476dcafc85310",
+        "order": 6,
+        "className": "",
+        "visible": true,
+        "disabled": "false"
+    },
+    {
+        "id": "stripgrpctrl01",
+        "type": "ui-group",
+        "name": "Strip control",
+        "page": "strippage0001",
+        "width": "6",
+        "height": "4",
+        "order": 1,
+        "showTitle": true,
+        "className": "",
+        "visible": "true",
+        "disabled": "false"
+    },
+    {
+        "id": "stripgrptemps1",
+        "type": "ui-group",
+        "name": "Temps",
+        "page": "strippage0001",
+        "width": "6",
+        "height": "8",
+        "order": 2,
+        "showTitle": true,
+        "className": "",
+        "visible": "true",
+        "disabled": "false"
+    },
+    {
+        "id": "stripgrpabv0001",
+        "type": "ui-group",
+        "name": "ABV",
+        "page": "strippage0001",
+        "width": "6",
+        "height": "8",
+        "order": 3,
+        "showTitle": true,
+        "className": "",
+        "visible": "true",
+        "disabled": "false"
     }
 ]

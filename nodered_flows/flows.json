@@ -3234,7 +3234,7 @@
         "type": "ui-chart",
         "z": "b8f36cbcfc882e5f",
         "group": "stripgrptemps1",
-        "name": "Temps",
+        "name": "Boiler",
         "label": "",
         "order": 1,
         "chartType": "line",
@@ -3249,23 +3249,23 @@
         "action": "append",
         "pointShape": "false",
         "pointRadius": 4,
-        "showLegend": true,
+        "showLegend": false,
         "removeOlder": 12,
         "removeOlderUnit": "3600",
         "removeOlderPoints": "",
         "colors": [
             "#1f77b4",
-            "#d62728",
-            "#2ca02c",
+            "#aec7e8",
             "#ff7f0e",
+            "#2ca02c",
+            "#98df8a",
+            "#d62728",
+            "#ff9896",
             "#9467bd",
-            "#8c564b",
-            "#e377c2",
-            "#7f7f7f",
-            "#bcbd22"
+            "#c5b0d5"
         ],
         "width": "4",
-        "height": "4",
+        "height": "3",
         "className": "",
         "x": 2420,
         "y": 340,
@@ -3323,7 +3323,7 @@
         "y": 400,
         "wires": [
             [
-                "striptempsc001"
+                "stripvapourchart"
             ]
         ]
     },
@@ -3525,6 +3525,50 @@
                 "stripcondslider",
                 "bde06e267b92f170"
             ]
+        ]
+    },
+    {
+        "id": "stripvapourchart",
+        "type": "ui-chart",
+        "z": "b8f36cbcfc882e5f",
+        "group": "stripgrptemps1",
+        "name": "Vapour",
+        "label": "",
+        "order": 2,
+        "chartType": "line",
+        "category": "topic",
+        "categoryType": "msg",
+        "xAxisProperty": "",
+        "xAxisPropertyType": "msg",
+        "xAxisType": "time",
+        "yAxisProperty": "",
+        "ymin": "",
+        "ymax": "",
+        "action": "append",
+        "pointShape": "false",
+        "pointRadius": 4,
+        "showLegend": false,
+        "removeOlder": 12,
+        "removeOlderUnit": "3600",
+        "removeOlderPoints": "",
+        "colors": [
+            "#d62728",
+            "#1f77b4",
+            "#ff7f0e",
+            "#2ca02c",
+            "#98df8a",
+            "#ff9896",
+            "#9467bd",
+            "#c5b0d5",
+            "#8c564b"
+        ],
+        "width": "4",
+        "height": "3",
+        "className": "",
+        "x": 2420,
+        "y": 360,
+        "wires": [
+            []
         ]
     },
     {
@@ -3855,7 +3899,7 @@
         "name": "Temps",
         "page": "strippage0001",
         "width": "4",
-        "height": "5",
+        "height": "6",
         "order": 2,
         "showTitle": true,
         "className": "",

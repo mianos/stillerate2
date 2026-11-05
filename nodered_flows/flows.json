@@ -3213,7 +3213,7 @@
         "type": "ui-text",
         "z": "b8f36cbcfc882e5f",
         "group": "stripgrpctrl01",
-        "order": 3,
+        "order": 4,
         "width": 0,
         "height": 0,
         "name": "",
@@ -3465,7 +3465,7 @@
         "name": "",
         "label": "Condenser",
         "tooltip": "Condenser pump duty %",
-        "order": 4,
+        "order": 5,
         "width": 0,
         "height": 0,
         "passthru": false,
@@ -3490,7 +3490,7 @@
         "type": "ui-text",
         "z": "b8f36cbcfc882e5f",
         "group": "stripgrpctrl01",
-        "order": 5,
+        "order": 6,
         "width": 0,
         "height": 0,
         "name": "",
@@ -3534,7 +3534,7 @@
         "group": "stripgrpctrl01",
         "name": "",
         "label": "Clear charts",
-        "order": 6,
+        "order": 7,
         "width": 0,
         "height": 0,
         "emulateClick": false,
@@ -4286,6 +4286,68 @@
         "className": "",
         "x": 2420,
         "y": 40,
+        "wires": []
+    },
+    {
+        "id": "striphousepwr",
+        "type": "mqtt in",
+        "z": "b8f36cbcfc882e5f",
+        "name": "",
+        "topic": "home/power/tele",
+        "qos": "2",
+        "datatype": "auto-detect",
+        "broker": "3fe3ac59af05955a",
+        "nl": false,
+        "rap": true,
+        "rh": 0,
+        "inputs": 0,
+        "x": 180,
+        "y": 920,
+        "wires": [
+            [
+                "striphousepwrfn"
+            ]
+        ]
+    },
+    {
+        "id": "striphousepwrfn",
+        "type": "function",
+        "z": "b8f36cbcfc882e5f",
+        "name": "house power fmt",
+        "func": "let o = msg.payload;\nif (typeof o === 'string') { try { o = JSON.parse(o); } catch (e) { return null; } }\nif (!o || typeof o !== 'object') return null;\nconst p = o.power;\nif (typeof p !== 'number' || !isFinite(p)) return null;\nmsg.payload = (p >= 0 ? '+' : '') + Math.round(p) + ' W';\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 440,
+        "y": 920,
+        "wires": [
+            [
+                "striphousepwrtxt"
+            ]
+        ]
+    },
+    {
+        "id": "striphousepwrtxt",
+        "type": "ui-text",
+        "z": "b8f36cbcfc882e5f",
+        "group": "stripgrpctrl01",
+        "order": 3,
+        "width": 0,
+        "height": 0,
+        "name": "",
+        "label": "House power",
+        "format": "{{msg.payload}}",
+        "layout": "row-right",
+        "style": false,
+        "font": "",
+        "fontSize": 16,
+        "color": "#7a7a7a",
+        "className": "",
+        "x": 2420,
+        "y": 160,
         "wires": []
     }
 ]

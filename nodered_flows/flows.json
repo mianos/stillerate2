@@ -3936,5 +3936,294 @@
         "className": "",
         "visible": "true",
         "disabled": "false"
+    },
+    {
+        "id": "stripgrpsched1",
+        "type": "ui-group",
+        "name": "Schedule",
+        "page": "strippage0001",
+        "width": "4",
+        "height": "3",
+        "order": 4,
+        "showTitle": true,
+        "className": "",
+        "visible": "true",
+        "disabled": "false"
+    },
+    {
+        "id": "stripschedtime",
+        "type": "ui-text-input",
+        "z": "b8f36cbcfc882e5f",
+        "group": "stripgrpsched1",
+        "name": "",
+        "label": "Start time (HH:MM)",
+        "order": 1,
+        "width": 0,
+        "height": 0,
+        "topic": "topic",
+        "topicType": "msg",
+        "mode": "text",
+        "tooltip": "24h time, e.g. 22:00",
+        "delay": 300,
+        "passthru": false,
+        "sendOnDelay": true,
+        "sendOnBlur": true,
+        "sendOnEnter": true,
+        "className": "",
+        "clearable": false,
+        "sendOnClear": false,
+        "icon": "",
+        "iconPosition": "left",
+        "iconInnerPosition": "inside",
+        "x": 2420,
+        "y": 640,
+        "wires": [
+            [
+                "stripschestore"
+            ]
+        ]
+    },
+    {
+        "id": "stripschestore",
+        "type": "function",
+        "z": "b8f36cbcfc882e5f",
+        "name": "store start time",
+        "func": "flow.set('sched_time', String(msg.payload || '').trim());\nreturn null;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 2680,
+        "y": 640,
+        "wires": []
+    },
+    {
+        "id": "stripschearm",
+        "type": "ui-button",
+        "z": "b8f36cbcfc882e5f",
+        "group": "stripgrpsched1",
+        "name": "",
+        "label": "Arm",
+        "order": 2,
+        "width": 0,
+        "height": 0,
+        "emulateClick": false,
+        "tooltip": "Start the run at the time above (once)",
+        "color": "",
+        "bgcolor": "",
+        "className": "",
+        "icon": "",
+        "iconPosition": "left",
+        "payload": "arm",
+        "payloadType": "str",
+        "topic": "topic",
+        "topicType": "msg",
+        "buttonColor": "",
+        "textColor": "",
+        "iconColor": "",
+        "enableClick": true,
+        "enablePointerdown": false,
+        "pointerdownPayload": "",
+        "pointerdownPayloadType": "str",
+        "enablePointerup": false,
+        "pointerupPayload": "",
+        "pointerupPayloadType": "str",
+        "x": 2680,
+        "y": 680,
+        "wires": [
+            [
+                "stripscheparse"
+            ]
+        ]
+    },
+    {
+        "id": "stripscheparse",
+        "type": "function",
+        "z": "b8f36cbcfc882e5f",
+        "name": "arm schedule",
+        "func": "const raw = String(flow.get('sched_time') || '').trim();\nconst m = raw.match(/^([01]?\\d|2[0-3]):([0-5]\\d)$/);\nif (!m) {\n    flow.set('sched_armed', false);\n    return { payload: 'Invalid time \"' + raw + '\" - use HH:MM (24h)' };\n}\nconst h = parseInt(m[1], 10);\nconst mn = parseInt(m[2], 10);\nconst now = new Date();\nlet t = new Date(now.getFullYear(), now.getMonth(), now.getDate(), h, mn, 0, 0);\nif (t.getTime() <= now.getTime()) {\n    t = new Date(t.getTime() + 86400000);\n}\nflow.set('sched_target_ms', t.getTime());\nflow.set('sched_armed', true);\nreturn { payload: 'Armed: starts ' + t.toLocaleString() };",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 2680,
+        "y": 680,
+        "wires": [
+            [
+                "stripschestat"
+            ]
+        ]
+    },
+    {
+        "id": "stripschecancel",
+        "type": "ui-button",
+        "z": "b8f36cbcfc882e5f",
+        "group": "stripgrpsched1",
+        "name": "",
+        "label": "Cancel",
+        "order": 3,
+        "width": 0,
+        "height": 0,
+        "emulateClick": false,
+        "tooltip": "Cancel the scheduled start",
+        "color": "",
+        "bgcolor": "",
+        "className": "",
+        "icon": "",
+        "iconPosition": "left",
+        "payload": "cancel",
+        "payloadType": "str",
+        "topic": "topic",
+        "topicType": "msg",
+        "buttonColor": "",
+        "textColor": "",
+        "iconColor": "",
+        "enableClick": true,
+        "enablePointerdown": false,
+        "pointerdownPayload": "",
+        "pointerdownPayloadType": "str",
+        "enablePointerup": false,
+        "pointerupPayload": "",
+        "pointerupPayloadType": "str",
+        "x": 2680,
+        "y": 720,
+        "wires": [
+            [
+                "stripschecancel_fn"
+            ]
+        ]
+    },
+    {
+        "id": "stripschecancel_fn",
+        "type": "function",
+        "z": "b8f36cbcfc882e5f",
+        "name": "cancel schedule",
+        "func": "flow.set('sched_armed', false);\nreturn { payload: 'Schedule cancelled' };",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 2680,
+        "y": 720,
+        "wires": [
+            [
+                "stripschestat"
+            ]
+        ]
+    },
+    {
+        "id": "stripschetick",
+        "type": "inject",
+        "z": "b8f36cbcfc882e5f",
+        "name": "sched tick 15s",
+        "props": [
+            {
+                "p": "payload"
+            }
+        ],
+        "repeat": "15",
+        "crontab": "",
+        "once": true,
+        "topic": "",
+        "payload": "",
+        "payloadType": "date",
+        "x": 2420,
+        "y": 760,
+        "wires": [
+            [
+                "stripschecheck"
+            ]
+        ]
+    },
+    {
+        "id": "stripschecheck",
+        "type": "function",
+        "z": "b8f36cbcfc882e5f",
+        "name": "sched check",
+        "func": "if (flow.get('sched_armed') !== true) return [null, null];\nconst target = Number(flow.get('sched_target_ms'));\nif (!Number.isFinite(target)) return [null, null];\nif (Date.now() < target) return [null, null];\nflow.set('sched_armed', false);\nreturn [\n    { payload: { action: 'start' } },\n    { payload: 'Started at ' + new Date().toLocaleTimeString() }\n];",
+        "outputs": 2,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 2680,
+        "y": 760,
+        "wires": [
+            [
+                "stripschecond",
+                "stripscheheat"
+            ],
+            [
+                "stripschestat"
+            ]
+        ]
+    },
+    {
+        "id": "stripschecond",
+        "type": "function",
+        "z": "b8f36cbcfc882e5f",
+        "name": "condenser 100%",
+        "func": "msg.payload = 100;\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 2680,
+        "y": 800,
+        "wires": [
+            [
+                "e3135429fcbd80e2"
+            ]
+        ]
+    },
+    {
+        "id": "stripscheheat",
+        "type": "function",
+        "z": "b8f36cbcfc882e5f",
+        "name": "heater 2400W",
+        "func": "msg.payload = 2400;\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 2680,
+        "y": 840,
+        "wires": [
+            [
+                "pwrsetpwr000001"
+            ]
+        ]
+    },
+    {
+        "id": "stripschestat",
+        "type": "ui-text",
+        "z": "b8f36cbcfc882e5f",
+        "group": "stripgrpsched1",
+        "order": 4,
+        "width": 0,
+        "height": 0,
+        "name": "",
+        "label": "Status",
+        "format": "{{msg.payload}}",
+        "layout": "row-left",
+        "style": false,
+        "font": "",
+        "fontSize": 14,
+        "color": "",
+        "className": "",
+        "x": 2680,
+        "y": 880,
+        "wires": []
     }
 ]

@@ -69,7 +69,7 @@ public:
         nvs.retrieve("condenserPump", condenserPump);
         nvs.retrieve("powerCutUrl", powerCutUrl);
         retrieveFloat("dangerTemp", dangerTemp);
-        retrieveFloat("dangerHysteresis", dangerHysteresis);
+        retrieveFloat("dangerHyst", dangerHysteresis);
         retrieveFloat("middleRref", middleRref);
         retrieveFloat("headRref", headRref);
         retrieveFloat("middleOffset", middleOffset);
@@ -88,7 +88,7 @@ public:
         json.AddItem("condenserPump", condenserPump);
         json.AddItem("powerCutUrl", powerCutUrl);
         json.AddItem("dangerTemp", dangerTemp);
-        json.AddItem("dangerHysteresis", dangerHysteresis);
+        json.AddItem("dangerHyst", dangerHysteresis);
         json.AddItem("middleRref", middleRref);
         json.AddItem("headRref", headRref);
         json.AddItem("middleOffset", middleOffset);
@@ -119,7 +119,7 @@ public:
         updateFieldIfChanged(json, "condenserPump", condenserPump, changes);
         updateFieldIfChanged(json, "powerCutUrl", powerCutUrl, changes);
         updateFieldIfChanged(json, "dangerTemp", dangerTemp, changes);
-        updateFieldIfChanged(json, "dangerHysteresis", dangerHysteresis, changes);
+        updateFieldIfChanged(json, "dangerHyst", dangerHysteresis, changes);
         updateFieldIfChanged(json, "middleRref", middleRref, changes);
         updateFieldIfChanged(json, "headRref", headRref, changes);
         updateFieldIfChanged(json, "middleOffset", middleOffset, changes);

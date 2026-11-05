@@ -30,6 +30,10 @@ public:
 //    std::string condenserPump = "http://131.84.1.78:8080/pump";
     std::string refluxPump = "http://reflux.mianos.com/pump";
     std::string condenserPump = "http://condenser.mianos.com/pump";
+    std::string powerCutUrl = "http://iampwr.mianos.com/api/setpower?x=0";
+
+    float dangerTemp = 99.0f;
+    float dangerHysteresis = 3.0f;
 
     float middleRref   = 401.5f;
     float headRref     = 401.5f;
@@ -63,6 +67,9 @@ public:
         nvs.retrieve("ntpServer", ntpServer);
         nvs.retrieve("refluxPump", refluxPump);
         nvs.retrieve("condenserPump", condenserPump);
+        nvs.retrieve("powerCutUrl", powerCutUrl);
+        retrieveFloat("dangerTemp", dangerTemp);
+        retrieveFloat("dangerHysteresis", dangerHysteresis);
         retrieveFloat("middleRref", middleRref);
         retrieveFloat("headRref", headRref);
         retrieveFloat("middleOffset", middleOffset);
@@ -79,6 +86,9 @@ public:
         json.AddItem("ntpServer", ntpServer);
         json.AddItem("refluxPump", refluxPump);
         json.AddItem("condenserPump", condenserPump);
+        json.AddItem("powerCutUrl", powerCutUrl);
+        json.AddItem("dangerTemp", dangerTemp);
+        json.AddItem("dangerHysteresis", dangerHysteresis);
         json.AddItem("middleRref", middleRref);
         json.AddItem("headRref", headRref);
         json.AddItem("middleOffset", middleOffset);
@@ -107,6 +117,9 @@ public:
         updateFieldIfChanged(json, "ntpServer", ntpServer, changes);
         updateFieldIfChanged(json, "refluxPump", refluxPump, changes);
         updateFieldIfChanged(json, "condenserPump", condenserPump, changes);
+        updateFieldIfChanged(json, "powerCutUrl", powerCutUrl, changes);
+        updateFieldIfChanged(json, "dangerTemp", dangerTemp, changes);
+        updateFieldIfChanged(json, "dangerHysteresis", dangerHysteresis, changes);
         updateFieldIfChanged(json, "middleRref", middleRref, changes);
         updateFieldIfChanged(json, "headRref", headRref, changes);
         updateFieldIfChanged(json, "middleOffset", middleOffset, changes);

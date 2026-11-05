@@ -1,4 +1,5 @@
 #include <cstdlib>
+#include <cmath>
 #include <time.h>
 #include <sys/time.h>
 
@@ -29,6 +30,7 @@
 #include "PidControlTimer.h"
 #include "SensorLoopTask.h"
 #include "RESTMotorController.h"
+#include "HttpClient.h"
 #include "SettingsManager.h"
 #include "esp_ota_ops.h"
 #include "StillWebServer.h"
@@ -228,6 +230,12 @@ extern "C" void app_main() {
         int64_t last_pump_check = 0;
         const int64_t check_interval_sec = 30; // Check every 30 seconds
 
+        // Variables for the boiler over-temperature safety cutoff.
+        int64_t last_safety_check = 0;
+        const int64_t safety_check_interval_sec = 2; // Check every 2 seconds
+        int64_t last_cut_sent = 0;
+        bool safety_tripped = false;
+
         while (true) {
             vTaskDelay(pdMS_TO_TICKS(1000)); 
             
@@ -252,6 +260,38 @@ extern "C" void app_main() {
                 // Optional Logging
                 if (!reflux_ok || !condenser_ok) {
                     ESP_LOGW(TAG, "Pump Health Alert! Reflux: %d, Condenser: %d", reflux_ok, condenser_ok);
+                }
+            }
+
+            // Safety: cut boiler power if the boiler exceeds the danger temperature.
+            if (now - last_safety_check > safety_check_interval_sec) {
+                last_safety_check = now;
+                const float boiler_c = head_temp.measure();
+                if (std::isfinite(boiler_c) && boiler_c > settings.dangerTemp) {
+                    if (!safety_tripped) {
+                        safety_tripped = true;
+                        ESP_LOGE(TAG, "SAFETY: boiler %.2f C > %.1f C, cutting power",
+                                 boiler_c, settings.dangerTemp);
+                    }
+                    // Re-assert the cut every 10 s while still over temp (defeats manual re-apply).
+                    if (now - last_cut_sent > 10) {
+                        last_cut_sent = now;
+                        HttpClient cut(settings.powerCutUrl);
+                        auto [ok, resp] = cut.get();
+                        ESP_LOGE(TAG, "SAFETY: cut sent=%d (%s)", ok, resp.c_str());
+                        JsonWrapper alert;
+                        alert.AddItem("tripped", true);
+                        alert.AddItem("boiler_c", boiler_c);
+                        client.publish("tele/" + settings.sensorName + "/safety", alert.ToString());
+                    }
+                } else if (safety_tripped && std::isfinite(boiler_c) &&
+                           boiler_c < settings.dangerTemp - settings.dangerHysteresis) {
+                    safety_tripped = false;
+                    ESP_LOGI(TAG, "SAFETY: boiler %.2f C re-armed", boiler_c);
+                    JsonWrapper alert;
+                    alert.AddItem("tripped", false);
+                    alert.AddItem("boiler_c", boiler_c);
+                    client.publish("tele/" + settings.sensorName + "/safety", alert.ToString());
                 }
             }
         }

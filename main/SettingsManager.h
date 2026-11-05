@@ -32,7 +32,7 @@ public:
     std::string condenserPump = "http://condenser.mianos.com/pump";
     std::string powerCutUrl = "http://iampwr.mianos.com/api/setpower?x=0";
 
-    float dangerTemp = 99.0f;
+    float dangerTemp = 98.5f;
     float dangerHysteresis = 3.0f;
 
     float middleRref   = 401.5f;

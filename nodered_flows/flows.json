@@ -30,7 +30,8 @@
         "y": 160,
         "wires": [
             [
-                "433500282fc4c0ec"
+                "433500282fc4c0ec",
+                "stripabvfn"
             ]
         ]
     },
@@ -56,7 +57,6 @@
             [
                 "still2dispboiler",
                 "stripboilerfmt",
-                "stripabvfn",
                 "stripstopfn"
             ]
         ]
@@ -3332,7 +3332,7 @@
         "type": "function",
         "z": "b8f36cbcfc882e5f",
         "name": "ABV estimate",
-        "func": "const T = Number(msg.payload);\nif (typeof T !== \"number\" || !isFinite(T)) return null;\n// Below the ethanol azeotrope the wash isn't boiling, so an ABV is meaningless.\nif (T < 78) return [{ payload: 0, topic: \"ABV %\", timestamp: msg.timestamp }, { payload: \"\u2014 not boiling\" }];\n// Distillate ABV (v/v) vs BOILER equilibrium temp, approximate.\nconst table = [\n  [78.2, 96], [80, 91], [82, 87], [84, 84], [86, 80],\n  [88, 75], [90, 70], [92, 62], [94, 55], [96, 42], [98, 25], [100, 0]\n];\nlet abv;\nif (T <= table[0][0]) abv = table[0][1];\nelse if (T >= table[table.length - 1][0]) abv = table[table.length - 1][1];\nelse {\n  abv = table[0][1];\n  for (let i = 0; i < table.length - 1; i++) {\n    const t0 = table[i][0], a0 = table[i][1];\n    const t1 = table[i + 1][0], a1 = table[i + 1][1];\n    if (T >= t0 && T <= t1) { abv = a0 + (a1 - a0) * (T - t0) / (t1 - t0); break; }\n  }\n}\nconst pct = Math.round(abv * 10) / 10;\nreturn [\n  { payload: pct, topic: \"ABV %\", timestamp: msg.timestamp },\n  { payload: \"\u2248 \" + pct + \" % ABV\" }\n];\n",
+        "func": "const p = msg.payload;\nif (!p || typeof p !== \"object\") return null;\nconst boiler = Number(p.head);\nconst vapour = Number(p.middle);\nif (!isFinite(boiler) || !isFinite(vapour)) return null;\n// No vapour flowing yet -> no distillate.\nif (vapour < 78) return [{ payload: 0, topic: \"ABV %\", timestamp: p.time }, { payload: \"\u2014 not boiling\" }];\n// Base equilibrium distillate ABV from the boiler temp.\nconst table = [\n  [78.2, 96], [80, 91], [82, 87], [84, 84], [86, 80],\n  [88, 75], [90, 70], [92, 62], [94, 55], [96, 42], [98, 25], [100, 0]\n];\nfunction abvAt(t) {\n  if (t <= table[0][0]) return table[0][1];\n  if (t >= table[table.length - 1][0]) return table[table.length - 1][1];\n  for (let i = 0; i < table.length - 1; i++) {\n    const t0 = table[i][0], a0 = table[i][1];\n    const t1 = table[i + 1][0], a1 = table[i + 1][1];\n    if (t >= t0 && t <= t1) return a0 + (a1 - a0) * (t - t0) / (t1 - t0);\n  }\n  return table[0][1];\n}\nconst base = abvAt(boiler);\n// Passive reflux enriches the vapour as it cools up the column:\n// the boiler-vapour gap is how much cooling/enrichment occurred.\nconst gap = Math.max(0, boiler - vapour);\nconst K = 1.0; // % ABV per \u00b0C of cooling\nlet pct = base + K * gap;\npct = Math.max(0, Math.min(96, pct));\npct = Math.round(pct * 10) / 10;\nreturn [\n  { payload: pct, topic: \"ABV %\", timestamp: p.time },\n  { payload: \"\u2248 \" + pct + \" % ABV\" }\n];\n",
         "outputs": 2,
         "timeout": 0,
         "noerr": 0,
@@ -3359,7 +3359,7 @@
         "width": 0,
         "height": 0,
         "name": "",
-        "label": "Est. distillate ABV (from boiler)",
+        "label": "Est. distillate ABV",
         "format": "{{msg.payload}}",
         "layout": "row-center",
         "style": true,

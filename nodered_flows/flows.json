@@ -3420,7 +3420,7 @@
         "type": "function",
         "z": "b8f36cbcfc882e5f",
         "name": "strip done watch",
-        "func": "const T = Number(msg.payload);\nif (typeof T !== \"number\" || !isFinite(T)) return null;\nconst done = flow.get(\"strip_done\") === true;\nif (T >= 98.5 && !done) {\n  flow.set(\"strip_done\", true);\n  return { payload: \"Strip nearly done - boiler \" + T.toFixed(1) + \" \u00b0C\" };\n}\nif (T < 96 && done) flow.set(\"strip_done\", false);\nreturn null;\n",
+        "func": "const T = Number(msg.payload);\nif (typeof T !== \"number\" || !isFinite(T)) return null;\nconst done = flow.get(\"strip_done\") === true;\nif (T >= 98 && !done) {\n  flow.set(\"strip_done\", true);\n  return { payload: \"Strip nearly done - boiler \" + T.toFixed(1) + \" \u00b0C\" };\n}\nif (T < 96 && done) flow.set(\"strip_done\", false);\nreturn null;\n",
         "outputs": 1,
         "timeout": 0,
         "noerr": 0,

@@ -4225,5 +4225,67 @@
         "x": 2680,
         "y": 880,
         "wires": []
+    },
+    {
+        "id": "stripsafetyin",
+        "type": "mqtt in",
+        "z": "b8f36cbcfc882e5f",
+        "name": "",
+        "topic": "tele/still2/safety",
+        "qos": "2",
+        "datatype": "auto-detect",
+        "broker": "3fe3ac59af05955a",
+        "nl": false,
+        "rap": true,
+        "rh": 0,
+        "inputs": 0,
+        "x": 180,
+        "y": 880,
+        "wires": [
+            [
+                "stripsafetyfmt"
+            ]
+        ]
+    },
+    {
+        "id": "stripsafetyfmt",
+        "type": "function",
+        "z": "b8f36cbcfc882e5f",
+        "name": "safety badge",
+        "func": "let o = msg.payload;\nif (typeof o === 'string') { try { o = JSON.parse(o); } catch (e) { return null; } }\nif (!o || typeof o !== 'object') return null;\nif (o.tripped === true) {\n    const c = typeof o.boiler_c === 'number' ? ' at ' + o.boiler_c.toFixed(1) + ' \u00b0C' : '';\n    msg.payload = '\ud83d\udd34 SAFETY TRIPPED \u2014 power cut' + c;\n    return msg;\n}\nif (o.tripped === false) {\n    msg.payload = '';\n    return msg;\n}\nreturn null;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 440,
+        "y": 880,
+        "wires": [
+            [
+                "stripsafetybadge"
+            ]
+        ]
+    },
+    {
+        "id": "stripsafetybadge",
+        "type": "ui-text",
+        "z": "b8f36cbcfc882e5f",
+        "group": "stripgrpctrl01",
+        "order": 0,
+        "width": 0,
+        "height": 0,
+        "name": "",
+        "label": "Safety",
+        "format": "{{msg.payload}}",
+        "layout": "row-center",
+        "style": false,
+        "font": "",
+        "fontSize": 18,
+        "color": "#c0392b",
+        "className": "",
+        "x": 2420,
+        "y": 40,
+        "wires": []
     }
 ]

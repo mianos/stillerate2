@@ -3250,8 +3250,8 @@
         "pointShape": "false",
         "pointRadius": 4,
         "showLegend": true,
-        "removeOlder": 12,
-        "removeOlderUnit": "3600",
+        "removeOlder": 20,
+        "removeOlderUnit": "60",
         "removeOlderPoints": "",
         "colors": [
             "#d62728",
@@ -3392,8 +3392,8 @@
         "pointShape": "false",
         "pointRadius": 4,
         "showLegend": false,
-        "removeOlder": 12,
-        "removeOlderUnit": "3600",
+        "removeOlder": 20,
+        "removeOlderUnit": "60",
         "removeOlderPoints": "",
         "colors": [
             "#1f77b4",
@@ -3524,6 +3524,68 @@
             [
                 "stripcondslider",
                 "bde06e267b92f170"
+            ]
+        ]
+    },
+    {
+        "id": "stripclearbtn",
+        "type": "ui-button",
+        "z": "b8f36cbcfc882e5f",
+        "group": "stripgrpctrl01",
+        "name": "",
+        "label": "Clear charts",
+        "order": 6,
+        "width": 0,
+        "height": 0,
+        "emulateClick": false,
+        "tooltip": "Clear the Temps and ABV charts",
+        "color": "",
+        "bgcolor": "",
+        "className": "",
+        "icon": "",
+        "iconPosition": "left",
+        "payload": "clear",
+        "payloadType": "str",
+        "topic": "topic",
+        "topicType": "msg",
+        "buttonColor": "",
+        "textColor": "",
+        "iconColor": "",
+        "enableClick": true,
+        "enablePointerdown": false,
+        "pointerdownPayload": "",
+        "pointerdownPayloadType": "str",
+        "enablePointerup": false,
+        "pointerupPayload": "",
+        "pointerupPayloadType": "str",
+        "x": 2420,
+        "y": 320,
+        "wires": [
+            [
+                "stripclearfn"
+            ]
+        ]
+    },
+    {
+        "id": "stripclearfn",
+        "type": "function",
+        "z": "b8f36cbcfc882e5f",
+        "name": "clear charts",
+        "func": "const m = { action: \"replace\", payload: [] };\nreturn [m, m];",
+        "outputs": 2,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 2700,
+        "y": 320,
+        "wires": [
+            [
+                "striptempsc001"
+            ],
+            [
+                "stripabvchart01"
             ]
         ]
     },

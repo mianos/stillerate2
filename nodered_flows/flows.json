@@ -2679,8 +2679,7 @@
                 "pwrtxtmeter0001"
             ],
             [
-                "pwrtxtgrid00001",
-                "stripgridtext1"
+                "pwrtxtgrid00001"
             ],
             [
                 "pwrtxtupd000001"
@@ -3186,27 +3185,6 @@
                 "stripheat00001"
             ]
         ]
-    },
-    {
-        "id": "stripgridtext1",
-        "type": "ui-text",
-        "z": "b8f36cbcfc882e5f",
-        "group": "stripgrpctrl01",
-        "order": 2,
-        "width": 0,
-        "height": 0,
-        "name": "",
-        "label": "Grid power",
-        "format": "{{msg.payload}}",
-        "layout": "row-right",
-        "style": false,
-        "font": "",
-        "fontSize": 16,
-        "color": "#7a7a7a",
-        "className": "",
-        "x": 2420,
-        "y": 140,
-        "wires": []
     },
     {
         "id": "stripreptext01",

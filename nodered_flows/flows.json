@@ -2221,48 +2221,6 @@
         "wires": []
     },
     {
-        "id": "pwrtxttemp00001",
-        "type": "ui-text",
-        "z": "b8f36cbcfc882e5f",
-        "group": "pwrgrpstat0001",
-        "order": 5,
-        "width": 0,
-        "height": 0,
-        "name": "",
-        "label": "Board \u00b0C",
-        "format": "{{msg.payload}}",
-        "layout": "row-right",
-        "style": false,
-        "font": "",
-        "fontSize": 16,
-        "color": "#7a7a7a",
-        "className": "",
-        "x": 880,
-        "y": 560,
-        "wires": []
-    },
-    {
-        "id": "pwrtxtmeter0001",
-        "type": "ui-text",
-        "z": "b8f36cbcfc882e5f",
-        "group": "pwrgrpstat0001",
-        "order": 6,
-        "width": 0,
-        "height": 0,
-        "name": "",
-        "label": "Meter",
-        "format": "{{msg.payload}}",
-        "layout": "row-right",
-        "style": false,
-        "font": "",
-        "fontSize": 16,
-        "color": "#7a7a7a",
-        "className": "",
-        "x": 880,
-        "y": 600,
-        "wires": []
-    },
-    {
         "id": "pwrtxtgrid00001",
         "type": "ui-text",
         "z": "b8f36cbcfc882e5f",
@@ -2271,7 +2229,7 @@
         "width": 0,
         "height": 0,
         "name": "",
-        "label": "Grid W",
+        "label": "Grid power",
         "format": "{{msg.payload}}",
         "layout": "row-right",
         "style": false,
@@ -2672,15 +2630,9 @@
             [
                 "pwrtxtmax000001"
             ],
-            [
-                "pwrtxttemp00001"
-            ],
-            [
-                "pwrtxtmeter0001"
-            ],
-            [
-                "pwrtxtgrid00001"
-            ],
+            [],
+            [],
+            [],
             [
                 "pwrtxtupd000001"
             ],
@@ -4135,8 +4087,7 @@
         "y": 760,
         "wires": [
             [
-                "stripschecond",
-                "stripscheheat"
+                "stripschecond"
             ],
             [
                 "stripschestat"
@@ -4148,7 +4099,7 @@
         "type": "function",
         "z": "b8f36cbcfc882e5f",
         "name": "condenser 100%",
-        "func": "msg.payload = 100;\nreturn msg;",
+        "func": "msg.payload = { duty: 100 };\nreturn msg;",
         "outputs": 1,
         "timeout": 0,
         "noerr": 0,
@@ -4159,27 +4110,7 @@
         "y": 800,
         "wires": [
             [
-                "e3135429fcbd80e2"
-            ]
-        ]
-    },
-    {
-        "id": "stripscheheat",
-        "type": "function",
-        "z": "b8f36cbcfc882e5f",
-        "name": "heater 2400W",
-        "func": "msg.payload = 2400;\nreturn msg;",
-        "outputs": 1,
-        "timeout": 0,
-        "noerr": 0,
-        "initialize": "",
-        "finalize": "",
-        "libs": [],
-        "x": 2680,
-        "y": 840,
-        "wires": [
-            [
-                "pwrsetpwr000001"
+                "stripschecondpost"
             ]
         ]
     },
@@ -4303,7 +4234,8 @@
         "y": 920,
         "wires": [
             [
-                "striphousepwrtxt"
+                "striphousepwrtxt",
+                "pwrtxtgrid00001"
             ]
         ]
     },
@@ -4327,5 +4259,59 @@
         "x": 2420,
         "y": 160,
         "wires": []
+    },
+    {
+        "id": "stripschecondpost",
+        "type": "http request",
+        "z": "b8f36cbcfc882e5f",
+        "name": "POST condenser (schedule)",
+        "method": "POST",
+        "ret": "txt",
+        "paytoqs": "ignore",
+        "url": "http://condenser.mianos.com/pump",
+        "tls": "",
+        "persist": false,
+        "proxy": "",
+        "insecureHTTPParser": false,
+        "authType": "",
+        "senderr": true,
+        "headers": [
+            {
+                "keyType": "other",
+                "keyValue": "",
+                "valueType": "other",
+                "valueValue": ""
+            }
+        ],
+        "x": 2960,
+        "y": 820,
+        "wires": [
+            [
+                "stripschecondverify"
+            ]
+        ]
+    },
+    {
+        "id": "stripschecondverify",
+        "type": "function",
+        "z": "b8f36cbcfc882e5f",
+        "name": "verify condenser",
+        "func": "let j = msg.payload;\nif (typeof j === 'string') { try { j = JSON.parse(j); } catch (e) { j = null; } }\nconst ok = !msg.error && !(msg.statusCode && msg.statusCode >= 400) && j && typeof j === 'object' && typeof j.duty === 'number';\nif (ok) {\n    return [\n        { payload: 2400 },\n        { payload: 'Started ' + new Date().toLocaleTimeString() + ' \u2014 condenser OK' }\n    ];\n}\nreturn [\n    null,\n    { payload: 'ABORT \u2014 condenser pump did not start, heater NOT turned on' }\n];",
+        "outputs": 2,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 3240,
+        "y": 820,
+        "wires": [
+            [
+                "pwrsetpwr000001"
+            ],
+            [
+                "stripschestat"
+            ]
+        ]
     }
 ]

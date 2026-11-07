@@ -4320,7 +4320,7 @@
         "name": "Heat-up",
         "page": "strippage0001",
         "width": "4",
-        "height": "3",
+        "height": "4",
         "order": 5,
         "showTitle": true,
         "className": "",
@@ -4363,7 +4363,7 @@
         "type": "function",
         "z": "b8f36cbcfc882e5f",
         "name": "heat-up on/off",
-        "func": "const HEAT_PWR = 2400;\nconst RUN_PWR = 1200;\nconst SWITCH_C = 50;\nconst on = String(msg.payload) === 'on';\nif (on) {\n    flow.set('heatup_on', true);\n    flow.set('heatup_phase', 'heat');\n    flow.set('heatup_power', HEAT_PWR);\n    return [\n        { payload: HEAT_PWR },\n        { payload: 'HEAT-UP - ' + HEAT_PWR + ' W until vapour >= ' + SWITCH_C + ' C, then ' + RUN_PWR + ' W' }\n    ];\n}\nflow.set('heatup_on', false);\nflow.set('heatup_phase', 'off');\nflow.set('heatup_power', 0);\nreturn [\n    { payload: 0 },\n    { payload: 'OFF - heater cut to 0 W' }\n];",
+        "func": "const HEAT_PWR = 2400;\nconst run = typeof flow.get('heatup_run_pwr') === 'number' ? flow.get('heatup_run_pwr') : 1200;\nconst sw  = typeof flow.get('heatup_switch_c') === 'number' ? flow.get('heatup_switch_c') : 50;\nconst on = String(msg.payload) === 'on';\nif (on) {\n    flow.set('heatup_on', true);\n    flow.set('heatup_phase', 'heat');\n    flow.set('heatup_power', HEAT_PWR);\n    return [\n        { payload: HEAT_PWR },\n        { payload: 'HEAT-UP - ' + HEAT_PWR + ' W until vapour >= ' + sw + ' C, then ' + run + ' W' }\n    ];\n}\nflow.set('heatup_on', false);\nflow.set('heatup_phase', 'off');\nflow.set('heatup_power', 0);\nreturn [\n    { payload: 0 },\n    { payload: 'OFF - heater cut to 0 W' }\n];",
         "outputs": 2,
         "timeout": 0,
         "noerr": 0,
@@ -4407,7 +4407,7 @@
         "type": "function",
         "z": "b8f36cbcfc882e5f",
         "name": "vapour watcher",
-        "func": "const HEAT_PWR = 2400;\nconst RUN_PWR = 1200;\nconst SWITCH_C = 50;\nif (!flow.get('heatup_on')) return null;\nconst phase = flow.get('heatup_phase') || 'off';\nconst cur = flow.get('heatup_power');\nlet o = msg.payload;\nif (typeof o === 'string') { try { o = JSON.parse(o); } catch (e) { o = null; } }\nif (!o || typeof o !== 'object') return null;\nconst hasV = Object.prototype.hasOwnProperty.call(o, 'middle');\nconst hasB = Object.prototype.hasOwnProperty.call(o, 'head');\nconst faulted = o.fault === true;\nlet vapour = flow.get('heatup_vapour');\nlet boiler = flow.get('heatup_boiler');\nif (hasV) {\n    const v = Number(o.middle);\n    if (faulted || !Number.isFinite(v)) {\n        return [null, { payload: 'VAPOUR FAULT - holding ' + cur + ' W' }];\n    }\n    vapour = v;\n    flow.set('heatup_vapour', v);\n}\nif (hasB) {\n    const b = Number(o.head);\n    if (Number.isFinite(b)) { boiler = b; flow.set('heatup_boiler', b); }\n}\nif (phase === 'heat' && hasV && Number.isFinite(vapour) && vapour >= SWITCH_C) {\n    flow.set('heatup_phase', 'run');\n    flow.set('heatup_power', RUN_PWR);\n    return [\n        { payload: RUN_PWR },\n        { payload: 'RUN - vapour ' + vapour.toFixed(1) + ' C reached ' + SWITCH_C + ' C -> ' + RUN_PWR + ' W' }\n    ];\n}\nconst label = phase === 'off' ? 'OFF' : (phase === 'run' ? 'RUN' : 'HEAT-UP');\nlet s = label + ' - vapour ' + (Number.isFinite(vapour) ? vapour.toFixed(1) : '-') + ' C';\nif (Number.isFinite(boiler)) s += ' | boiler ' + boiler.toFixed(1) + ' C';\ns += ' @ ' + cur + ' W';\nreturn [null, { payload: s }];",
+        "func": "if (!flow.get('heatup_on')) return null;\nconst run = typeof flow.get('heatup_run_pwr') === 'number' ? flow.get('heatup_run_pwr') : 1200;\nconst sw  = typeof flow.get('heatup_switch_c') === 'number' ? flow.get('heatup_switch_c') : 50;\nconst phase = flow.get('heatup_phase') || 'off';\nconst cur = flow.get('heatup_power');\nlet o = msg.payload;\nif (typeof o === 'string') { try { o = JSON.parse(o); } catch (e) { o = null; } }\nif (!o || typeof o !== 'object') return null;\nconst hasV = Object.prototype.hasOwnProperty.call(o, 'middle');\nconst hasB = Object.prototype.hasOwnProperty.call(o, 'head');\nconst faulted = o.fault === true;\nlet vapour = flow.get('heatup_vapour');\nlet boiler = flow.get('heatup_boiler');\nif (hasV) {\n    const v = Number(o.middle);\n    if (faulted || !Number.isFinite(v)) {\n        return [null, { payload: 'VAPOUR FAULT - holding ' + cur + ' W' }];\n    }\n    vapour = v;\n    flow.set('heatup_vapour', v);\n}\nif (hasB) {\n    const b = Number(o.head);\n    if (Number.isFinite(b)) { boiler = b; flow.set('heatup_boiler', b); }\n}\nif (phase === 'heat' && hasV && Number.isFinite(vapour) && vapour >= sw) {\n    flow.set('heatup_phase', 'run');\n    flow.set('heatup_power', run);\n    return [\n        { payload: run },\n        { payload: 'RUN - vapour ' + vapour.toFixed(1) + ' C reached ' + sw + ' C -> ' + run + ' W' }\n    ];\n}\nconst label = phase === 'off' ? 'OFF' : (phase === 'run' ? 'RUN' : 'HEAT-UP');\nlet s = label + ' - vapour ' + (Number.isFinite(vapour) ? vapour.toFixed(1) : '-') + ' C';\nif (Number.isFinite(boiler)) s += ' | boiler ' + boiler.toFixed(1) + ' C';\ns += ' @ ' + cur + ' W';\nreturn [null, { payload: s }];",
         "outputs": 2,
         "timeout": 0,
         "noerr": 0,
@@ -4430,7 +4430,7 @@
         "type": "ui-text",
         "z": "b8f36cbcfc882e5f",
         "group": "stripgrpheatup",
-        "order": 3,
+        "order": 4,
         "width": 0,
         "height": 0,
         "name": "",
@@ -4445,5 +4445,148 @@
         "x": 3400,
         "y": 260,
         "wires": []
+    },
+    {
+        "id": "heatup_run_slider",
+        "type": "ui-slider",
+        "z": "b8f36cbcfc882e5f",
+        "group": "stripgrpheatup",
+        "name": "",
+        "label": "Run power (W)",
+        "tooltip": "Power to drop to once vapour is up",
+        "order": 2,
+        "width": 0,
+        "height": 0,
+        "passthru": false,
+        "outs": "end",
+        "topic": "run_pwr",
+        "topicType": "msg",
+        "thumbLabel": true,
+        "min": 0,
+        "max": 2400,
+        "step": 50,
+        "className": "",
+        "x": 3400,
+        "y": 120,
+        "wires": [
+            [
+                "heatup_cfg_run"
+            ]
+        ]
+    },
+    {
+        "id": "heatup_switch_slider",
+        "type": "ui-slider",
+        "z": "b8f36cbcfc882e5f",
+        "group": "stripgrpheatup",
+        "name": "",
+        "label": "Vapour switch (C)",
+        "tooltip": "Vapour temperature that triggers the power drop",
+        "order": 3,
+        "width": 0,
+        "height": 0,
+        "passthru": false,
+        "outs": "end",
+        "topic": "switch_c",
+        "topicType": "msg",
+        "thumbLabel": true,
+        "min": 30,
+        "max": 95,
+        "step": 1,
+        "className": "",
+        "x": 3400,
+        "y": 180,
+        "wires": [
+            [
+                "heatup_cfg_sw"
+            ]
+        ]
+    },
+    {
+        "id": "heatup_cfg_run",
+        "type": "function",
+        "z": "b8f36cbcfc882e5f",
+        "name": "store run power",
+        "func": "const v = Number(msg.payload);\nif (Number.isFinite(v) && v >= 0 && v <= 2400) flow.set('heatup_run_pwr', v);\nconst run = typeof flow.get('heatup_run_pwr') === 'number' ? flow.get('heatup_run_pwr') : 1200;\nconst sw  = typeof flow.get('heatup_switch_c') === 'number' ? flow.get('heatup_switch_c') : 50;\nreturn { payload: 'Configured: drop to ' + run + ' W at vapour ' + sw + ' C' };",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 3680,
+        "y": 120,
+        "wires": [
+            [
+                "heatup_status"
+            ]
+        ]
+    },
+    {
+        "id": "heatup_cfg_sw",
+        "type": "function",
+        "z": "b8f36cbcfc882e5f",
+        "name": "store switch temp",
+        "func": "const v = Number(msg.payload);\nif (Number.isFinite(v) && v >= 30 && v <= 95) flow.set('heatup_switch_c', v);\nconst run = typeof flow.get('heatup_run_pwr') === 'number' ? flow.get('heatup_run_pwr') : 1200;\nconst sw  = typeof flow.get('heatup_switch_c') === 'number' ? flow.get('heatup_switch_c') : 50;\nreturn { payload: 'Configured: drop to ' + run + ' W at vapour ' + sw + ' C' };",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 3680,
+        "y": 180,
+        "wires": [
+            [
+                "heatup_status"
+            ]
+        ]
+    },
+    {
+        "id": "heatup_seed",
+        "type": "inject",
+        "z": "b8f36cbcfc882e5f",
+        "name": "seed slider defaults",
+        "props": [
+            {
+                "p": "payload"
+            }
+        ],
+        "repeat": "",
+        "crontab": "",
+        "once": true,
+        "topic": "",
+        "payload": "",
+        "payloadType": "date",
+        "x": 3120,
+        "y": 120,
+        "wires": [
+            [
+                "heatup_seedfn"
+            ]
+        ]
+    },
+    {
+        "id": "heatup_seedfn",
+        "type": "function",
+        "z": "b8f36cbcfc882e5f",
+        "name": "seed defaults",
+        "func": "const run = typeof flow.get('heatup_run_pwr') === 'number' ? flow.get('heatup_run_pwr') : 1200;\nconst sw  = typeof flow.get('heatup_switch_c') === 'number' ? flow.get('heatup_switch_c') : 50;\nreturn [ { payload: run }, { payload: sw } ];",
+        "outputs": 2,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 3120,
+        "y": 180,
+        "wires": [
+            [
+                "heatup_run_slider"
+            ],
+            [
+                "heatup_switch_slider"
+            ]
+        ]
     }
 ]

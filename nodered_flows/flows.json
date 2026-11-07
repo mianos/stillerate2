@@ -4604,7 +4604,7 @@
         "group": "stillschgrp",
         "name": "",
         "label": "Arm",
-        "order": 4,
+        "order": 6,
         "width": 0,
         "height": 0,
         "emulateClick": false,
@@ -4643,7 +4643,7 @@
         "group": "stillschgrp",
         "name": "",
         "label": "Cancel",
-        "order": 5,
+        "order": 7,
         "width": 0,
         "height": 0,
         "emulateClick": false,
@@ -4728,7 +4728,7 @@
         "type": "function",
         "z": "b8f36cbcfc882e5f",
         "name": "parse",
-        "func": "const raw = String(flow.get('still_sched_time') || '').trim();\nconst m = raw.match(/^([01]?\\d|2[0-3]):([0-5]\\d)$/);\nif (!m) {\n    flow.set('still_sched_armed', false);\n    return { payload: 'Invalid time \"' + raw + '\" - use HH:MM (24h)' };\n}\nconst h = parseInt(m[1], 10);\nconst mn = parseInt(m[2], 10);\nconst now = new Date();\nlet t = new Date(now.getFullYear(), now.getMonth(), now.getDate(), h, mn, 0, 0);\nif (t.getTime() <= now.getTime()) t = new Date(t.getTime() + 86400000);\nconst settle = Number(flow.get('still_sched_settle'));\nconst period = Number(flow.get('still_sched_period'));\nif (!Number.isFinite(settle) || settle < 0) {\n    flow.set('still_sched_armed', false);\n    return { payload: 'Settle (min) must be a number >= 0' };\n}\nif (!Number.isFinite(period) || period <= 0) {\n    flow.set('still_sched_armed', false);\n    return { payload: 'PID period (s) must be > 0' };\n}\nflow.set('still_sched_target_ms', t.getTime());\nflow.set('still_sched_armed', true);\nflow.set('still_sched_pid_pending', false);\nreturn { payload: 'Armed: boiler ' + t.toLocaleString() + ', PID in ' + settle + ' min' };",
+        "func": "const raw = String(flow.get('still_sched_time') || '').trim();\nconst m = raw.match(/^([01]?\\d|2[0-3]):([0-5]\\d)$/);\nif (!m) {\n    flow.set('still_sched_armed', false);\n    return { payload: 'Invalid time \"' + raw + '\" - use HH:MM (24h)' };\n}\nconst h = parseInt(m[1], 10);\nconst mn = parseInt(m[2], 10);\nconst now = new Date();\nlet t = new Date(now.getFullYear(), now.getMonth(), now.getDate(), h, mn, 0, 0);\nif (t.getTime() <= now.getTime()) t = new Date(t.getTime() + 86400000);\nconst settle = Number(flow.get('still_sched_settle'));\nconst period = Number(flow.get('still_sched_period'));\nconst run = Number(flow.get('still_sched_run_pwr'));\nconst sw = Number(flow.get('still_sched_switch_c'));\nif (!Number.isFinite(settle) || settle < 0) {\n    flow.set('still_sched_armed', false);\n    return { payload: 'Settle (min) must be a number >= 0' };\n}\nif (!Number.isFinite(period) || period <= 0) {\n    flow.set('still_sched_armed', false);\n    return { payload: 'PID period (s) must be > 0' };\n}\nif (!Number.isFinite(run) || run < 0 || run > 2400) {\n    flow.set('still_sched_armed', false);\n    return { payload: 'Run power (W) must be 0..2400' };\n}\nif (!Number.isFinite(sw) || sw < 30 || sw > 95) {\n    flow.set('still_sched_armed', false);\n    return { payload: 'Switch temp (C) must be 30..95' };\n}\nflow.set('still_sched_target_ms', t.getTime());\nflow.set('still_sched_armed', true);\nflow.set('still_sched_pid_pending', false);\nflow.set('still_sched_heatup', 'off');\nreturn { payload: 'Armed: 2400W until vapour ' + sw + 'C then ' + run + 'W, PID in ' + settle + ' min' };",
         "outputs": 1,
         "timeout": 0,
         "noerr": 0,
@@ -4748,7 +4748,7 @@
         "type": "function",
         "z": "b8f36cbcfc882e5f",
         "name": "cancelfn",
-        "func": "flow.set('still_sched_armed', false);\nflow.set('still_sched_pid_pending', false);\nreturn { payload: 'Schedule cancelled' };",
+        "func": "flow.set('still_sched_armed', false);\nflow.set('still_sched_pid_pending', false);\nflow.set('still_sched_heatup', 'off');\nreturn { payload: 'Schedule cancelled' };",
         "outputs": 1,
         "timeout": 0,
         "noerr": 0,
@@ -4768,7 +4768,7 @@
         "type": "ui-text",
         "z": "b8f36cbcfc882e5f",
         "group": "stillschgrp",
-        "order": 6,
+        "order": 8,
         "width": 0,
         "height": 0,
         "name": "",
@@ -4890,7 +4890,7 @@
         "type": "function",
         "z": "b8f36cbcfc882e5f",
         "name": "condverify",
-        "func": "let j = msg.payload;\nif (typeof j === 'string') { try { j = JSON.parse(j); } catch (e) { j = null; } }\nconst ok = !msg.error && !(msg.statusCode && msg.statusCode >= 400) && j && typeof j === 'object' && typeof j.duty === 'number';\nif (ok) {\n    return [\n        { payload: 2400 },\n        { payload: 'Condenser OK - boiler heating, PID in ' + (Number(msg.settleMin) || 0) + ' min' }\n    ];\n}\nflow.set('still_sched_pid_pending', false);\nreturn [\n    null,\n    { payload: 'ABORT - condenser pump did not start, boiler NOT turned on' }\n];",
+        "func": "let j = msg.payload;\nif (typeof j === 'string') { try { j = JSON.parse(j); } catch (e) { j = null; } }\nconst ok = !msg.error && !(msg.statusCode && msg.statusCode >= 400) && j && typeof j === 'object' && typeof j.duty === 'number';\nif (ok) {\n    flow.set('still_sched_heatup', 'heat');\n    return [\n        { payload: 2400 },\n        { payload: 'Condenser OK - boiler heating at 2400 W, PID in ' + (Number(msg.settleMin) || 0) + ' min' }\n    ];\n}\nflow.set('still_sched_pid_pending', false);\nflow.set('still_sched_heatup', 'off');\nreturn [\n    null,\n    { payload: 'ABORT - condenser pump did not start, boiler NOT turned on' }\n];",
         "outputs": 2,
         "timeout": 0,
         "noerr": 0,
@@ -4957,8 +4957,8 @@
         "type": "function",
         "z": "b8f36cbcfc882e5f",
         "name": "seedfn",
-        "func": "const settle = typeof flow.get('still_sched_settle') === 'number' ? flow.get('still_sched_settle') : 30;\nconst period = typeof flow.get('still_sched_period') === 'number' ? flow.get('still_sched_period') : 5;\nflow.set('still_sched_settle', settle);\nflow.set('still_sched_period', period);\nreturn [ { payload: settle }, { payload: period } ];",
-        "outputs": 2,
+        "func": "const settle = typeof flow.get('still_sched_settle') === 'number' ? flow.get('still_sched_settle') : 30;\nconst period = typeof flow.get('still_sched_period') === 'number' ? flow.get('still_sched_period') : 5;\nconst run = typeof flow.get('still_sched_run_pwr') === 'number' ? flow.get('still_sched_run_pwr') : 1200;\nconst sw = typeof flow.get('still_sched_switch_c') === 'number' ? flow.get('still_sched_switch_c') : 78;\nflow.set('still_sched_settle', settle);\nflow.set('still_sched_period', period);\nflow.set('still_sched_run_pwr', run);\nflow.set('still_sched_switch_c', sw);\nreturn [ { payload: settle }, { payload: period }, { payload: run }, { payload: sw } ];",
+        "outputs": 4,
         "timeout": 0,
         "noerr": 0,
         "initialize": "",
@@ -4972,6 +4972,145 @@
             ],
             [
                 "stillschperiod"
+            ],
+            [
+                "stillschrunpwr"
+            ],
+            [
+                "stillschswitchc"
+            ]
+        ]
+    },
+    {
+        "id": "stillschrunpwr",
+        "type": "ui-text-input",
+        "z": "b8f36cbcfc882e5f",
+        "group": "stillschgrp",
+        "name": "",
+        "label": "Run power (W)",
+        "order": 4,
+        "width": 0,
+        "height": 0,
+        "topic": "topic",
+        "topicType": "msg",
+        "mode": "number",
+        "delay": 300,
+        "passthru": false,
+        "sendOnDelay": true,
+        "sendOnBlur": true,
+        "sendOnEnter": true,
+        "className": "",
+        "x": 4000,
+        "y": 2020,
+        "wires": [
+            [
+                "stillschstore_run"
+            ]
+        ]
+    },
+    {
+        "id": "stillschswitchc",
+        "type": "ui-text-input",
+        "z": "b8f36cbcfc882e5f",
+        "group": "stillschgrp",
+        "name": "",
+        "label": "Switch temp (C)",
+        "order": 5,
+        "width": 0,
+        "height": 0,
+        "topic": "topic",
+        "topicType": "msg",
+        "mode": "number",
+        "delay": 300,
+        "passthru": false,
+        "sendOnDelay": true,
+        "sendOnBlur": true,
+        "sendOnEnter": true,
+        "className": "",
+        "x": 4000,
+        "y": 2080,
+        "wires": [
+            [
+                "stillschstore_switch"
+            ]
+        ]
+    },
+    {
+        "id": "stillschstore_run",
+        "type": "function",
+        "z": "b8f36cbcfc882e5f",
+        "name": "store run power",
+        "func": "const v = Number(msg.payload);\nif (Number.isFinite(v) && v >= 0 && v <= 2400) flow.set('still_sched_run_pwr', v);\nreturn null;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 4200,
+        "y": 2020,
+        "wires": []
+    },
+    {
+        "id": "stillschstore_switch",
+        "type": "function",
+        "z": "b8f36cbcfc882e5f",
+        "name": "store switch temp",
+        "func": "const v = Number(msg.payload);\nif (Number.isFinite(v) && v >= 30 && v <= 95) flow.set('still_sched_switch_c', v);\nreturn null;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 4200,
+        "y": 2080,
+        "wires": []
+    },
+    {
+        "id": "stillschwatchin",
+        "type": "mqtt in",
+        "z": "b8f36cbcfc882e5f",
+        "name": "",
+        "topic": "tele/still2/temp",
+        "qos": "2",
+        "datatype": "auto-detect",
+        "broker": "3fe3ac59af05955a",
+        "nl": false,
+        "rap": true,
+        "rh": 0,
+        "inputs": 0,
+        "x": 4000,
+        "y": 2140,
+        "wires": [
+            [
+                "stillschwatchfn"
+            ]
+        ]
+    },
+    {
+        "id": "stillschwatchfn",
+        "type": "function",
+        "z": "b8f36cbcfc882e5f",
+        "name": "vapour watcher",
+        "func": "const phase = flow.get('still_sched_heatup') || 'off';\nif (phase !== 'heat') return null;\nconst run = typeof flow.get('still_sched_run_pwr') === 'number' ? flow.get('still_sched_run_pwr') : 1200;\nconst sw = typeof flow.get('still_sched_switch_c') === 'number' ? flow.get('still_sched_switch_c') : 78;\nlet o = msg.payload;\nif (typeof o === 'string') { try { o = JSON.parse(o); } catch (e) { o = null; } }\nif (!o || typeof o !== 'object') return null;\nif (!Object.prototype.hasOwnProperty.call(o, 'middle')) return null;\nconst faulted = o.fault === true;\nconst v = Number(o.middle);\nif (faulted || !Number.isFinite(v)) {\n    return [null, null, { payload: 'VAPOUR FAULT - holding 2400 W' }];\n}\nif (v >= sw) {\n    flow.set('still_sched_heatup', 'run');\n    return [\n        { payload: run },\n        { payload: 100 },\n        { payload: 'RUN - vapour ' + v.toFixed(1) + ' C reached ' + sw + ' C -> ' + run + ' W + full reflux' }\n    ];\n}\nreturn [null, null, { payload: 'HEAT-UP - vapour ' + v.toFixed(1) + ' C @ 2400 W (drop at ' + sw + ' C)' }];",
+        "outputs": 3,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 4200,
+        "y": 2140,
+        "wires": [
+            [
+                "pwrsetpwr000001"
+            ],
+            [
+                "89f879361dbff6b3"
+            ],
+            [
+                "stillschstat"
             ]
         ]
     }

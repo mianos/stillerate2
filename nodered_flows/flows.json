@@ -97,7 +97,7 @@
             "#c5b0d5"
         ],
         "width": "6",
-        "height": "6",
+        "height": 4,
         "className": "",
         "x": 1130,
         "y": 180,
@@ -184,7 +184,7 @@
             "#9467bd",
             "#c5b0d5"
         ],
-        "width": "0",
+        "width": 6,
         "height": "0",
         "className": "",
         "x": 1140,
@@ -489,8 +489,7 @@
                 "aac1b1fa69090b09",
                 "b569b443fbd3d7f7",
                 "1b4ddda823d0dc7e",
-                "5c0c2aaaf24abf56",
-                "still2colchart1"
+                "5c0c2aaaf24abf56"
             ]
         ]
     },
@@ -1625,7 +1624,7 @@
             "#9467bd",
             "#c5b0d5"
         ],
-        "width": "0",
+        "width": 6,
         "height": "0",
         "className": "",
         "x": 1130,
@@ -1807,8 +1806,8 @@
             "#e5e5e5"
         ],
         "gridColorDefault": true,
-        "width": 6,
-        "height": 8,
+        "width": 12,
+        "height": 4,
         "className": "",
         "interpolation": "linear",
         "x": 1110,
@@ -1962,8 +1961,7 @@
         "y": 100,
         "wires": [
             [
-                "tmpchartmid0001",
-                "still2colseries"
+                "tmpchartmid0001"
             ],
             [
                 "15811c80180f4d0f"
@@ -1986,8 +1984,7 @@
         "y": 220,
         "wires": [
             [
-                "aac1b1fa69090b09",
-                "still2colseries"
+                "aac1b1fa69090b09"
             ],
             [
                 "aa25d9e2770d5196"
@@ -2061,77 +2058,6 @@
         "className": "",
         "x": 2080,
         "y": 880,
-        "wires": [
-            []
-        ]
-    },
-    {
-        "id": "still2colseries",
-        "type": "change",
-        "z": "b8f36cbcfc882e5f",
-        "name": "series name",
-        "rules": [
-            {
-                "t": "set",
-                "p": "topic",
-                "pt": "msg",
-                "to": "$substringAfter(topic, 'tele/still2/temp/') = \"head\" ? \"Boiler\" : \"Reflux\"",
-                "tot": "jsonata"
-            }
-        ],
-        "action": "",
-        "property": "",
-        "from": "",
-        "to": "",
-        "reg": false,
-        "x": 1130,
-        "y": 280,
-        "wires": [
-            [
-                "still2colchart1"
-            ]
-        ]
-    },
-    {
-        "id": "still2colchart1",
-        "type": "ui-chart",
-        "z": "b8f36cbcfc882e5f",
-        "group": "still2grpcolumn",
-        "name": "Boiler vs Reflux",
-        "label": "",
-        "order": 1,
-        "chartType": "line",
-        "category": "topic",
-        "categoryType": "msg",
-        "xAxisProperty": "",
-        "xAxisPropertyType": "msg",
-        "xAxisType": "time",
-        "yAxisProperty": "",
-        "ymin": "",
-        "ymax": "",
-        "action": "append",
-        "pointShape": "false",
-        "pointRadius": 4,
-        "showLegend": true,
-        "removeOlder": 1,
-        "removeOlderUnit": "3600",
-        "removeOlderPoints": "",
-        "colors": [
-            "#1f77b4",
-            "#aec7e8",
-            "#ff7f0e",
-            "#2ca02c",
-            "#98df8a",
-            "#d62728",
-            "#ff9896",
-            "#9467bd",
-            "#c5b0d5"
-        ],
-        "width": "6",
-        "height": "6",
-        "className": "",
-        "x": 1340,
-        "y": 280,
         "wires": [
             []
         ]
@@ -2962,7 +2888,7 @@
             "#c5b0d5"
         ],
         "width": "6",
-        "height": "6",
+        "height": 4,
         "className": "",
         "x": 1400,
         "y": 140,
@@ -3596,8 +3522,8 @@
         "name": "Boiler",
         "page": "98530696ee8cd926",
         "width": "6",
-        "height": "6",
-        "order": 4,
+        "height": 4,
+        "order": 2,
         "showTitle": true,
         "className": "",
         "visible": "true",
@@ -3608,8 +3534,8 @@
         "type": "ui-group",
         "name": "PID Monitoring",
         "page": "98530696ee8cd926",
-        "width": "6",
-        "height": "1",
+        "width": 12,
+        "height": 4,
         "order": 3,
         "showTitle": true,
         "className": "",
@@ -3650,7 +3576,7 @@
         "page": "98530696ee8cd926",
         "width": "6",
         "height": "1",
-        "order": 2,
+        "order": 4,
         "showTitle": true,
         "className": "",
         "visible": "true",
@@ -3728,7 +3654,7 @@
         "name": "Reflux",
         "page": "98530696ee8cd926",
         "width": "6",
-        "height": "6",
+        "height": 4,
         "order": 1,
         "showTitle": true,
         "className": "",
@@ -3756,19 +3682,6 @@
         "width": "6",
         "height": "1",
         "order": 5,
-        "showTitle": true,
-        "className": "",
-        "visible": "true",
-        "disabled": "false"
-    },
-    {
-        "id": "still2grpcolumn",
-        "type": "ui-group",
-        "name": "Boiler vs Reflux",
-        "page": "98530696ee8cd926",
-        "width": "6",
-        "height": "6",
-        "order": 6,
         "showTitle": true,
         "className": "",
         "visible": "true",

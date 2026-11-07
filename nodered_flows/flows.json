@@ -4501,5 +4501,478 @@
                 "heatup_switch_slider"
             ]
         ]
+    },
+    {
+        "id": "stillschgrp",
+        "type": "ui-group",
+        "name": "Schedule",
+        "page": "98530696ee8cd926",
+        "width": "6",
+        "height": "4",
+        "order": 6,
+        "showTitle": true,
+        "className": "",
+        "visible": "true",
+        "disabled": "false"
+    },
+    {
+        "id": "stillschtime",
+        "type": "ui-text-input",
+        "z": "b8f36cbcfc882e5f",
+        "group": "stillschgrp",
+        "name": "",
+        "label": "Start time (HH:MM)",
+        "order": 1,
+        "width": 0,
+        "height": 0,
+        "topic": "topic",
+        "topicType": "msg",
+        "mode": "text",
+        "delay": 300,
+        "passthru": false,
+        "sendOnDelay": true,
+        "sendOnBlur": true,
+        "sendOnEnter": true,
+        "className": "",
+        "x": 4000,
+        "y": 1500,
+        "wires": [
+            [
+                "stillschstore"
+            ]
+        ],
+        "tooltip": "24h time, e.g. 22:00"
+    },
+    {
+        "id": "stillschsettle",
+        "type": "ui-text-input",
+        "z": "b8f36cbcfc882e5f",
+        "group": "stillschgrp",
+        "name": "",
+        "label": "Settle (min)",
+        "order": 2,
+        "width": 0,
+        "height": 0,
+        "topic": "topic",
+        "topicType": "msg",
+        "mode": "number",
+        "delay": 300,
+        "passthru": false,
+        "sendOnDelay": true,
+        "sendOnBlur": true,
+        "sendOnEnter": true,
+        "className": "",
+        "x": 4000,
+        "y": 1560,
+        "wires": [
+            [
+                "stillschstore_settle"
+            ]
+        ]
+    },
+    {
+        "id": "stillschperiod",
+        "type": "ui-text-input",
+        "z": "b8f36cbcfc882e5f",
+        "group": "stillschgrp",
+        "name": "",
+        "label": "PID period (s)",
+        "order": 3,
+        "width": 0,
+        "height": 0,
+        "topic": "topic",
+        "topicType": "msg",
+        "mode": "number",
+        "delay": 300,
+        "passthru": false,
+        "sendOnDelay": true,
+        "sendOnBlur": true,
+        "sendOnEnter": true,
+        "className": "",
+        "x": 4000,
+        "y": 1620,
+        "wires": [
+            [
+                "stillschstore_period"
+            ]
+        ]
+    },
+    {
+        "id": "stillscharm",
+        "type": "ui-button",
+        "z": "b8f36cbcfc882e5f",
+        "group": "stillschgrp",
+        "name": "",
+        "label": "Arm",
+        "order": 4,
+        "width": 0,
+        "height": 0,
+        "emulateClick": false,
+        "tooltip": "Start the stilling run at the time above (once)",
+        "color": "",
+        "bgcolor": "",
+        "className": "",
+        "icon": "",
+        "iconPosition": "left",
+        "payload": "arm",
+        "payloadType": "str",
+        "topic": "topic",
+        "topicType": "msg",
+        "buttonColor": "",
+        "textColor": "",
+        "iconColor": "",
+        "enableClick": true,
+        "enablePointerdown": false,
+        "pointerdownPayload": "",
+        "pointerdownPayloadType": "str",
+        "enablePointerup": false,
+        "pointerupPayload": "",
+        "pointerupPayloadType": "str",
+        "x": 4000,
+        "y": 1680,
+        "wires": [
+            [
+                "stillschparse"
+            ]
+        ]
+    },
+    {
+        "id": "stillschcancel",
+        "type": "ui-button",
+        "z": "b8f36cbcfc882e5f",
+        "group": "stillschgrp",
+        "name": "",
+        "label": "Cancel",
+        "order": 5,
+        "width": 0,
+        "height": 0,
+        "emulateClick": false,
+        "tooltip": "Cancel the scheduled start (also aborts a pending PID start)",
+        "color": "",
+        "bgcolor": "",
+        "className": "",
+        "icon": "",
+        "iconPosition": "left",
+        "payload": "cancel",
+        "payloadType": "str",
+        "topic": "topic",
+        "topicType": "msg",
+        "buttonColor": "",
+        "textColor": "",
+        "iconColor": "",
+        "enableClick": true,
+        "enablePointerdown": false,
+        "pointerdownPayload": "",
+        "pointerdownPayloadType": "str",
+        "enablePointerup": false,
+        "pointerupPayload": "",
+        "pointerupPayloadType": "str",
+        "x": 4000,
+        "y": 1740,
+        "wires": [
+            [
+                "stillschcancelfn"
+            ]
+        ]
+    },
+    {
+        "id": "stillschstore",
+        "type": "function",
+        "z": "b8f36cbcfc882e5f",
+        "name": "store",
+        "func": "flow.set('still_sched_time', String(msg.payload || '').trim());\nreturn null;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 4200,
+        "y": 1500,
+        "wires": []
+    },
+    {
+        "id": "stillschstore_settle",
+        "type": "function",
+        "z": "b8f36cbcfc882e5f",
+        "name": "store_settle",
+        "func": "const v = Number(msg.payload);\nif (Number.isFinite(v) && v >= 0) flow.set('still_sched_settle', v);\nreturn null;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 4200,
+        "y": 1560,
+        "wires": []
+    },
+    {
+        "id": "stillschstore_period",
+        "type": "function",
+        "z": "b8f36cbcfc882e5f",
+        "name": "store_period",
+        "func": "const v = Number(msg.payload);\nif (Number.isFinite(v) && v > 0) flow.set('still_sched_period', v);\nreturn null;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 4200,
+        "y": 1620,
+        "wires": []
+    },
+    {
+        "id": "stillschparse",
+        "type": "function",
+        "z": "b8f36cbcfc882e5f",
+        "name": "parse",
+        "func": "const raw = String(flow.get('still_sched_time') || '').trim();\nconst m = raw.match(/^([01]?\\d|2[0-3]):([0-5]\\d)$/);\nif (!m) {\n    flow.set('still_sched_armed', false);\n    return { payload: 'Invalid time \"' + raw + '\" - use HH:MM (24h)' };\n}\nconst h = parseInt(m[1], 10);\nconst mn = parseInt(m[2], 10);\nconst now = new Date();\nlet t = new Date(now.getFullYear(), now.getMonth(), now.getDate(), h, mn, 0, 0);\nif (t.getTime() <= now.getTime()) t = new Date(t.getTime() + 86400000);\nconst settle = Number(flow.get('still_sched_settle'));\nconst period = Number(flow.get('still_sched_period'));\nif (!Number.isFinite(settle) || settle < 0) {\n    flow.set('still_sched_armed', false);\n    return { payload: 'Settle (min) must be a number >= 0' };\n}\nif (!Number.isFinite(period) || period <= 0) {\n    flow.set('still_sched_armed', false);\n    return { payload: 'PID period (s) must be > 0' };\n}\nflow.set('still_sched_target_ms', t.getTime());\nflow.set('still_sched_armed', true);\nflow.set('still_sched_pid_pending', false);\nreturn { payload: 'Armed: boiler ' + t.toLocaleString() + ', PID in ' + settle + ' min' };",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 4200,
+        "y": 1680,
+        "wires": [
+            [
+                "stillschstat"
+            ]
+        ]
+    },
+    {
+        "id": "stillschcancelfn",
+        "type": "function",
+        "z": "b8f36cbcfc882e5f",
+        "name": "cancelfn",
+        "func": "flow.set('still_sched_armed', false);\nflow.set('still_sched_pid_pending', false);\nreturn { payload: 'Schedule cancelled' };",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 4200,
+        "y": 1740,
+        "wires": [
+            [
+                "stillschstat"
+            ]
+        ]
+    },
+    {
+        "id": "stillschstat",
+        "type": "ui-text",
+        "z": "b8f36cbcfc882e5f",
+        "group": "stillschgrp",
+        "order": 6,
+        "width": 0,
+        "height": 0,
+        "name": "",
+        "label": "Status",
+        "format": "{{msg.payload}}",
+        "layout": "row-left",
+        "style": false,
+        "font": "",
+        "fontSize": 14,
+        "color": "",
+        "className": "",
+        "x": 4400,
+        "y": 1680,
+        "wires": []
+    },
+    {
+        "id": "stillschtick",
+        "type": "inject",
+        "z": "b8f36cbcfc882e5f",
+        "name": "stilling sched tick 15s",
+        "props": [
+            {
+                "p": "payload"
+            }
+        ],
+        "repeat": "15",
+        "crontab": "",
+        "once": true,
+        "topic": "",
+        "payload": "",
+        "payloadType": "date",
+        "x": 4000,
+        "y": 1840,
+        "wires": [
+            [
+                "stillschcheck"
+            ]
+        ]
+    },
+    {
+        "id": "stillschcheck",
+        "type": "function",
+        "z": "b8f36cbcfc882e5f",
+        "name": "check",
+        "func": "const now = Date.now();\n\nif (flow.get('still_sched_pid_pending') === true) {\n    const pidAt = Number(flow.get('still_sched_pid_at_ms'));\n    if (Number.isFinite(pidAt) && now >= pidAt) {\n        const period = Number(flow.get('still_sched_period')) || 5;\n        flow.set('still_sched_pid_pending', false);\n        return [\n            null,\n            { payload: 'PID loop starting ' + new Date().toLocaleTimeString() },\n            { period: period }\n        ];\n    }\n    return [null, null, null];\n}\n\nif (flow.get('still_sched_armed') !== true) return [null, null, null];\nconst target = Number(flow.get('still_sched_target_ms'));\nif (!Number.isFinite(target) || now < target) return [null, null, null];\n\nconst settle = Number(flow.get('still_sched_settle')) || 0;\nconst period = Number(flow.get('still_sched_period')) || 5;\nflow.set('still_sched_armed', false);\nflow.set('still_sched_pid_pending', true);\nflow.set('still_sched_pid_at_ms', now + settle * 60000);\n\nreturn [\n    { payload: { duty: 100 }, settleMin: settle },\n    { payload: 'Boiler starting ' + new Date().toLocaleTimeString() + ' (condenser 100%)' },\n    null\n];",
+        "outputs": 3,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 4200,
+        "y": 1840,
+        "wires": [
+            [
+                "stillschcond"
+            ],
+            [
+                "stillschstat"
+            ],
+            [
+                "stillschpidfn"
+            ]
+        ]
+    },
+    {
+        "id": "stillschcond",
+        "type": "function",
+        "z": "b8f36cbcfc882e5f",
+        "name": "cond",
+        "func": "msg.payload = { duty: 100 };\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 4400,
+        "y": 1780,
+        "wires": [
+            [
+                "stillschcondpost"
+            ]
+        ]
+    },
+    {
+        "id": "stillschcondpost",
+        "type": "http request",
+        "z": "b8f36cbcfc882e5f",
+        "name": "POST condenser (stilling sched)",
+        "method": "POST",
+        "ret": "txt",
+        "paytoqs": "ignore",
+        "url": "http://condenser.mianos.com/pump",
+        "tls": "",
+        "persist": false,
+        "proxy": "",
+        "insecureHTTPParser": false,
+        "authType": "",
+        "senderr": true,
+        "headers": [
+            {
+                "keyType": "other",
+                "keyValue": "",
+                "valueType": "other",
+                "valueValue": ""
+            }
+        ],
+        "x": 4600,
+        "y": 1780,
+        "wires": [
+            [
+                "stillschcondverify"
+            ]
+        ]
+    },
+    {
+        "id": "stillschcondverify",
+        "type": "function",
+        "z": "b8f36cbcfc882e5f",
+        "name": "condverify",
+        "func": "let j = msg.payload;\nif (typeof j === 'string') { try { j = JSON.parse(j); } catch (e) { j = null; } }\nconst ok = !msg.error && !(msg.statusCode && msg.statusCode >= 400) && j && typeof j === 'object' && typeof j.duty === 'number';\nif (ok) {\n    return [\n        { payload: 2400 },\n        { payload: 'Condenser OK - boiler heating, PID in ' + (Number(msg.settleMin) || 0) + ' min' }\n    ];\n}\nflow.set('still_sched_pid_pending', false);\nreturn [\n    null,\n    { payload: 'ABORT - condenser pump did not start, boiler NOT turned on' }\n];",
+        "outputs": 2,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 4800,
+        "y": 1780,
+        "wires": [
+            [
+                "pwrsetpwr000001"
+            ],
+            [
+                "stillschstat"
+            ]
+        ]
+    },
+    {
+        "id": "stillschpidfn",
+        "type": "function",
+        "z": "b8f36cbcfc882e5f",
+        "name": "pidfn",
+        "func": "const period = Number(msg.period) || 5;\nmsg.method = 'POST';\nmsg.url = 'http://still2.mianos.com/pid/run';\nmsg.payload = { sample_time: period };\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 4400,
+        "y": 1900,
+        "wires": [
+            [
+                "still2req0000001"
+            ]
+        ]
+    },
+    {
+        "id": "stillschseed",
+        "type": "inject",
+        "z": "b8f36cbcfc882e5f",
+        "name": "seed stilling sched defaults",
+        "props": [
+            {
+                "p": "payload"
+            }
+        ],
+        "repeat": "",
+        "crontab": "",
+        "once": true,
+        "topic": "",
+        "payload": "",
+        "payloadType": "date",
+        "x": 4000,
+        "y": 1960,
+        "wires": [
+            [
+                "stillschseedfn"
+            ]
+        ]
+    },
+    {
+        "id": "stillschseedfn",
+        "type": "function",
+        "z": "b8f36cbcfc882e5f",
+        "name": "seedfn",
+        "func": "const settle = typeof flow.get('still_sched_settle') === 'number' ? flow.get('still_sched_settle') : 30;\nconst period = typeof flow.get('still_sched_period') === 'number' ? flow.get('still_sched_period') : 5;\nflow.set('still_sched_settle', settle);\nflow.set('still_sched_period', period);\nreturn [ { payload: settle }, { payload: period } ];",
+        "outputs": 2,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 4200,
+        "y": 1960,
+        "wires": [
+            [
+                "stillschsettle"
+            ],
+            [
+                "stillschperiod"
+            ]
+        ]
     }
 ]

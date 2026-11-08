@@ -5,7 +5,7 @@ below the packing) and at the head, and runs a PID loop on the head (top)
 probe that drives the reflux (dephlegmator) coolant pump.
 
 Commands are REST on `http://still2.mianos.com`. MQTT carries telemetry only:
-`tele/still2/{init,temp,pid,pumps}` and a retained `Online`/`Offline` on
+`tele/still2/{init,temp,pid,pumps,safety}` and a retained `Online`/`Offline` on
 `tele/still2/LWT`. Every POST is logged with the caller's address.
 
 Success is a 2xx whose body is the resulting state. Errors return
@@ -53,11 +53,60 @@ curl http://still2.mianos.com/settings
 curl -X POST -d '{"refluxPump": "http://reflux.mianos.com/pump"}' http://still2.mianos.com/settings
 curl -X POST -d '{"middleRref": 401.5, "middleOffset": 0}' http://still2.mianos.com/settings
 curl -X POST -d '{"pidSource": "middle"}' http://still2.mianos.com/settings
+curl -X POST -d '{"dangerTemp": 98.5, "dangerHyst": 3}' http://still2.mianos.com/settings
+curl -X POST -d '{"powerCutUrl": "http://iampwr.mianos.com/api/setpower?x=0"}' http://still2.mianos.com/settings
 ```
 
-RTD calibration (`middleRref headRref middleOffset headOffset`) applies at
-once; broker, `sensorName` and pump URLs take effect after a reboot. Hostname:
+RTD calibration (`middleRref headRref middleOffset headOffset`), `pidSource`
+and the safety knobs (`dangerTemp dangerHyst powerCutUrl`) apply at once;
+broker, `sensorName` and the reflux/condenser pump URLs take effect after a
+reboot. Hostname:
 `curl -X POST -d '{"host_name": "still2"}' http://still2.mianos.com/set_hostname`.
+
+## Safety cutoff
+
+The firmware watches the boiler (head) probe and cuts the element if the
+boiler runs away. Every 2 s it compares the head temperature against
+`dangerTemp` (default 98.5 °C); when it is exceeded it GETs `powerCutUrl`
+(`http://iampwr.mianos.com/api/setpower?x=0`) to force the element to 0 W,
+and re-asserts that cut every 10 s while the probe stays over the limit, so a
+manual re-apply on the Power page is overridden. The trip is logged and
+published on `tele/still2/safety` as `{"tripped":true,"boiler_c":C}`; once the
+boiler falls below `dangerTemp - dangerHyst` (default 95.5 °C) it re-arms and
+publishes `{"tripped":false,"boiler_c":C}`. `dangerTemp`, `dangerHyst` and
+`powerCutUrl` are NVS-persisted settings.
+
+The PID loop has a separate sensor-fault fail-safe. A reading that is a fault,
+non-finite, or outside −40..200 °C is never fed to the PID: the last output is
+held for up to 3 consecutive samples, then the pump is driven to the fail-safe
+output (`output_max`, i.e. full reflux) while the fault persists. Each fault
+is published on `tele/still2/pid` as
+`{"fault":true,"fail_safe":…,"held_output":…,"consecutive_faults":…}`.
+
+## Control flows (Node-RED)
+
+`nodered_flows/flows.json` is the live still-control flow running on the
+Node-RED host (the same one that hosts the advisory tuner below). It provides
+the dashboard: temperature charts, boiler power (0–2400 W via the iampwr
+`/api/setpower?x=<W>` endpoint), the reflux/condenser pump duty sliders, PID
+start/stop, and two heat-up helpers.
+
+- **Heat-up mode** (Power page): a manual on/off that fires the boiler at
+  2400 W, then drops to a run power (default 1200 W) once the vapour probe
+  (`middle`) reaches a switch temperature (default 50 °C). It manages the
+  element power only; it does not start the PID.
+- **Stilling schedule** (Schedule group): an armed delayed start. At the armed
+  time it verifies the condenser pump came up, fires the boiler at 2400 W, and
+  then — when the vapour probe reaches the switch temperature (default 78 °C)
+  — drops the boiler to the run power (default 1200 W) and sets the reflux
+  pump to 100 % (full reflux). After the settle time (default 30 min) it
+  starts the PID via `/pid/run`, which takes over the reflux pump. Run power
+  and switch temperature are editable in the Schedule group; Cancel clears the
+  heat-up state.
+
+The schedule's heat-up stage runs in Node-RED rather than the firmware; the
+ESP32's own over-temperature cutoff (see Safety cutoff) is the independent
+backstop for the boiler.
 
 ## Advisory tuner (Node-RED)
 

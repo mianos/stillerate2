@@ -245,7 +245,7 @@
         "type": "function",
         "z": "b8f36cbcfc882e5f",
         "name": "parse string to float",
-        "func": "// Parse the string received from the input field into a number\nvar numberValue = parseFloat(msg.payload);\n\n// Check if the parsed value is a valid number\nif (!isNaN(numberValue)) {\n    // Update the payload with the parsed number\n    msg.payload = numberValue;\n    return msg;\n} else {\n    // If the parsed value is not a valid number, log an error and return null\n    node.error('Invalid number received from input field: ' + msg.payload);\n    return null;\n}\n",
+        "func": "// Parse the string received from the input field into a number\nvar numberValue = parseFloat(msg.payload);\n\n// Check if the parsed value is a valid number\nif (!isNaN(numberValue)) {\n    // Update the payload with the parsed number\n    msg.payload = numberValue;\n    // Remember the last period so the Start PID button can reuse it.\n    if (numberValue > 0) flow.set('pid_period', numberValue);\n    return msg;\n} else {\n    // If the parsed value is not a valid number, log an error and return null\n    node.error('Invalid number received from input field: ' + msg.payload);\n    return null;\n}",
         "outputs": 1,
         "timeout": 0,
         "noerr": 0,
@@ -5111,6 +5111,65 @@
             ],
             [
                 "stillschstat"
+            ]
+        ]
+    },
+    {
+        "id": "pidstart",
+        "type": "ui-button",
+        "z": "b8f36cbcfc882e5f",
+        "group": "e459568c74dfd8b2",
+        "name": "",
+        "label": "Start PID",
+        "order": 3,
+        "width": 0,
+        "height": 0,
+        "emulateClick": false,
+        "tooltip": "Start the PID loop now (no settle), so the reflux pump cools",
+        "color": "",
+        "bgcolor": "",
+        "className": "",
+        "icon": "",
+        "iconPosition": "left",
+        "payload": "start",
+        "payloadType": "str",
+        "topic": "topic",
+        "topicType": "msg",
+        "buttonColor": "",
+        "textColor": "",
+        "iconColor": "",
+        "enableClick": true,
+        "enablePointerdown": false,
+        "pointerdownPayload": "",
+        "pointerdownPayloadType": "str",
+        "enablePointerup": false,
+        "pointerupPayload": "",
+        "pointerupPayloadType": "str",
+        "x": 230,
+        "y": 1880,
+        "wires": [
+            [
+                "pidstartfn"
+            ]
+        ]
+    },
+    {
+        "id": "pidstartfn",
+        "type": "function",
+        "z": "b8f36cbcfc882e5f",
+        "name": "start PID now",
+        "func": "const period = Number(flow.get('pid_period')) || 10;\nmsg.method = 'POST';\nmsg.url = 'http://still2.mianos.com/pid/run';\nmsg.payload = { sample_time: period };\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 230,
+        "y": 1960,
+        "wires": [
+            [
+                "still2req0000001"
             ]
         ]
     }

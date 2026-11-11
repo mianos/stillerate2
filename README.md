@@ -30,6 +30,12 @@ request returns 400 with an error message. Ranges: output limits are 0..100 with
 filter coefficients lie in [0, 1), and every value must be finite — nothing is
 persisted to NVS unless it is valid.
 
+The loop does **not** auto-start after a reboot or power cycle: the firmware
+boots with `sample_time` 0 (loop stopped) even though the PID parameters,
+including `set_point`, are restored from NVS. Start it with
+`{"sample_time": N}`, the dashboard's **Start PID** button, or by arming the
+Stilling schedule. Stopping the loop also turns the reflux pump off.
+
 ## Emulation
 
 ```sh
@@ -95,6 +101,12 @@ start/stop, and two heat-up helpers.
   2400 W, then drops to a run power (default 1200 W) once the vapour probe
   (`middle`) reaches a switch temperature (default 50 °C). It manages the
   element power only; it does not start the PID.
+- **Start PID** (PID Control group on the Monitoring page): starts the PID
+  loop immediately at the period shown in **PID Period** (falling back to 10 s).
+  There is no settle on this path — use it for a manual run. The 30-minute
+  settle applies only to the Stilling schedule below. The firmware does not
+  restart the loop after a power cycle, so this is what you press to get the
+  reflux pump cooling again.
 - **Stilling schedule** (Schedule group): an armed delayed start. At the armed
   time it verifies the condenser pump came up, fires the boiler at 2400 W, and
   then — when the vapour probe reaches the switch temperature (default 78 °C)

@@ -1,5 +1,6 @@
 #pragma once
 #include <cmath>
+#include <cstdint>
 #include <cstdlib>
 #include <string>
 #include <type_traits>
@@ -44,6 +45,12 @@ public:
     // "middle" — lets you repoint the PID in software when the probes are moved.
     std::string pidSource = "head";
 
+    // PID loop period to restore across a reboot/power cycle. > 0 means the
+    // loop was running and should auto-resume at that period; 0 means it was
+    // stopped. Written by POST /pid/run so a power cycle brings the reflux
+    // pump cooling back up instead of silently booting with the loop off.
+    uint32_t pidResumeMs = 0;
+
     std::string convertChangesToJson(const SettingsManager::ChangeList& changes) {
         cJSON *root = cJSON_CreateObject();
         for (const auto& [key, value] : changes) {
@@ -75,6 +82,17 @@ public:
         retrieveFloat("middleOffset", middleOffset);
         retrieveFloat("headOffset", headOffset);
         nvs.retrieve("pidSource", pidSource);
+
+        std::string resumeMs;
+        if (nvs.retrieve("pidResumeMs", resumeMs)) {
+            char* end = nullptr;
+            const unsigned long parsed = std::strtoul(resumeMs.c_str(), &end, 10);
+            if (end != resumeMs.c_str()) {
+                pidResumeMs = static_cast<uint32_t>(parsed);
+            } else {
+                ESP_LOGE("Settings", "bad pidResumeMs='%s'", resumeMs.c_str());
+            }
+        }
     }
 
     void toJsonWrapper(JsonWrapper& json, bool maskPassword = false) const {
@@ -100,6 +118,15 @@ public:
         JsonWrapper json;
         toJsonWrapper(json, /*maskPassword=*/true);
         return json.ToString();
+    }
+
+    // Persist the loop period across reboots (0 = stopped, do not resume).
+    // Only writes NVS when the value actually changes, so normal starts/stops
+    // do not wear the flash.
+    void setPidResumeMs(uint32_t ms) {
+        if (ms == pidResumeMs) return;
+        pidResumeMs = ms;
+        nvs.store("pidResumeMs", std::to_string(ms));
     }
 
    ChangeList updateFromJsonString(const std::string& jsonString) {

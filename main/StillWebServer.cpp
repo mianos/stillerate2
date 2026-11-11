@@ -241,7 +241,10 @@ esp_err_t StillWebServer::pid_run_handler(httpd_req_t* req) {
     if (!(sample_time == 0.0 || (sample_time >= 0.5 && sample_time <= 3600.0))) {
         return sendJsonError(req, 400, "'sample_time' must be 0 (stop) or 0.5..3600 s");
     }
-    self->still_->ptimer->start(static_cast<uint32_t>(sample_time * 1000.0 + 0.5));
+    const uint32_t period_ms = static_cast<uint32_t>(sample_time * 1000.0 + 0.5);
+    self->still_->ptimer->start(period_ms);
+    // Remember it across a power cycle: 0 stays stopped, >0 auto-resumes at boot.
+    self->still_->settings->setPidResumeMs(period_ms);
     {
         std::lock_guard<std::mutex> lock(self->lastRunMu_);
         self->lastRunSampleTime_ = sample_time;

@@ -226,6 +226,15 @@ extern "C" void app_main() {
         static StillWebServer web(&webctx, &ctx, &middle_temp, &head_temp);
         web.start();
 
+        // The firmware boots with the PID loop stopped. If it was running when
+        // the device last stopped, resume it now — after Wi-Fi is up, because
+        // the pump endpoints are HTTP. 0 means it was deliberately stopped.
+        if (settings.pidResumeMs > 0) {
+            ESP_LOGW(TAG, "PID: auto-resuming loop at %u ms after reboot",
+                     static_cast<unsigned>(settings.pidResumeMs));
+            ptimer.start(settings.pidResumeMs);
+        }
+
         // Variables for Pump Health Checking
         int64_t last_pump_check = 0;
         const int64_t check_interval_sec = 30; // Check every 30 seconds

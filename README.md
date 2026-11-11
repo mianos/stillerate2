@@ -30,11 +30,14 @@ request returns 400 with an error message. Ranges: output limits are 0..100 with
 filter coefficients lie in [0, 1), and every value must be finite — nothing is
 persisted to NVS unless it is valid.
 
-The loop does **not** auto-start after a reboot or power cycle: the firmware
-boots with `sample_time` 0 (loop stopped) even though the PID parameters,
-including `set_point`, are restored from NVS. Start it with
-`{"sample_time": N}`, the dashboard's **Start PID** button, or by arming the
-Stilling schedule. Stopping the loop also turns the reflux pump off.
+The loop **resumes automatically after a reboot or power cycle if it was running
+when the device stopped**: `POST /pid/run` records the period in NVS, and at boot
+the firmware restarts the loop once Wi-Fi is up (the pump endpoints are HTTP).
+Stopping it with `{"sample_time": 0}` records "stopped", so it stays stopped.
+PID parameters, including `set_point`, are always restored from NVS. You can also
+start it immediately with `{"sample_time": N}`, the dashboard's **Start PID**
+button, or by arming the Stilling schedule. Stopping the loop turns the reflux
+pump off.
 
 ## Emulation
 
@@ -104,9 +107,8 @@ start/stop, and two heat-up helpers.
 - **Start PID** (PID Control group on the Monitoring page): starts the PID
   loop immediately at the period shown in **PID Period** (falling back to 10 s).
   There is no settle on this path — use it for a manual run. The 30-minute
-  settle applies only to the Stilling schedule below. The firmware does not
-  restart the loop after a power cycle, so this is what you press to get the
-  reflux pump cooling again.
+  settle applies only to the Stilling schedule below. Once started, the firmware
+  remembers the period and auto-resumes the loop after a power cycle.
 - **Stilling schedule** (Schedule group): an armed delayed start. At the armed
   time it verifies the condenser pump came up, fires the boiler at 2400 W, and
   then — when the vapour probe reaches the switch temperature (default 78 °C)

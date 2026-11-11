@@ -9,7 +9,7 @@
 #include "JsonWrapper.h"
 #include "Max31865Sensor.h"
 #include "StillContext.h"
-#include "WebServer.h"
+#include "WifiWebServer.h"
 
 // stillerate2 HTTP control surface, layered on the shared WebServer base
 // (/reset, /set_hostname, /healthz). All commands are REST; MQTT carries
@@ -23,9 +23,9 @@
 //   POST     /sensors/reset  reset both MAX31865s, then report as GET
 //   POST     /firmware       raw .bin body -> inactive OTA slot -> reboot
 //   GET      /firmware       running image version / partition
-class StillWebServer : public WebServer {
+class StillWebServer : public WifiWebServer {
 public:
-    StillWebServer(WebContext* ctx, StillContext* still, Max31865Sensor* middle, Max31865Sensor* head);
+    StillWebServer(WifiWebContext* ctx, StillContext* still, Max31865Sensor* middle, Max31865Sensor* head);
 
     esp_err_t start() override;
 

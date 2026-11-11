@@ -222,7 +222,7 @@ extern "C" void app_main() {
         client.start();
         PublishMqttInit(client, settings, pid);
 
-        static WebContext webctx(&wifiManager);
+        static WifiWebContext webctx(&wifiManager);
         static StillWebServer web(&webctx, &ctx, &middle_temp, &head_temp);
         web.start();
 

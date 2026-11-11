@@ -34,8 +34,8 @@ std::string now_iso() {
 
 }  // namespace
 
-StillWebServer::StillWebServer(WebContext* ctx, StillContext* still, Max31865Sensor* middle, Max31865Sensor* head)
-    : WebServer(ctx), still_(still), middle_(middle), head_(head) {}
+StillWebServer::StillWebServer(WifiWebContext* ctx, StillContext* still, Max31865Sensor* middle, Max31865Sensor* head)
+    : WifiWebServer(ctx), still_(still), middle_(middle), head_(head) {}
 
 esp_err_t StillWebServer::start() {
     esp_err_t r = WebServer::start();
